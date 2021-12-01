@@ -219,8 +219,12 @@ export class BookView extends ItemView {
 
 		const self = this;
 		this.contentEl.classList.add("webviewer-container");
+		const workerPath = this.plugin.settings.useLocalWebViewerServer ? 
+							"http://127.0.0.1:"+this.plugin.settings.webviewerLocalPort
+							: this.plugin.settings.webviewerExternalServerAddress;
+
 		WebViewer({
-			path: "http://127.0.0.1:"+this.plugin.settings.webviewerPort,
+			path: workerPath,
 			config: "config.js",
 			custom: JSON.stringify({
 				id: this.viewerId,

@@ -34,23 +34,28 @@ import {
 	VIEW_TYPE_BOOK_VIEW
 } from "./BookView";
 
+// import staticServer, { StaticServer } from './static-server'
+// import * as http from "http";
 
 interface BookNoteSettings {
 	bookPath: string;
 	bookDataPath: string;
 
-	webviewerRoot: string;
-	webviewerPort: string;
+	useLocalWebViewerServer: boolean,
+	webviewerRootPath: string,
+	webviewerLocalPort: string,
 
-	webviewerExternalAddress: string;
+	webviewerExternalServerAddress: string;
 }
 
 const DEFAULT_SETTINGS: BookNoteSettings = {
 	bookPath: "",
 	bookDataPath: "booknote/books-data",
-	webviewerRoot: "",
-	webviewerPort: "1440",
-	webviewerExternalAddress: ""
+	useLocalWebViewerServer: false,
+	webviewerRootPath: "",
+	webviewerLocalPort: "1448",
+
+	webviewerExternalServerAddress: "https://relaxed-torvalds-5a5c77.netlify.app"
 };
 
 export default class BookNotePlugin extends Plugin {
@@ -61,6 +66,10 @@ export default class BookNotePlugin extends Plugin {
 	bookTreeData: Array<any>
 	currentBookProjectFile: TFile;
 	currentBookProjectBooks: Array<any>;
+
+	// TODO: 内建服务器
+	staticServer: any;
+	localWebViewerServer: any;
 
 	async onload() {
 
@@ -137,6 +146,38 @@ export default class BookNotePlugin extends Plugin {
 		});
 
 
+		
+
+
+		// console.log(http);
+		// if (this.settings.useLocalWebViewerServer) {
+		// 	this.localWebViewerServer = staticServer(this.settings.webviewerRootPath,this.settings.webviewerLocalPort,this);
+		// 	this.register(() => {
+		// 		if (this.localWebViewerServer) this.localWebViewerServer.close();
+		// 	})
+		// }
+
+		console.log(this.settings.useLocalWebViewerServer);
+		this.staticServer = (this.app as any).plugins.plugins["obsidian-static-file-server"].staticServer;
+		if (this.settings.useLocalWebViewerServer) {
+			this.startStaticServer();
+		}
+
+	}
+
+
+	startStaticServer() {
+		this.localWebViewerServer = this.staticServer(this.settings.webviewerRootPath,this.settings.webviewerLocalPort,
+											(this.app as any).plugins.plugins["obsidian-static-file-server"]);
+		this.localWebViewerServer.listen();
+		this.register(this.stopStaticServer);
+	}
+
+	stopStaticServer() {
+		if (this.localWebViewerServer) {
+			this.localWebViewerServer.close();
+			this.localWebViewerServer = null;
+		}
 	}
 
 	parseXfdfString(xfdfString: string) {
@@ -464,13 +505,65 @@ class SampleSettingTab extends PluginSettingTab {
 		containerEl.createEl("h2", { text: "BookNote" });
 
 		new Setting(containerEl)
-			.setName("Book Path")
-			.setDesc("Book 根目录")
+			.setName("书籍根路径")
 			.addText((text) =>
 				text.setValue(this.plugin.settings.bookPath).onChange(async (value) => {
 					this.plugin.settings.bookPath = value;
 					await this.plugin.saveSettings();
 				})
 			);
+		
+		new Setting(containerEl)
+			.setName("使用本地服务器")
+			.setDesc("使用本地服务器需要设置WebViewer库路径和端口")
+			.addToggle((toggle) => {
+				toggle.setValue(this.plugin.settings.useLocalWebViewerServer).onChange(async (value) => {
+					this.plugin.settings.useLocalWebViewerServer = value;
+					await this.plugin.saveSettings();
+					if (this.plugin.settings.useLocalWebViewerServer) {
+						this.plugin.startStaticServer();
+					} else {
+						this.plugin.stopStaticServer();
+					}
+				})
+			})
+		new Setting(containerEl)
+			.setName("WebViewer 路径")
+			.setDesc("使用本地服务器时有效")
+			.addText((text) =>
+				text.setValue(this.plugin.settings.webviewerRootPath).onChange(async (value) => {
+					this.plugin.settings.webviewerRootPath = value;
+					await this.plugin.saveSettings();
+					// TODO: value check and is server started?
+					if (this.plugin.settings.useLocalWebViewerServer) {
+						this.plugin.stopStaticServer();
+						this.plugin.startStaticServer();
+					}
+				})
+			);
+
+		new Setting(containerEl)
+			.setName("本地服务器端口")
+			.setDesc("使用本地服务器时有效")
+			.addText((text) => {
+				text.setValue(this.plugin.settings.webviewerLocalPort).onChange(async (value) => {
+					this.plugin.settings.webviewerLocalPort = value;
+					await this.plugin.saveSettings();
+					if (this.plugin.settings.useLocalWebViewerServer) {
+						this.plugin.stopStaticServer();
+						this.plugin.startStaticServer();
+					}
+				})
+			})
+
+		new Setting(containerEl)
+			.setName("WebViewer远程服务器")
+			.setDesc("不使用本地服务器时有效")
+			.addText((text) => {
+				text.setValue(this.plugin.settings.webviewerExternalServerAddress).onChange(async (value) => {
+					this.plugin.settings.webviewerExternalServerAddress = value;
+					await this.plugin.saveSettings();
+				})
+			})
 	}
 }
