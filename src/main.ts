@@ -84,6 +84,7 @@ export default class BookNotePlugin extends Plugin {
 		this.path = (this.app.vault.adapter as any).path;
 		this.fs = (this.app.vault.adapter as any).fs;
 
+
 		await this.loadSettings();
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new SampleSettingTab(this.app, this));
@@ -169,9 +170,8 @@ export default class BookNotePlugin extends Plugin {
 		// }
 
 		// TODO: booknote load before static server
-		console.log((this.app as any).plugins.plugins["obsidian-static-file-server"]);
+		// console.log((this.app as any).plugins.plugins["obsidian-static-file-server"]);
 
-		
 		if (this.settings.useLocalWebViewerServer) {
 			this.startStaticServer();
 		}
@@ -515,6 +515,11 @@ export default class BookNotePlugin extends Plugin {
 
 		return attrs;
 	}
+
+	isUrlBook(path: string) {
+		return path.startsWith("http://") || path.startsWith("https://");
+	}
+
 }
 
 class SampleSettingTab extends PluginSettingTab {

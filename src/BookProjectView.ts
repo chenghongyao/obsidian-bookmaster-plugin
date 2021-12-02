@@ -106,7 +106,11 @@ export class BookProjectView extends ItemView {
 						},
 						'open-file': function (item: any) {
 							// self.plugin.openFileBySystem(self.plugin.normalizeBookPath(item.path));
-							self.plugin.openBookInBookView(item.path);
+							if (self.plugin.isUrlBook(item.path)) {
+								window.open(item.path);
+							} else {
+								self.plugin.openBookInBookView(item.path);
+							}
 						},
 						'context-menu': function(evt: MouseEvent, item: any) {
 							self.openContextMenu(evt,item);
