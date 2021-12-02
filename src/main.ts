@@ -17,6 +17,8 @@ import {
 	WorkspaceLeaf,
 } from "obsidian";
 import { around } from "monkey-around";
+
+import {SUPPORT_BOOK_TYPES} from "./constants"
 import {
 	BookExplorerView,
 	VIEW_TYPE_BOOK_EXPLORER_VIEW,
@@ -129,7 +131,6 @@ export default class BookNotePlugin extends Plugin {
 		this.registerBookProject();
 
 		this.registerObsidianProtocolHandler("booknote", (params) => {
-			console.log(params);
 			if (params["type"] === "annotation") {
 				const annotId = params["id"];
 				const annotBook = params["book"];
@@ -157,7 +158,6 @@ export default class BookNotePlugin extends Plugin {
 		// 	})
 		// }
 
-		console.log(this.settings.useLocalWebViewerServer);
 		this.staticServer = (this.app as any).plugins.plugins["obsidian-static-file-server"].staticServer;
 		if (this.settings.useLocalWebViewerServer) {
 			this.startStaticServer();
@@ -283,16 +283,10 @@ export default class BookNotePlugin extends Plugin {
 				arr.push({ name: filename, path: filepath, children: Array<any>() });
 				self.walk(filepath,arr.last().children);
 			} else {
-				if (!filename.startsWith("~$")) {
-					// window 下的临时文件
-					if (
-						filename.endsWith(".pdf") ||
-						filename.endsWith(".xlsx") ||
-						filename.endsWith(".pptx") ||
-						filename.endsWith(".docx")
-					) {
-						fi.push(filename);
-					}
+				const ext = path.extname(filename).substr(1);
+				
+				if (!filename.startsWith("~$") && !filename.startsWith(".") && SUPPORT_BOOK_TYPES.indexOf(ext) >= 0) { // window 下的临时文件
+					fi.push(filename);
 				}
 			}
 		});
