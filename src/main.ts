@@ -48,6 +48,9 @@ interface BookNoteSettings {
 	webviewerLocalPort: string,
 
 	webviewerExternalServerAddress: string;
+
+	openAllBOokBySystem: boolean;
+	openOfficeBookBySystem: boolean;
 }
 
 const DEFAULT_SETTINGS: BookNoteSettings = {
@@ -57,7 +60,10 @@ const DEFAULT_SETTINGS: BookNoteSettings = {
 	webviewerRootPath: "",
 	webviewerLocalPort: "1448",
 
-	webviewerExternalServerAddress: "https://relaxed-torvalds-5a5c77.netlify.app"
+	webviewerExternalServerAddress: "https://relaxed-torvalds-5a5c77.netlify.app",
+
+	openAllBOokBySystem: false,
+	openOfficeBookBySystem: false,
 };
 
 export default class BookNotePlugin extends Plugin {
@@ -135,11 +141,17 @@ export default class BookNotePlugin extends Plugin {
 				const annotId = params["id"];
 				const annotBook = params["book"];
 				if (annotId && annotBook) {
-					this.getBookView().then(view => {
-						view.openBook(annotBook).then(view => {
-							view.showAnnotation(annotId);
+					
+					// TODO:还需要支持?
+					if (this.isForceOpenBySystem(annotBook)) {
+						this.openBookBySystem(annotBook);
+					} else {
+						this.getBookView().then(view => {
+							view.openBook(annotBook).then(view => {
+								view.showAnnotation(annotId);
+							})
 						})
-					})
+					}
 				} else {
 					new Notice("标注链接参数错误");
 				}
@@ -148,8 +160,6 @@ export default class BookNotePlugin extends Plugin {
 
 
 		
-
-
 		// console.log(http);
 		// if (this.settings.useLocalWebViewerServer) {
 		// 	this.localWebViewerServer = staticServer(this.settings.webviewerRootPath,this.settings.webviewerLocalPort,this);
@@ -158,19 +168,27 @@ export default class BookNotePlugin extends Plugin {
 		// 	})
 		// }
 
-		this.staticServer = (this.app as any).plugins.plugins["obsidian-static-file-server"].staticServer;
+		// TODO: booknote load before static server
+		console.log((this.app as any).plugins.plugins["obsidian-static-file-server"]);
+
+		
 		if (this.settings.useLocalWebViewerServer) {
 			this.startStaticServer();
 		}
 
 	}
 
-
 	startStaticServer() {
-		this.localWebViewerServer = this.staticServer(this.settings.webviewerRootPath,this.settings.webviewerLocalPort,
-											(this.app as any).plugins.plugins["obsidian-static-file-server"]);
-		this.localWebViewerServer.listen();
-		this.register(this.stopStaticServer);
+		// static server plugin may loaded after booknote
+		const plugins = (this.app as any).plugins.plugins;
+		if (plugins["obsidian-static-file-server"]) {
+			this.localWebViewerServer = this.staticServer(this.settings.webviewerRootPath,this.settings.webviewerLocalPort,
+										(this.app as any).plugins.plugins["obsidian-static-file-server"]);
+			this.localWebViewerServer.listen();
+			this.register(this.stopStaticServer);
+		} else {
+			setTimeout(this.startStaticServer,500);
+		}	
 	}
 
 	stopStaticServer() {
@@ -207,7 +225,8 @@ export default class BookNotePlugin extends Plugin {
 						if (books && books.length > 0) {
 							menu.addItem((item) => {
 								item.setTitle("OpenBook").onClick(() => {
-									console.log(books[0]);
+									// console.log(books[0]);
+									self.openBookInBookView(books[0]);
 								});
 							});
 						}
@@ -329,8 +348,22 @@ export default class BookNotePlugin extends Plugin {
 		return normalizePath(this.settings.bookDataPath+"/"+path);
 	}
 
-	openFileBySystem(path: string) {
-		window.open("file://" + path);
+	openBookBySystem(path: string) {
+		window.open("file://" + this.normalizeBookPath(path));
+	}
+
+	isForceOpenBySystem(path: string) {
+		return this.settings.openAllBOokBySystem 
+			|| (this.settings.openOfficeBookBySystem && this.path.extname(path).substr(1) != "pdf"); // TODO: office book mean not pdf book?
+	}
+	openBookInBookView(path: string) {
+		if (this.isForceOpenBySystem(path)) {
+			this.openBookBySystem(path);
+		} else {
+			this.getBookView().then(view => {
+						view.openBook(path);
+					});
+		}
 	}
 
 	updateBookProject(file: TFile) {
@@ -522,7 +555,7 @@ class SampleSettingTab extends PluginSettingTab {
 				})
 			})
 		new Setting(containerEl)
-			.setName("WebViewer 路径")
+			.setName("WebViewer库 路径")
 			.setDesc("使用本地服务器时有效")
 			.addText((text) =>
 				text.setValue(this.plugin.settings.webviewerRootPath).onChange(async (value) => {
@@ -557,6 +590,27 @@ class SampleSettingTab extends PluginSettingTab {
 				text.setValue(this.plugin.settings.webviewerExternalServerAddress).onChange(async (value) => {
 					this.plugin.settings.webviewerExternalServerAddress = value;
 					await this.plugin.saveSettings();
+				})
+			})
+
+		new Setting(containerEl)
+			.setName("使用默认应用打开所有书籍")
+			.setDesc("使能时双击书籍总是使用系统默认应用打开")
+			.addToggle((toggle) => {
+				toggle.setValue(this.plugin.settings.openAllBOokBySystem).onChange(async (value) => {
+					this.plugin.settings.openAllBOokBySystem = value;
+					await this.plugin.saveSettings();
+				})
+			})
+
+		new Setting(containerEl)
+			.setName("使用默认应用打开Office书籍")
+			.setDesc("使能时双击Office书籍总是使用系统默认应用打开")
+			.addToggle((toggle) => {
+				toggle.setValue(this.plugin.settings.openOfficeBookBySystem).onChange(async (value) => {
+					this.plugin.settings.openOfficeBookBySystem = value;
+					await this.plugin.saveSettings();
+
 				})
 			})
 	}

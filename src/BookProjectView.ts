@@ -48,7 +48,7 @@ export class BookProjectView extends ItemView {
 			.setTitle("使用默认应用打开")
 			.setIcon("popup-open")
 			.onClick(()=>{
-				self.plugin.openFileBySystem(self.plugin.normalizeBookPath(fileitem.path));
+				self.plugin.openBookBySystem(fileitem.path);
 			})
 		)
 
@@ -106,9 +106,7 @@ export class BookProjectView extends ItemView {
 						},
 						'open-file': function (item: any) {
 							// self.plugin.openFileBySystem(self.plugin.normalizeBookPath(item.path));
-							self.plugin.getBookView().then((view) => {
-								view.openBook(item.path);
-							});
+							self.plugin.openBookInBookView(item.path);
 						},
 						'context-menu': function(evt: MouseEvent, item: any) {
 							self.openContextMenu(evt,item);
