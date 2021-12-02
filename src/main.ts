@@ -18,7 +18,6 @@ import {
 } from "obsidian";
 import { around } from "monkey-around";
 
-import {SUPPORT_BOOK_TYPES} from "./constants"
 import {
 	BookExplorerView,
 	VIEW_TYPE_BOOK_EXPLORER_VIEW,
@@ -36,8 +35,10 @@ import {
 	VIEW_TYPE_BOOK_VIEW
 } from "./BookView";
 
-// import staticServer, { StaticServer } from './static-server'
-// import * as http from "http";
+import {SUPPORT_BOOK_TYPES} from "./constants"
+
+
+import staticServer, { StaticServer } from './static-server'
 
 interface BookNoteSettings {
 	bookPath: string;
@@ -83,7 +84,6 @@ export default class BookNotePlugin extends Plugin {
 
 		this.path = (this.app.vault.adapter as any).path;
 		this.fs = (this.app.vault.adapter as any).fs;
-
 
 		await this.loadSettings();
 		// This adds a settings tab so the user can configure various aspects of the plugin
@@ -180,15 +180,18 @@ export default class BookNotePlugin extends Plugin {
 
 	startStaticServer() {
 		// static server plugin may loaded after booknote
-		const plugins = (this.app as any).plugins.plugins;
-		if (plugins["obsidian-static-file-server"]) {
-			this.localWebViewerServer = this.staticServer(this.settings.webviewerRootPath,this.settings.webviewerLocalPort,
-										(this.app as any).plugins.plugins["obsidian-static-file-server"]);
-			this.localWebViewerServer.listen();
-			this.register(this.stopStaticServer);
-		} else {
-			setTimeout(this.startStaticServer,500);
-		}	
+		// const plugins = (this.app as any).plugins.plugins;
+		// if (plugins["obsidian-static-file-server"]) {
+		// 	this.localWebViewerServer = this.staticServer(this.settings.webviewerRootPath,this.settings.webviewerLocalPort,
+		// 								(this.app as any).plugins.plugins["obsidian-static-file-server"]);
+		// 	this.localWebViewerServer.listen();
+		// 	this.register(this.stopStaticServer);
+		// } else {
+		// 	setTimeout(this.startStaticServer,500);
+		// }	
+
+		this.localWebViewerServer = staticServer(this.settings.webviewerRootPath,this.settings.webviewerLocalPort,this);
+		this.register(this.stopStaticServer);
 	}
 
 	stopStaticServer() {

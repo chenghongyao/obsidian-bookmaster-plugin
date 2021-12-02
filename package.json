@@ -4,25 +4,22 @@
   "description": "This is a booknote plugin for Obsidian (https://obsidian.md)",
   "main": "main.js",
   "scripts": {
-    "dev": "webpack --mode development --watch",
-    "build": "webpack --mode production"
+    "dev": "rollup --config  -w",
+    "build": "rollup --config rollup.config.js --environment BUILD:production"
   },
   "keywords": [],
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@pdftron/webviewer": "^8.2.0",
+    "@rollup/plugin-commonjs": "^21.0.1",
+    "@rollup/plugin-node-resolve": "^13.0.6",
+    "@rollup/plugin-typescript": "^8.3.0",
     "monkey-around": "^2.2.0",
     "obsidian": "^0.12.17",
-    "ts-loader": "^9.2.6",
-    "tslib": "^2.3.1",
+    "rollup-plugin-uglify": "^6.0.4",
+    "rollup-plugin-vue2": "^0.8.1",
     "typescript": "^4.5.2",
-    "vue": "^2.6.14",
-    "vue-loader": "^15.9.8",
-    "vue-template-compiler": "^2.6.14",
-    "webpack": "^5.64.4",
-    "webpack-cli": "^4.9.1"
-  },
-  "dependencies": {
-    "@pdftron/webviewer": "^8.2.0"
+    "vue": "^2.6.14"
   }
 }
