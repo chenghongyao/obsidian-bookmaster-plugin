@@ -78,7 +78,7 @@ export default class BookNotePlugin extends Plugin {
 
 	// TODO: 内建服务器
 	staticServer: any;
-	localWebViewerServer: any;
+	localWebViewerServer: StaticServer;
 
 	async onload() {
 
@@ -190,8 +190,10 @@ export default class BookNotePlugin extends Plugin {
 		// 	setTimeout(this.startStaticServer,500);
 		// }	
 
+		const self = this;
 		this.localWebViewerServer = staticServer(this.settings.webviewerRootPath,this.settings.webviewerLocalPort,this);
-		this.register(this.stopStaticServer);
+		this.localWebViewerServer.listen();
+		this.register(() => {self.localWebViewerServer.close()});
 	}
 
 	stopStaticServer() {
