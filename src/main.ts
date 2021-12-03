@@ -113,6 +113,10 @@ export default class BookNotePlugin extends Plugin {
 			},
 		});
 
+		this.addRibbonIcon("bold-glyph","书籍列表",() => {
+			this.reactivateView(VIEW_TYPE_BOOK_EXPLORER_VIEW,'left');
+		});
+
 		this.safeRegisterView(
 			VIEW_TYPE_BOOK_EXPLORER_VIEW,
 			(leaf) => new BookExplorerView(leaf, this)
