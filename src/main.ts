@@ -161,16 +161,6 @@ export default class BookNotePlugin extends Plugin {
 
 
 		
-		// console.log(http);
-		// if (this.settings.useLocalWebViewerServer) {
-		// 	this.localWebViewerServer = staticServer(this.settings.webviewerRootPath,this.settings.webviewerLocalPort,this);
-		// 	this.register(() => {
-		// 		if (this.localWebViewerServer) this.localWebViewerServer.close();
-		// 	})
-		// }
-
-		// TODO: booknote load before static server
-		// console.log((this.app as any).plugins.plugins["obsidian-static-file-server"]);
 
 		if (this.settings.useLocalWebViewerServer) {
 			this.startStaticServer();
@@ -179,16 +169,6 @@ export default class BookNotePlugin extends Plugin {
 	}
 
 	startStaticServer() {
-		// static server plugin may loaded after booknote
-		// const plugins = (this.app as any).plugins.plugins;
-		// if (plugins["obsidian-static-file-server"]) {
-		// 	this.localWebViewerServer = this.staticServer(this.settings.webviewerRootPath,this.settings.webviewerLocalPort,
-		// 								(this.app as any).plugins.plugins["obsidian-static-file-server"]);
-		// 	this.localWebViewerServer.listen();
-		// 	this.register(this.stopStaticServer);
-		// } else {
-		// 	setTimeout(this.startStaticServer,500);
-		// }	
 
 		const self = this;
 		this.localWebViewerServer = staticServer(this.settings.webviewerRootPath,this.settings.webviewerLocalPort,this);
@@ -388,14 +368,26 @@ export default class BookNotePlugin extends Plugin {
 				const self = this;
 				if (this.currentBookProjectBooks)
 					this.currentBookProjectBooks.length = 0;
-				else this.currentBookProjectBooks = Array<any>();
+				else 
+					this.currentBookProjectBooks = Array<any>();
+				
 				bookpaths.forEach((filepath: string) => {
-					const ext = this.path.extname(filepath).substr(1);
-					self.currentBookProjectBooks.push({
-						name: this.path.basename(filepath),
-						path: filepath,
-						ext: ext ? ext : "unknown",
-					});
+					const regUrl = /^\[(.*)\]\((http(s)?:\/\/[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&'\*\+,;=.]+)\)$/
+					const urlGroup = regUrl.exec(filepath);
+					if (urlGroup) {
+						self.currentBookProjectBooks.push({
+							name: urlGroup[1],
+							path: urlGroup[2],
+							isUrl: true,
+						})
+					} else {
+						const ext = this.path.extname(filepath).substr(1);
+						self.currentBookProjectBooks.push({
+							name: this.path.basename(filepath),
+							path: filepath,
+							ext: ext ? ext : "unknown",
+						});	
+					}
 				});
 			}
 		}
@@ -521,9 +513,9 @@ export default class BookNotePlugin extends Plugin {
 		return attrs;
 	}
 
-	isUrlBook(path: string) {
-		return path.startsWith("http://") || path.startsWith("https://");
-	}
+	// isUrlBook(path: string) {
+	// 	return path.startsWith("http://") || path.startsWith("https://");
+	// }
 
 }
 
