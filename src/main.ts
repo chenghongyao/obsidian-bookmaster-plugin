@@ -42,7 +42,7 @@ import staticServer, { StaticServer } from './static-server'
 
 interface BookNoteSettings {
 	bookPath: string;
-	bookDataPath: string;
+	bookSettingPath: string;
 
 	useLocalWebViewerServer: boolean,
 	webviewerRootPath: string,
@@ -56,7 +56,7 @@ interface BookNoteSettings {
 
 const DEFAULT_SETTINGS: BookNoteSettings = {
 	bookPath: "",
-	bookDataPath: "booknote/books-data",
+	bookSettingPath: "booknote",
 	useLocalWebViewerServer: false,
 	webviewerRootPath: "",
 	webviewerLocalPort: "1448",
@@ -69,6 +69,7 @@ const DEFAULT_SETTINGS: BookNoteSettings = {
 
 export default class BookNotePlugin extends Plugin {
 	settings: BookNoteSettings;
+	bookDataPath: string;
 	path: any;
 	fs: any;
 
@@ -86,6 +87,9 @@ export default class BookNotePlugin extends Plugin {
 		this.fs = (this.app.vault.adapter as any).fs;
 
 		await this.loadSettings();
+		this.bookDataPath = normalizePath(this.settings.bookSettingPath+"/books-data");
+		
+
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new SampleSettingTab(this.app, this));
 
@@ -334,7 +338,7 @@ export default class BookNotePlugin extends Plugin {
 	}
 
 	normalizeBookDataPath(path: string) {
-		return normalizePath(this.settings.bookDataPath+"/"+path);
+		return normalizePath(this.bookDataPath+"/"+path);
 	}
 
 	openBookBySystem(path: string) {
@@ -539,12 +543,22 @@ class SampleSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("书籍根路径")
+			.setDesc("使用绝对路径，可以使用库外的目录")
 			.addText((text) =>
 				text.setValue(this.plugin.settings.bookPath).onChange(async (value) => {
 					this.plugin.settings.bookPath = value;
 					await this.plugin.saveSettings();
 				})
 			);
+		new Setting(containerEl)
+		.setName("配置文件路径")
+		.setDesc("必须使用库内的路径")
+		.addText((text) =>
+			text.setValue(this.plugin.settings.bookSettingPath).onChange(async (value) => {
+				this.plugin.settings.bookSettingPath = value;
+				await this.plugin.saveSettings();
+			})
+		);
 		
 		new Setting(containerEl)
 			.setName("使用本地服务器")
@@ -561,8 +575,8 @@ class SampleSettingTab extends PluginSettingTab {
 				})
 			})
 		new Setting(containerEl)
-			.setName("WebViewer库 路径")
-			.setDesc("使用本地服务器时有效")
+			.setName("WebViewer库路径")
+			.setDesc("使用本地服务器时有效，使用绝对路径")
 			.addText((text) =>
 				text.setValue(this.plugin.settings.webviewerRootPath).onChange(async (value) => {
 					this.plugin.settings.webviewerRootPath = value;
