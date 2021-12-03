@@ -245,6 +245,19 @@ export class BookView extends ItemView {
 		window.addEventListener("message", this.listener);
 
 		this.headerTitleEl = this.containerEl.children[0].getElementsByClassName("view-header-title")[0];
+
+		const actionsContainer = this.containerEl.children[0].children[2];
+		const actionTemp = actionsContainer.children[0];
+		actionsContainer.insertBefore(actionTemp,this.addAction("dice","占位",()=> {
+			new Notice("广告位出租");
+		}));
+		actionsContainer.insertBefore(actionTemp,this.addAction("dice","占位",()=> {
+			new Notice("广告位出租");
+		}));
+		actionsContainer.insertBefore(actionTemp,this.addAction("dice","占位",()=> {
+			new Notice("广告位出租");
+		}));
+		
 	}
 
 	async onClose() {
