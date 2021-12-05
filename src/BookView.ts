@@ -3,6 +3,8 @@ import { ItemView, MarkdownEditView, MarkdownView, Menu, Notice, WorkspaceLeaf }
 import WebViewer from "@pdftron/webviewer";
 import BookNotePlugin from "./main";
 
+import {clipPDF, getPDFDocFromData} from "./PDFHelper"
+
 
 export const VIEW_TYPE_BOOK_VIEW = "book-view";
 export class BookView extends ItemView {
@@ -18,6 +20,9 @@ export class BookView extends ItemView {
 	xfdfDoc: Document;
 	annotsDoc: Element;
 	isAnnotsChanged: boolean;
+
+	// TODO: when needed??
+	pdfjsDoc: any;
 
 	constructor(leaf: WorkspaceLeaf, plugin: BookNotePlugin) {
 		super(leaf)
@@ -41,11 +46,30 @@ export class BookView extends ItemView {
 				self.isAnnotsChanged = false;
 				self.documentReady = true;
 			},
+			
 			copyAnnotationLink(data: any) {
 				const id = data.id;
-				const content = 
-				self.copyAnnotationLink(self.xfdfDoc.getElementsByName(id)[0],data.ctrlKey);
-				new Notice("回链已复制到剪贴板");
+				const node = self.xfdfDoc.getElementsByName(id)[0];
+				if (node) {
+
+					self.getAnnotationLink(node,).then((content: string) => {
+						navigator.clipboard.writeText(content);
+						new Notice("回链已复制到剪贴板");
+						if (data.ctrlKey) {
+							if (self.app.workspace.activeLeaf.view.getViewType() === "markdown") { // insert to markdown
+								(self.app.workspace.activeLeaf.view as MarkdownView).editor.replaceSelection(content);
+	
+							} else {
+								new Notice("请先激活目标Markdown窗口");
+							}
+						}
+				
+					});
+
+				} else {
+					new Notice("标注id不存在");
+					
+				}
 			},
 
 			annotationChanged(data: any) {
@@ -60,9 +84,10 @@ export class BookView extends ItemView {
 					self.isAnnotsChanged = true;
 				}
 
-				if (annotsAdd.length > 0) {
-					self.copyAnnotationLink(annotsAdd[annotsAdd.length-1]);
-				}
+				// TODO: 添加标签时进行复制??
+				// if (annotsAdd.length > 0) {
+				// 	self.copyAnnotationLink(annotsAdd[annotsAdd.length-1]);
+				// }
 
 				for(var i = 0; i < annotsAdd.length; i++) {
 					self.annotsDoc.appendChild(annotsAdd[i]);
@@ -83,25 +108,45 @@ export class BookView extends ItemView {
 	}
 
 
-	getAnnotationLink(anno: Element, useContent?: boolean) {
+	async getAnnotationLink(anno: Element) {
+		const annoType = anno.tagName;
 		const annoId = anno.getAttr("name");
 		const annoRect = anno.getAttr("rect");
 		const annoPage = anno.getAttr("page");
-		const link = `obsidian://booknote?type=annotation&book=${this.currentBook}&id=${annoId}&page=${annoPage}&rect=${annoRect}`;
-		return `[${useContent?anno.textContent : ""}](${encodeURI(link)})`
-	}
+		const link = encodeURI(`obsidian://booknote?type=annotation&book=${this.currentBook}&id=${annoId}&page=${annoPage}&rect=${annoRect}`);
 
-	copyAnnotationLink(anno: Element|null, useContent?: boolean) {
-		if (anno) {
-			const content = this.getAnnotationLink(anno,useContent);
-			if (useContent) {
-				if (this.app.workspace.activeLeaf) {
-					(this.app.workspace.activeLeaf.view as MarkdownView).editor.replaceSelection(content);
-				}
-			}
-			navigator.clipboard.writeText(content);
-
+		// TODO: declare moment??
+		let template = "";
+		let needComment = false;
+		if (["highlight","underline" ,"strikeout","squiggly","freetext"].indexOf(annoType) >= 0) {
+			template = this.plugin.settings.selectionAnnotationLinkTemplate;
+			needComment = template.indexOf("{{comment}}") >= 0;
+			template = template.replace("{{content}}",anno.textContent);
+		} else {
+			template = this.plugin.settings.regionAnnotationLinkTemplate;
+			needComment = template.indexOf("{{comment}}") >= 0;
 		}
+
+		if (template.indexOf("{{img}}") >= 0) {
+
+			const imgPath = this.plugin.normalizeBookDataPath(`(annotations)${this.currentBook}/p${annoPage}r${annoRect}i(${annoId}).png`);
+			clipPDF(this.plugin, 
+				this.pdfjsDoc,Number(annoPage	)+1,
+				annoRect.split(",").map(t => Number(t)),
+				imgPath);
+			template = template.replace("{{img}}",imgPath);
+		}
+
+		template.replace("{{page}}",annoPage);
+		template = template.replace("{{url}}",link);
+		
+		// TODO: more comment!
+		if (needComment) {
+			const commentEl = anno.getElementsByTagName("contents");
+			template = template.replace("{{comment}}",commentEl.length ? commentEl[0].textContent : "");
+		}
+
+		return template;
 	}
 
 	showAnnotation(id: string) {
@@ -146,6 +191,11 @@ export class BookView extends ItemView {
 							console.error("can't read file:",fullPath);
 							reject(err);
 						} else {
+
+							getPDFDocFromData(data).then(pdfDoc => {
+								this.pdfjsDoc = pdfDoc;
+							})
+
 							const ext = self.plugin.path.extname(bookpath).substr(1)
 							const arr = new Uint8Array(data);
 							const blob = new Blob([arr], { type: 'application/'+ext });
@@ -178,8 +228,6 @@ export class BookView extends ItemView {
 
 		return promise;
 	}
-
-
 
 	private getViewerWindow() {
 		const self = this;
@@ -231,7 +279,7 @@ export class BookView extends ItemView {
 			}),
 			preloadWorker: "pdf",
 		},this.contentEl).then(instance => {
-			
+
 		});
 
 		this.listener = function(event: any) {

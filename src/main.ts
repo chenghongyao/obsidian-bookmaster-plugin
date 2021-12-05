@@ -37,7 +37,6 @@ import {
 
 import {SUPPORT_BOOK_TYPES} from "./constants"
 
-
 import staticServer, { StaticServer } from './static-server'
 
 interface BookNoteSettings {
@@ -52,6 +51,10 @@ interface BookNoteSettings {
 
 	openAllBOokBySystem: boolean;
 	openOfficeBookBySystem: boolean;
+
+	selectionAnnotationLinkTemplate: string; // highlight,underline ,strikeout,squiggly,freetext 
+	regionAnnotationLinkTemplate: string; // 
+
 }
 
 const DEFAULT_SETTINGS: BookNoteSettings = {
@@ -65,11 +68,15 @@ const DEFAULT_SETTINGS: BookNoteSettings = {
 
 	openAllBOokBySystem: false,
 	openOfficeBookBySystem: false,
+
+
+	selectionAnnotationLinkTemplate: "[{{content}}]({{url}})",
+	regionAnnotationLinkTemplate: "({{url}})![[{{img}}]]",
 };
 
 export default class BookNotePlugin extends Plugin {
 	settings: BookNoteSettings;
-	bookDataPath: string;
+
 	path: any;
 	fs: any;
 
@@ -81,15 +88,14 @@ export default class BookNotePlugin extends Plugin {
 	staticServer: any;
 	localWebViewerServer: StaticServer;
 
+
 	async onload() {
 
 		this.path = (this.app.vault.adapter as any).path;
 		this.fs = (this.app.vault.adapter as any).fs;
 
 		await this.loadSettings();
-		this.bookDataPath = normalizePath(this.settings.bookSettingPath+"/books-data");
-		
-
+	
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new SampleSettingTab(this.app, this));
 
@@ -141,8 +147,6 @@ export default class BookNotePlugin extends Plugin {
 			(leaf) => new BookView(leaf,this)
 		)
 
-
-
 		this.registerBookProject();
 
 		this.registerObsidianProtocolHandler("booknote", (params) => {
@@ -167,8 +171,6 @@ export default class BookNotePlugin extends Plugin {
 			}
 		});
 
-
-		
 
 		if (this.settings.useLocalWebViewerServer) {
 			this.startStaticServer();
@@ -338,8 +340,9 @@ export default class BookNotePlugin extends Plugin {
 	}
 
 	normalizeBookDataPath(path: string) {
-		return normalizePath(this.bookDataPath+"/"+path);
+		return normalizePath(this.settings.bookSettingPath+"/books-data/"+path);
 	}
+
 
 	openBookBySystem(path: string) {
 		window.open("file://" + this.normalizeBookPath(path));
@@ -349,6 +352,7 @@ export default class BookNotePlugin extends Plugin {
 		return this.settings.openAllBOokBySystem 
 			|| (this.settings.openOfficeBookBySystem && this.path.extname(path).substr(1) != "pdf"); // TODO: office book mean not pdf book?
 	}
+
 	openBookInBookView(path: string) {
 		if (this.isForceOpenBySystem(path)) {
 			this.openBookBySystem(path);
@@ -432,51 +436,53 @@ export default class BookNotePlugin extends Plugin {
 		return content;
 	}
 
+	async safeWriteFile(path: string, data: Buffer|string, overwrite: boolean) {
+
+		const file = this.app.vault.getAbstractFileByPath(path) as TFile;
+		
+		if (file) {
+			if (!overwrite)return;
+			if (typeof data === "string") {
+				this.app.vault.modify(file,data as string);
+			} else {
+				this.app.vault.modifyBinary(file, data as Buffer);
+			}
+		} else {
+			// cant not write to file if folder doesn't exists
+			// TODO: ob api to get folder?
+			const folderPath = this.path.dirname(path);
+			const folder = this.app.vault.getAbstractFileByPath(folderPath) as TFolder;
+			if (!folder) {
+				await this.app.vault.createFolder(folderPath);
+			}
+
+			if (typeof path === "string") {
+				this.app.vault.create(path, data as string);
+			} else {
+				this.app.vault.createBinary(path, data as Buffer);
+			}
+
+			
+		}
+
+	}
+
+
 	saveBookAttrs(bookpath: string, attrs: any) {
 		const dataPath = this.normalizeBookDataPath(bookpath+".md");
-		const dataPathDir = this.path.dirname(dataPath);
 		const content = this.genBootAttrMeta(attrs);
-	
-	
-		const file = this.app.vault.getAbstractFileByPath(dataPath) as TFile;
-		if (file) {
-			this.app.vault.modify(file,content);
-		} else {
 		
-			const folder = this.app.vault.getAbstractFileByPath(dataPathDir) as TFolder;
-			if (folder) {
-				this.app.vault.create(dataPath, content);
-			} else {
-				this.app.vault.createFolder(dataPathDir).then(()=>{
-					this.app.vault.create(dataPath,content);
-					new Notice("已保存");
-				});
-			}
-		}
+		this.safeWriteFile(dataPath,content,true).then(() => {
+			new Notice("已保存");
+		})
+		
 	}
 
 
 	saveBookAnnotations(bookpath: string, xfdfDoc: Document) {
-
 		const xfdfString = new XMLSerializer().serializeToString(xfdfDoc);
-		const dataPath = this.normalizeBookDataPath(bookpath+".xml");
-		const dataPathDir = this.path.dirname(dataPath);
-	
-		const file = this.app.vault.getAbstractFileByPath(dataPath) as TFile;
-		if (file) {
-			this.app.vault.modify(file,xfdfString);
-		} else {
-		
-			const folder = this.app.vault.getAbstractFileByPath(dataPathDir) as TFolder;
-			if (folder) {
-				this.app.vault.create(dataPath, xfdfString);
-			} else {
-				this.app.vault.createFolder(dataPathDir).then(()=>{
-					this.app.vault.create(dataPath,xfdfString);
-					new Notice("已保存");
-				});
-			}
-		}
+		const dataPath = this.normalizeBookDataPath(bookpath+".xml");		
+		this.safeWriteFile(dataPath,xfdfString,true);
 	}
 
 	async getBookAnnotations(bookpath: string) {
@@ -550,6 +556,7 @@ class SampleSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				})
 			);
+
 		new Setting(containerEl)
 		.setName("配置文件路径")
 		.setDesc("必须使用库内的路径")
@@ -573,7 +580,8 @@ class SampleSettingTab extends PluginSettingTab {
 						this.plugin.stopStaticServer();
 					}
 				})
-			})
+			});
+
 		new Setting(containerEl)
 			.setName("WebViewer库路径")
 			.setDesc("使用本地服务器时有效，使用绝对路径")
@@ -601,7 +609,7 @@ class SampleSettingTab extends PluginSettingTab {
 						this.plugin.startStaticServer();
 					}
 				})
-			})
+			});
 
 		new Setting(containerEl)
 			.setName("WebViewer远程服务器")
@@ -611,7 +619,7 @@ class SampleSettingTab extends PluginSettingTab {
 					this.plugin.settings.webviewerExternalServerAddress = value;
 					await this.plugin.saveSettings();
 				})
-			})
+			});
 
 		new Setting(containerEl)
 			.setName("使用默认应用打开所有书籍")
@@ -621,7 +629,7 @@ class SampleSettingTab extends PluginSettingTab {
 					this.plugin.settings.openAllBOokBySystem = value;
 					await this.plugin.saveSettings();
 				})
-			})
+			});
 
 		new Setting(containerEl)
 			.setName("使用默认应用打开Office书籍")
@@ -632,6 +640,27 @@ class SampleSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 
 				})
-			})
+			});
+
+		new Setting(containerEl)
+			.setName("选文摘录模板")
+			.setDesc("选中文字时的模板(如高亮，下划线等)\n可用命令包括page,url,content,img,comment")
+			.addTextArea((text) => {
+				text.setValue(this.plugin.settings.selectionAnnotationLinkTemplate).onChange(async (value) => {
+					this.plugin.settings.selectionAnnotationLinkTemplate = value;
+					await this.plugin.saveSettings();
+				})
+			});
+		
+		new Setting(containerEl)
+			.setName("区域摘录模板")
+			.setDesc("非文字类摘录时的模板(如框选等)\n可用命令包括page,url,img,comment")
+			.addTextArea((text) => {
+				text.setValue(this.plugin.settings.regionAnnotationLinkTemplate).onChange(async (value) => {
+					this.plugin.settings.regionAnnotationLinkTemplate = value;
+					await this.plugin.saveSettings();
+				})
+			});
+
 	}
 }
