@@ -1,8 +1,5 @@
 import {
 	App,
-	Editor,
-	FileView,
-	ItemView,
 	MarkdownView,
 	Menu,
 	Modal,
@@ -15,7 +12,6 @@ import {
 	TFile,
 	TFolder,
 	ViewCreator,
-	WorkspaceLeaf,
 } from "obsidian";
 import { around } from "monkey-around";
 
@@ -58,6 +54,9 @@ interface BookNoteSettings {
 
 	fixedAnnotImageZoom: boolean,
 	fixedAnnotImageZoomValue: string,
+	addClickEventForAnnotImage: boolean,
+
+	autoOpenProjectView: boolean, // when project note is opened
 
 }
 
@@ -79,7 +78,13 @@ const DEFAULT_SETTINGS: BookNoteSettings = {
 
 	fixedAnnotImageZoom: true,
 	fixedAnnotImageZoomValue: "2",
+
+	addClickEventForAnnotImage: true,
+
+	autoOpenProjectView: true,
 };
+
+
 
 export default class BookNotePlugin extends Plugin {
 	settings: BookNoteSettings;
@@ -168,11 +173,7 @@ export default class BookNotePlugin extends Plugin {
 					if (this.isForceOpenBySystem(annotBook)) {
 						this.openBookBySystem(annotBook);
 					} else {
-						this.getBookView().then((view: BookView) => {
-							view.openBook(annotBook).then((view: BookView) => {
-								view.showAnnotation(annotId);
-							})
-						})
+						this.showAnnotationById(annotBook,annotId);
 					}
 				} else {
 					new Notice("标注链接参数错误");
@@ -188,6 +189,36 @@ export default class BookNotePlugin extends Plugin {
 		this.registerObsidianProtocolHandler("booknote", (params) => {
 			obProtocalHandler?.[params["type"]](params);
 		});
+
+
+
+		this.registerMarkdownPostProcessor((secEl, ctx) => {
+
+			if (this.settings.addClickEventForAnnotImage) {
+				const reg = new RegExp(this.settings.bookSettingPath+"/books-data/((?:\\S+)/)?\\(annotations\\)(\\S+)/p(\\d+)r((?:\\d+(?:\\.\\d+)?,?){4})z(\\d+(?:\\.\\d+)?)i\\((\\w+-\\w+-\\w+-\\w+-\\w+)\\).png")
+				secEl.querySelectorAll("span.internal-embed").forEach(async (el) => {
+					
+					const src = el.getAttr("src");
+					const group = reg.exec(src);
+					if (group) {
+						const bookDir = group[1];
+						const bookName = group[2];
+						const annotId = group[6];
+						const annotBook = this.path.join(bookDir || "",bookName);
+						console.log("annoSrc:",src);
+						console.log("annotBook:",annotBook)
+						console.log("annotId:",annotBook)
+						this.registerDomEvent(el as HTMLAnchorElement, "dblclick", () => {
+							this.showAnnotationById(annotBook,annotId);
+						});
+						
+					}				
+				});
+			}
+			
+		});
+
+
 
 
 		if (this.settings.useLocalWebViewerServer) {
@@ -217,6 +248,7 @@ export default class BookNotePlugin extends Plugin {
 
 	registerBookProject() {
 		const self = this;
+		// add item in more options
 		this.register(
 			around(MarkdownView.prototype, {
 				onMoreOptionsMenu(next) {
@@ -251,6 +283,15 @@ export default class BookNotePlugin extends Plugin {
 				},
 			})
 		);
+
+		// TODO:窗口激活也会响应file-open???
+		// this.registerEvent(this.app.workspace.on)
+		// this.registerEvent(this.app.workspace.on("file-open",(file) => {
+		// 	if (this.settings.autoOpenProjectView && file && self.getPropertyValue(file, "booknote-plugin")) {
+		// 		self.updateBookProject(file);
+				self.reactivateView(VIEW_TYPE_BOOK_PROJECT_VIEW, "right");
+		// 	}
+		// }))
 	}
 
 	private safeRegisterView(type: string, viewCreator: ViewCreator) {
@@ -272,6 +313,14 @@ export default class BookNotePlugin extends Plugin {
 		await this.saveData(this.settings);
 	}
 
+
+	async showAnnotationById(book: string, id: string) {
+		this.getBookView().then((view: BookView) => {
+			view.openBook(book).then((view: BookView) => {
+				view.showAnnotation(id);
+			})
+		})
+	}
 	async reactivateView(type: string, dir?: string, split?: boolean) {
 		// this.app.workspace.detachLeavesOfType(type);
 
@@ -701,6 +750,27 @@ class SampleSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				})
 			})
+
+		new Setting(containerEl)
+			.setName("为图片摘录添加双击响应")
+			.setDesc("启用后双击笔记中的标注图片可自动跳转到原文\n需要图片路径满足规定格式")
+			.addToggle((toggle) => {
+				toggle.setValue(this.plugin.settings.addClickEventForAnnotImage).onChange(async (value) => {
+					this.plugin.settings.addClickEventForAnnotImage = value;
+					await this.plugin.saveSettings();
+				})
+			})
+
+		// new Setting(containerEl)
+		// 	.setName("打开工程文件时自动打开工程视图")
+		// 	.setDesc("每次打开工程文件时都弹出或更新工程视图")
+		// 	.addToggle((toggle) => {
+		// 		toggle.setValue(this.plugin.settings.autoOpenProjectView).onChange(async (value) => {
+		// 			this.plugin.settings.autoOpenProjectView = value;
+		// 			await this.plugin.saveSettings();
+		// 		})
+		// 	})
+
 
 	}
 }

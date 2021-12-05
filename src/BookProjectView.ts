@@ -84,45 +84,40 @@ export class BookProjectView extends ItemView {
 			console.log(evt);
 		})
 
-
-		if (!this.plugin.currentBookProjectFile) {
-			const ele = this.contentEl.createDiv("div");
-			ele.textContent = "没有选择工程";
-		} else {
-			const title = this.plugin.path.basename(this.plugin.settings.bookPath);
-			const el = this.contentEl.createDiv()
-			this.vueApp = new Vue({
-				el: el,
-				render: h => h('obtree', {
-					attrs: {
-						title: null,
-						data: self.plugin.currentBookProjectBooks
+		// const title = this.plugin.path.basename(this.plugin.settings.bookPath);
+		const el = this.contentEl.createDiv()
+		this.vueApp = new Vue({
+			el: el,
+			render: h => h('obtree', {
+				attrs: {
+					title: null,
+					data: self.plugin.currentBookProjectBooks
+				},
+				on: {
+					'select-file': function (item: any) {
+						const description = self.plugin.getBookAttrs(item.path)?.["description"];
+						self.descriptionContainer.setText(description ? description : '');
+			
 					},
-					on: {
-						'select-file': function (item: any) {
-							const description = self.plugin.getBookAttrs(item.path)?.["description"];
-							self.descriptionContainer.setText(description ? description : '');
-				
-						},
-						'open-file': function (item: any) {
-							if (item.isUrl) {
-								window.open(item.path);
-							} else {
-								self.plugin.openBookInBookView(item.path);
-							}
-						},
-						'context-menu': function(evt: MouseEvent, item: any) {
-							self.openContextMenu(evt,item);
+					'open-file': function (item: any) {
+						if (item.isUrl) {
+							self.plugin.openBookBySystem(item.path);
+						} else {
+							self.plugin.openBookInBookView(item.path);
 						}
 					},
-				}),
-				components: {
-					obtree,
-				}
-			});
+					'context-menu': function(evt: MouseEvent, item: any) {
+						self.openContextMenu(evt,item);
+					}
+				},
+			}),
+			components: {
+				obtree,
+			}
+		});
 
-			this.descriptionContainer = this.containerEl.createDiv({cls:"book-description-container"});
-		}
+		this.descriptionContainer = this.containerEl.createDiv({cls:"book-description-container"});
+		
 	}
 
 	async onClose() {
