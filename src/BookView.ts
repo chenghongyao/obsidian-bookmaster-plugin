@@ -161,10 +161,9 @@ export class BookView extends ItemView {
 		}
 	}
 
-	async openBook(bookpath: string) {
+	async openBook(bookpath: string, page?: Number) {
 
 		const self = this;
-
 		const promise = new Promise<BookView>((resolve,reject) => {
 			
 			if (self.currentBook === bookpath) {
@@ -204,6 +203,7 @@ export class BookView extends ItemView {
 								xfdfString: xfdfString,
 								path: fullPath,
 								extension: ext,
+								page: page,
 							})
 
 							function waitDocumentReady() {

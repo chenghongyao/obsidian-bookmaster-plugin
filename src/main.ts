@@ -8,6 +8,7 @@ import {
 	Modal,
 	normalizePath,
 	Notice,
+	ObsidianProtocolData,
 	Plugin,
 	PluginSettingTab,
 	Setting,
@@ -149,8 +150,10 @@ export default class BookNotePlugin extends Plugin {
 
 		this.registerBookProject();
 
-		this.registerObsidianProtocolHandler("booknote", (params) => {
-			if (params["type"] === "annotation") {
+
+		const self = this;
+		const obProtocalHandler: any = {
+			"annotation": function(params: ObsidianProtocolData) {
 				const annotId = params["id"];
 				const annotBook = params["book"];
 				if (annotId && annotBook) {
@@ -159,8 +162,8 @@ export default class BookNotePlugin extends Plugin {
 					if (this.isForceOpenBySystem(annotBook)) {
 						this.openBookBySystem(annotBook);
 					} else {
-						this.getBookView().then(view => {
-							view.openBook(annotBook).then(view => {
+						this.getBookView().then((view: BookView) => {
+							view.openBook(annotBook).then((view: BookView) => {
 								view.showAnnotation(annotId);
 							})
 						})
@@ -168,7 +171,16 @@ export default class BookNotePlugin extends Plugin {
 				} else {
 					new Notice("标注链接参数错误");
 				}
+			},
+			"open-book": function(params: ObsidianProtocolData) {
+				self.getBookView().then((view: BookView) => {
+					view.openBook(params["book"],Number(params["page"]));
+				})
 			}
+		}
+
+		this.registerObsidianProtocolHandler("booknote", (params) => {
+			obProtocalHandler?.[params["type"]](params);
 		});
 
 
