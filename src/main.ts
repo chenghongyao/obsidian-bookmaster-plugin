@@ -50,11 +50,14 @@ interface BookNoteSettings {
 
 	webviewerExternalServerAddress: string;
 
-	openAllBOokBySystem: boolean;
-	openOfficeBookBySystem: boolean;
+	openAllBOokBySystem: boolean,
+	openOfficeBookBySystem: boolean,
 
-	selectionAnnotationLinkTemplate: string; // highlight,underline ,strikeout,squiggly,freetext 
-	regionAnnotationLinkTemplate: string; // 
+	selectionAnnotationLinkTemplate: string, // highlight,underline ,strikeout,squiggly,freetext 
+	regionAnnotationLinkTemplate: string, // 
+
+	fixedAnnotImageZoom: boolean,
+	fixedAnnotImageZoomValue: string,
 
 }
 
@@ -72,7 +75,10 @@ const DEFAULT_SETTINGS: BookNoteSettings = {
 
 
 	selectionAnnotationLinkTemplate: "[{{content}}]({{url}})",
-	regionAnnotationLinkTemplate: "({{url}})![[{{img}}]]",
+	regionAnnotationLinkTemplate: "({{url}})![[{{img}}|{{width}}]]",
+
+	fixedAnnotImageZoom: true,
+	fixedAnnotImageZoomValue: "2",
 };
 
 export default class BookNotePlugin extends Plugin {
@@ -656,7 +662,7 @@ class SampleSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("选文摘录模板")
-			.setDesc("选中文字时的模板(如高亮，下划线等)\n可用命令包括page,url,content,img,comment")
+			.setDesc("选中文字时的模板(如高亮，下划线等)\n可用命令包括page,url,content,img,comment,width,height")
 			.addTextArea((text) => {
 				text.setValue(this.plugin.settings.selectionAnnotationLinkTemplate).onChange(async (value) => {
 					this.plugin.settings.selectionAnnotationLinkTemplate = value;
@@ -666,13 +672,35 @@ class SampleSettingTab extends PluginSettingTab {
 		
 		new Setting(containerEl)
 			.setName("区域摘录模板")
-			.setDesc("非文字类摘录时的模板(如框选等)\n可用命令包括page,url,img,comment")
+			.setDesc("非文字类摘录时的模板(如框选等)\n可用命令包括page,url,img,comment,width,height")
 			.addTextArea((text) => {
 				text.setValue(this.plugin.settings.regionAnnotationLinkTemplate).onChange(async (value) => {
 					this.plugin.settings.regionAnnotationLinkTemplate = value;
 					await this.plugin.saveSettings();
 				})
 			});
+
+		
+		new Setting(containerEl)
+			.setName("摘录截图使用固定比例")
+			.setDesc("禁止则使用阅读时的缩放等级\n固定比例有利于所有截图不受阅读时的影响，保持统一比例")
+			.addToggle((toggle) => {
+				toggle.setValue(this.plugin.settings.fixedAnnotImageZoom).onChange(async (value) => {
+					this.plugin.settings.fixedAnnotImageZoom = value;
+					await this.plugin.saveSettings();
+
+				})
+			});	
+
+		new Setting(containerEl)
+			.setName("固定的摘录截图比例")
+			.setDesc("启用固定比例时有效")
+			.addText((text) => {
+				text.setValue(this.plugin.settings.fixedAnnotImageZoomValue).onChange(async (value) => {
+					this.plugin.settings.fixedAnnotImageZoomValue = value;
+					await this.plugin.saveSettings();
+				})
+			})
 
 	}
 }

@@ -52,7 +52,7 @@ export class BookView extends ItemView {
 				const node = self.xfdfDoc.getElementsByName(id)[0];
 				if (node) {
 
-					self.getAnnotationLink(node,).then((content: string) => {
+					self.getAnnotationLink(node,data.zoom || 1).then((content: string) => {
 						navigator.clipboard.writeText(content);
 						new Notice("回链已复制到剪贴板");
 						if (data.ctrlKey) {
@@ -108,13 +108,13 @@ export class BookView extends ItemView {
 	}
 
 
-	async getAnnotationLink(anno: Element) {
+	async getAnnotationLink(anno: Element, zoom: Number) {
 		const annoType = anno.tagName;
 		const annoId = anno.getAttr("name");
 		const annoRect = anno.getAttr("rect");
 		const annoPage = anno.getAttr("page");
 		const link = encodeURI(`obsidian://booknote?type=annotation&book=${this.currentBook}&id=${annoId}&page=${annoPage}&rect=${annoRect}`);
-
+		
 		// TODO: declare moment??
 		let template = "";
 		let needComment = false;
@@ -129,12 +129,25 @@ export class BookView extends ItemView {
 
 		if (template.indexOf("{{img}}") >= 0) {
 
-			const imgPath = this.plugin.normalizeBookDataPath(`(annotations)${this.currentBook}/p${annoPage}r${annoRect}i(${annoId}).png`);
+			const realZoom = this.plugin.settings.fixedAnnotImageZoom ? Number(this.plugin.settings.fixedAnnotImageZoomValue) : Number(zoom);
+			const imgPath = this.plugin.normalizeBookDataPath(`(annotations)${this.currentBook}/p${annoPage}r${annoRect}z${realZoom}i(${annoId}).png`);
+			const clipBox = annoRect.split(",").map(t => Number(t));
+
+	
 			clipPDF(this.plugin, 
-				this.pdfjsDoc,Number(annoPage	)+1,
-				annoRect.split(",").map(t => Number(t)),
+				realZoom,
+				this.pdfjsDoc,Number(annoPage)+1,
+				clipBox,
 				imgPath);
+
 			template = template.replace("{{img}}",imgPath);
+
+
+			// TODO:图像模糊，暂时通过设置宽度解决
+			const clipWidth = Math.round((clipBox[2] - clipBox[0])*realZoom/1.2);
+			const clipHeight = Math.round((clipBox[3] - clipBox[1])*realZoom/1.2);
+			template = template.replace("{{width}}",clipWidth.toString());
+			template = template.replace("{{height}}",clipHeight.toString());
 		}
 
 		template.replace("{{page}}",annoPage);
