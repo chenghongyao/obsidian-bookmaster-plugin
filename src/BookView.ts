@@ -33,7 +33,7 @@ export class BookView extends ItemView {
 		this.documentReady = false;
 		this.isAnnotsChanged = false;
 		
-
+		this.leaf.setPinned(true); //锁定避免被退出
 		const self = this;
 		this.eventHandlerMap = {
 			viewerLoaded(data: any) {
@@ -52,7 +52,6 @@ export class BookView extends ItemView {
 				const id = data.id;
 				const node = self.xfdfDoc.getElementsByName(id)[0];
 				if (node) {
-
 					self.getAnnotationLink(node,data.zoom || 1).then((content: string) => {
 						navigator.clipboard.writeText(content);
 						new Notice("回链已复制到剪贴板");
@@ -64,7 +63,6 @@ export class BookView extends ItemView {
 
 				} else {
 					new Notice("标注id不存在");
-					
 				}
 			},
 
