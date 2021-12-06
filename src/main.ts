@@ -32,6 +32,11 @@ import {
 	VIEW_TYPE_BOOK_VIEW
 } from "./BookView";
 
+import {
+	QuickBookView,
+	VIEW_TYPE_QUICK_BOOK_VIEW
+} from "./QuickBookView";
+
 import {SUPPORT_BOOK_TYPES} from "./constants"
 
 import staticServer, { StaticServer } from './static-server'
@@ -96,7 +101,6 @@ export default class BookNotePlugin extends Plugin {
 	currentBookProjectFile: TFile;
 	currentBookProjectBooks: Array<any>;
 
-	// TODO: 内建服务器
 	staticServer: any;
 	localWebViewerServer: StaticServer;
 
@@ -107,16 +111,14 @@ export default class BookNotePlugin extends Plugin {
 		this.fs = (this.app.vault.adapter as any).fs;
 
 		await this.loadSettings();
-	
+		
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new SampleSettingTab(this.app, this));
 
-		// this.addRibbonIcon("dice", "opp", (evt) => {
-		// 	new Notice((this.app.vault.adapter as any).getBasePath());
-		// 	// this.updateBookTree();
-		// 	this.reactivateView(VIEW_TYPE_BOOK_EXPLORER_VIEW, "left");
-		// 	// this.reactivateView(VIEW_TYPE_BOOK_VIEW,"center",true);
-		// });
+		this.addRibbonIcon("dice", "opp", (evt) => {
+			this.reactivateView(VIEW_TYPE_QUICK_BOOK_VIEW, "center",true);
+			// this.reactivateView(VIEW_TYPE_BOOK_VIEW,"center",true);
+		});
 
 		this.addCommand({
 			id: "open-book-explorer",
@@ -157,6 +159,11 @@ export default class BookNotePlugin extends Plugin {
 		this.safeRegisterView(
 			VIEW_TYPE_BOOK_VIEW,
 			(leaf) => new BookView(leaf,this)
+		)
+
+		this.safeRegisterView(
+			VIEW_TYPE_QUICK_BOOK_VIEW,
+			(leaf) => new QuickBookView(leaf,this)
 		)
 
 		this.registerBookProject();
@@ -769,7 +776,7 @@ class SampleSettingTab extends PluginSettingTab {
 		// 			await this.plugin.saveSettings();
 		// 		})
 		// 	})
-
+		
 
 	}
 }
