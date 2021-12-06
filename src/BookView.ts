@@ -108,6 +108,9 @@ export class BookView extends ItemView {
 	}
 
 
+	parseAnnotationContent(content: string) {
+		return content.replace(/\n/g,"");
+	}
 	async getAnnotationLink(anno: Element, zoom: Number) {
 		const annoType = anno.tagName;
 		const annoId = anno.getAttr("name");
@@ -121,7 +124,7 @@ export class BookView extends ItemView {
 		if (["highlight","underline" ,"strikeout","squiggly","freetext"].indexOf(annoType) >= 0) {
 			template = this.plugin.settings.selectionAnnotationLinkTemplate;
 			needComment = template.indexOf("{{comment}}") >= 0;
-			template = template.replace("{{content}}",anno.textContent);
+			template = template.replace("{{content}}",this.parseAnnotationContent(anno.textContent));
 		} else {
 			template = this.plugin.settings.regionAnnotationLinkTemplate;
 			needComment = template.indexOf("{{comment}}") >= 0;

@@ -135,7 +135,7 @@ export default class BookNotePlugin extends Plugin {
 			},
 		});
 
-		this.addRibbonIcon("bold-glyph","书籍列表",() => {
+		this.addRibbonIcon("bold-glyph","书库",() => {
 			this.reactivateView(VIEW_TYPE_BOOK_EXPLORER_VIEW,'left');
 		});
 
@@ -170,10 +170,10 @@ export default class BookNotePlugin extends Plugin {
 				if (annotId && annotBook) {
 					
 					// TODO:还需要支持?
-					if (this.isForceOpenBySystem(annotBook)) {
-						this.openBookBySystem(annotBook);
+					if (self.isForceOpenBySystem(annotBook)) {
+						self.openBookBySystem(annotBook);
 					} else {
-						this.showAnnotationById(annotBook,annotId);
+						self.showAnnotationById(annotBook,annotId);
 					}
 				} else {
 					new Notice("标注链接参数错误");
@@ -289,7 +289,7 @@ export default class BookNotePlugin extends Plugin {
 		// this.registerEvent(this.app.workspace.on("file-open",(file) => {
 		// 	if (this.settings.autoOpenProjectView && file && self.getPropertyValue(file, "booknote-plugin")) {
 		// 		self.updateBookProject(file);
-				self.reactivateView(VIEW_TYPE_BOOK_PROJECT_VIEW, "right");
+		//		self.reactivateView(VIEW_TYPE_BOOK_PROJECT_VIEW, "right");
 		// 	}
 		// }))
 	}
@@ -434,8 +434,7 @@ export default class BookNotePlugin extends Plugin {
 		this.currentBookProjectFile = file;
 		if (
 			this.currentBookProjectFile &&
-			this.getPropertyValue(this.currentBookProjectFile, "booknote-plugin") ===
-			true
+			this.getPropertyValue(this.currentBookProjectFile, "booknote-plugin") === true
 		) {
 			const bookpaths = this.getPropertyValue(
 				this.currentBookProjectFile,
@@ -615,7 +614,7 @@ class SampleSettingTab extends PluginSettingTab {
 		containerEl.createEl("h2", { text: "BookNote" });
 
 		new Setting(containerEl)
-			.setName("书籍根路径")
+			.setName("书库根路径")
 			.setDesc("使用绝对路径，可以使用库外的目录")
 			.addText((text) =>
 				text.setValue(this.plugin.settings.bookPath).onChange(async (value) => {
