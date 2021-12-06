@@ -126,9 +126,12 @@ export class BookExplorerView extends ItemView {
 						style: "overflow: auto"
 					},
 					on: {
-						'select-file': function (item: any) {
+						'select-file': function (item: any, ctrlKey: boolean) {
 							const description = self.plugin.getBookAttrs(item.path)?.["description"];
 							self.descriptionContainer.setText(description ? description : '');
+							if (ctrlKey) {
+								
+							}
 				
 						},
 						'open-file': function (item: any) {

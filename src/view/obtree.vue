@@ -35,13 +35,13 @@ export default {
 	},
 	
 	methods: {
-		selectFile(node){
+		selectFile(node, ctrlKey){
 			if (this.activatedFile) {
 				this.activatedFile.isActivate = false;
 			}
 			this.activatedFile = node;
 			this.activatedFile.isActivate = true;
-			this.$emit('select-file',node.item);
+			this.$emit('select-file',node.item, ctrlKey);
 		},
 	},
 	components: {

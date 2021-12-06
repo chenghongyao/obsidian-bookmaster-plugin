@@ -18,7 +18,8 @@
 <div v-else class="nav-file" :class="`book-${item.ext}`">
 	<div class="nav-file-title" 
 		:class="{'is-active':isActivate}"
-		@click="selectFile"
+		@click.exact="selectFile($event,false)"
+		@click.control="select($event,true)"
 		@dblclick="$emit('open-file',item)"
 		@contextmenu.prevent="$emit('context-menu',$event,item)"
 		>
@@ -51,8 +52,8 @@ export default {
 			this.isOpen = !this.isOpen;
 		},
 
-		selectFile(e) {
-			this.$emit('select-file',this);
+		selectFile(e, ctrlKey) {
+			this.$emit('select-file',this, ctrlKey);
 		},
 
 	},
