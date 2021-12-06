@@ -56,13 +56,8 @@ export class BookView extends ItemView {
 					self.getAnnotationLink(node,data.zoom || 1).then((content: string) => {
 						navigator.clipboard.writeText(content);
 						new Notice("回链已复制到剪贴板");
-						if (data.ctrlKey) {
-							if (self.app.workspace.activeLeaf.view.getViewType() === "markdown") { // insert to markdown
-								(self.app.workspace.activeLeaf.view as MarkdownView).editor.replaceSelection(content);
-	
-							} else {
-								new Notice("请先激活目标Markdown窗口");
-							}
+						if (data.ctrlKey || self.plugin.autoInsertAnnotationLink) {
+							self.tryInsertAnnotationLink(content);
 						}
 				
 					});
@@ -86,9 +81,19 @@ export class BookView extends ItemView {
 				}
 
 				// TODO: 添加标签时进行复制??
-				// if (annotsAdd.length > 0) {
-				// 	self.copyAnnotationLink(annotsAdd[annotsAdd.length-1]);
-				// }
+				if (annotsAdd.length > 0 && (self.plugin.settings.copyNewAnnotationLink)) {
+					const node = annotsAdd[annotsAdd.length-1];
+
+					self.getAnnotationLink(node,data.zoom || 1).then((content: string) => {
+						if (self.plugin.settings.copyNewAnnotationLink) {
+							navigator.clipboard.writeText(content);
+						}
+
+						if (self.plugin.autoInsertAnnotationLink) {
+							self.tryInsertAnnotationLink(content);
+						}
+					});
+				}
 
 				for(var i = 0; i < annotsAdd.length; i++) {
 					self.annotsDoc.appendChild(annotsAdd[i]);
@@ -108,6 +113,14 @@ export class BookView extends ItemView {
 		}
 	}
 
+	tryInsertAnnotationLink(content: string) {
+		if (this.app.workspace.activeLeaf.view.getViewType() === "markdown") { // insert to markdown
+			(this.app.workspace.activeLeaf.view as MarkdownView).editor.replaceSelection(content);
+
+		} else {
+			new Notice("请先激活目标Markdown窗口");
+		}
+	}
 
 	parseAnnotationContent(content: string) {
 		return content.replace(/\n/g,"");
@@ -306,15 +319,26 @@ export class BookView extends ItemView {
 
 		const actionsContainer = this.containerEl.children[0].children[2];
 		const actionTemp = actionsContainer.children[0];
+
+		const actAutoInsert = actionsContainer.insertBefore(actionTemp,this.addAction("merge-files","自动插入",()=> {
+			self.plugin.autoInsertAnnotationLink = !self.plugin.autoInsertAnnotationLink;
+			if (self.plugin.autoInsertAnnotationLink) {
+				new Notice("已启动自动插入新标注");
+			} else {
+				new Notice("已关闭自动插入新标注")
+			}
+		}));
+
+
 		actionsContainer.insertBefore(actionTemp,this.addAction("dice","占位",()=> {
 			new Notice("广告位出租");
 		}));
 		actionsContainer.insertBefore(actionTemp,this.addAction("dice","占位",()=> {
 			new Notice("广告位出租");
 		}));
-		actionsContainer.insertBefore(actionTemp,this.addAction("dice","占位",()=> {
-			new Notice("广告位出租");
-		}));
+
+
+
 		
 	}
 

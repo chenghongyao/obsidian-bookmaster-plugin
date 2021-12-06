@@ -57,7 +57,7 @@ interface BookNoteSettings {
 	addClickEventForAnnotImage: boolean,
 
 	autoOpenProjectView: boolean, // when project note is opened
-
+	copyNewAnnotationLink: boolean,
 }
 
 const DEFAULT_SETTINGS: BookNoteSettings = {
@@ -82,6 +82,7 @@ const DEFAULT_SETTINGS: BookNoteSettings = {
 	addClickEventForAnnotImage: true,
 
 	autoOpenProjectView: true,
+	copyNewAnnotationLink: true,
 };
 
 
@@ -100,6 +101,8 @@ export default class BookNotePlugin extends Plugin {
 	staticServer: any;
 	localWebViewerServer: StaticServer;
 
+	autoInsertAnnotationLink: boolean;
+
 
 	async onload() {
 
@@ -108,6 +111,8 @@ export default class BookNotePlugin extends Plugin {
 
 		await this.loadSettings();
 	
+		this.autoInsertAnnotationLink = false;
+
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new SampleSettingTab(this.app, this));
 
@@ -770,6 +775,17 @@ class SampleSettingTab extends PluginSettingTab {
 		// 		})
 		// 	})
 
+		new Setting(containerEl)
+			.setName("自动复制新标注的回链到剪贴板")
+			.setDesc("每次在阅读器添加标注时自动复制回链到剪贴板")
+			.addToggle((toggle) => {
+				toggle.setValue(this.plugin.settings.copyNewAnnotationLink).onChange(async (value) => {
+					this.plugin.settings.copyNewAnnotationLink = value;
+					await this.plugin.saveSettings();
+				})
+			})
+
+	
 
 	}
 }
