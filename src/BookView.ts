@@ -300,7 +300,6 @@ export class BookView extends ItemView {
 			}),
 			preloadWorker: "pdf",
 		},this.contentEl).then(instance => {
-
 		});
 
 		this.listener = function(event: any) {

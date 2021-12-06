@@ -190,7 +190,9 @@ export default class BookNotePlugin extends Plugin {
 		}
 
 		this.registerObsidianProtocolHandler("booknote", (params) => {
-			obProtocalHandler?.[params["type"]](params);
+			if (obProtocalHandler[params["type"]]) {
+				obProtocalHandler[params["type"]](params);				
+			}
 		});
 
 
