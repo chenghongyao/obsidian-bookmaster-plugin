@@ -102,11 +102,12 @@ export class BookExplorerView extends ItemView {
 				self.plugin.updateBookTree();
 			}
 		})
-		this.navHeader.addAction("document","占位",(evt) => {
-			console.log(evt);
+		this.navHeader.addAction("stacked-levels","排序",(evt) => {
+			new Notice("未实现");
+			// console.log(evt);
 		})
-		this.navHeader.addAction("document","占位",(evt) => {
-			console.log(evt);
+		this.navHeader.addAction("search","搜索",(evt) => {
+			new Notice("未实现");
 		})
 
 

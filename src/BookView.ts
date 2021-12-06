@@ -320,7 +320,8 @@ export class BookView extends ItemView {
 		const actionsContainer = this.containerEl.children[0].children[2];
 		const actionTemp = actionsContainer.children[0];
 
-		const actAutoInsert = actionsContainer.insertBefore(actionTemp,this.addAction("merge-files","自动插入",()=> {
+		// TODO: 模式切换icon
+		actionsContainer.insertBefore(actionTemp,this.addAction("paper-plane","自动插入",()=> {
 			self.plugin.autoInsertAnnotationLink = !self.plugin.autoInsertAnnotationLink;
 			if (self.plugin.autoInsertAnnotationLink) {
 				new Notice("已启动自动插入新标注");
@@ -329,11 +330,14 @@ export class BookView extends ItemView {
 			}
 		}));
 
+		
+
+
 
 		actionsContainer.insertBefore(actionTemp,this.addAction("dice","占位",()=> {
 			new Notice("广告位出租");
 		}));
-		actionsContainer.insertBefore(actionTemp,this.addAction("dice","占位",()=> {
+		actionsContainer.insertBefore(actionTemp,this.addAction("star","占位",()=> {
 			new Notice("广告位出租");
 		}));
 
