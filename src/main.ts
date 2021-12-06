@@ -97,8 +97,6 @@ export default class BookNotePlugin extends Plugin {
 	currentBookProjectFile: TFile;
 	currentBookProjectBooks: Array<any>;
 
-	// TODO: 内建服务器
-	staticServer: any;
 	localWebViewerServer: StaticServer;
 
 	autoInsertAnnotationLink: boolean;
@@ -224,8 +222,6 @@ export default class BookNotePlugin extends Plugin {
 		});
 
 
-
-
 		if (this.settings.useLocalWebViewerServer) {
 			this.startStaticServer();
 		}
@@ -233,11 +229,8 @@ export default class BookNotePlugin extends Plugin {
 	}
 
 	startStaticServer() {
-
-		const self = this;
 		this.localWebViewerServer = staticServer(this.settings.webviewerRootPath,this.settings.webviewerLocalPort,this);
 		this.localWebViewerServer.listen();
-		this.register(() => {self.localWebViewerServer.close()});
 	}
 
 	stopStaticServer() {
@@ -307,7 +300,7 @@ export default class BookNotePlugin extends Plugin {
 	}
 
 	onunload() {
-		this.app.workspace.detachLeavesOfType(VIEW_TYPE_BOOK_EXPLORER_VIEW);
+		this.stopStaticServer();
 	}
 
 	async loadSettings() {
