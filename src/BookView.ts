@@ -8,7 +8,8 @@ import {clipPDF, getPDFDocFromData} from "./PDFHelper"
 
 export const VIEW_TYPE_BOOK_VIEW = "book-view";
 export class BookView extends ItemView {
-	currentBook: any;
+	currentBook: string;
+	currentVault: string;
 	plugin: BookNotePlugin;
 	listener: any;
 	viewerReady: boolean;
@@ -170,11 +171,7 @@ export class BookView extends ItemView {
 	}
 
 	getDisplayText() {
-		if (this.currentBook?.name) {
-			return this.currentBook.name;
-		} else {
-			return "Book View";
-		}
+		return "Book View";
 	}
 
 	async openBook(bookpath: string, page?: Number) {
@@ -183,7 +180,6 @@ export class BookView extends ItemView {
 		const promise = new Promise<BookView>((resolve,reject) => {
 			
 			if (self.currentBook === bookpath) {
-				console.log("samebook");
 				resolve(self);
 				return;
 			}
@@ -227,8 +223,6 @@ export class BookView extends ItemView {
 									setTimeout(waitDocumentReady,100);
 								} else {
 									self.currentBook = bookpath;
-
-
 									resolve(self);
 								}
 							}
