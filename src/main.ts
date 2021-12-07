@@ -75,7 +75,7 @@ const DEFAULT_SETTINGS: BookNoteSettings = {
 
 
 	selectionAnnotationLinkTemplate: "[{{content}}]({{url}})",
-	regionAnnotationLinkTemplate: "({{url}})![[{{img}}#center|{{width}}]]",
+	regionAnnotationLinkTemplate: "![[{{img}}#center|{{width}}]]",
 
 	fixedAnnotImageZoom: true,
 	fixedAnnotImageZoomValue: "2",
