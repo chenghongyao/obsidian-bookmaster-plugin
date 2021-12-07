@@ -134,13 +134,16 @@ export class BookView extends ItemView {
 		// TODO: declare moment??
 		let template = "";
 		let needComment = false;
+		let textType = false;
 		if (["highlight","underline" ,"strikeout","squiggly","freetext"].indexOf(annoType) >= 0) {
 			template = this.plugin.settings.selectionAnnotationLinkTemplate;
 			needComment = template.indexOf("{{comment}}") >= 0;
 			template = template.replace("{{content}}",this.parseAnnotationContent(anno.textContent));
+			textType = true;
 		} else {
 			template = this.plugin.settings.regionAnnotationLinkTemplate;
 			needComment = template.indexOf("{{comment}}") >= 0;
+			textType = false;
 		}
 
 		
@@ -172,11 +175,18 @@ export class BookView extends ItemView {
 
 		template.replace("{{page}}",annoPage);
 		template = template.replace("{{url}}",link);
-		
+
 		// TODO: more comment!
 		if (needComment) {
-			const commentEl = anno.getElementsByTagName("contents");
-			template = template.replace("{{comment}}",commentEl.length ? commentEl[0].textContent : "");
+			if (textType) {
+				const allReply = this.xfdfDoc.querySelector(`text[inreplyto="${annoId}"`)
+				const commentEl = allReply ? allReply.getElementsByTagName("contents") : null;
+				template = template.replace("{{comment}}",commentEl.length ? commentEl[0].textContent : "");
+
+			} else {
+				const commentEl = anno.getElementsByTagName("contents");
+				template = template.replace("{{comment}}",commentEl.length ? commentEl[0].textContent : "");
+			}
 		}
 
 		return template;
