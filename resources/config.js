@@ -11,6 +11,7 @@ if (!window.wvWindowMessageListener) {
     },
     showAnnotation: function(data) {
       const anno = instance.Core.annotationManager.getAnnotationById(data);
+			instance.Core.annotationManager.deselectAllAnnotations();
       instance.Core.annotationManager.jumpToAnnotation(anno,{verticalOffset:"50%"});
       instance.Core.annotationManager.selectAnnotation(anno);
     },

@@ -1,6 +1,6 @@
 {
   "name": "obsidian-booknote-plugin",
-  "version": "0.12.0",
+  "version": "0.2.0",
   "description": "This is a booknote plugin for Obsidian (https://obsidian.md)",
   "main": "main.js",
   "scripts": {

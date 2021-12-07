@@ -228,7 +228,12 @@ export class BookView extends ItemView {
 							self.headerTitleEl.setText(self.plugin.path.basename(bookpath));
 							self.plugin.bookViewMap.set(bookpath,self);
 
-							getPDFDocFromData(data).then(pdfDoc => {
+							let cmap = null;
+							if (self.plugin.settings.useLocalWebViewerServer) {
+								cmap = "http://127.0.0.1:"+this.plugin.settings.webviewerLocalPort+"/pdfjs/web/cmaps/"
+							}
+							console.log(cmap);
+							getPDFDocFromData(data,cmap).then(pdfDoc => {
 								this.pdfjsDoc = pdfDoc;
 							})
 

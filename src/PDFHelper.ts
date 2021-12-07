@@ -49,10 +49,13 @@ export async function clipPDF(plugin: BookNotePlugin, zoomLevel: number, pdfDoc:
 	return {clipWidth,clipHeight};
 }
 
-export async function getPDFDocFromData(docData: Buffer) {
+export async function getPDFDocFromData(docData: Buffer,cmap?:string) {
+	if (!cmap) {
+		cmap = "https://cdn.jsdelivr.net/npm/pdfjs-dist@2.10.377/cmaps/";
+	}
 	return await pdfjsLib.getDocument({ 
 		data: docData,
-		cMapUrl: "https://cdn.jsdelivr.net/npm/pdfjs-dist@2.10.377/cmaps/",
+		cMapUrl: cmap,
 		cMapPacked: true
 	}).promise;
 }
