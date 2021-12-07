@@ -8,7 +8,7 @@
 	<div v-show="isOpen" class="nav-folder-children">
 		<obtree-item v-for="(child, index) in item.children" 
 		:key="index" :item="child" 
-		v-on:select-file="(node)=>$emit('select-file',node)"
+		v-on:select-file="(node, ctrlKey)=>$emit('select-file',node, ctrlKey)"
 		v-on:open-file="(item)=>$emit('open-file',item)"
 		v-on:context-menu="(e,item)=>$emit('context-menu',e,item)"
 		/>
@@ -18,7 +18,8 @@
 <div v-else class="nav-file" :class="`book-${item.ext}`">
 	<div class="nav-file-title" 
 		:class="{'is-active':isActivate}"
-		@click="selectFile"
+		@click.exact="selectFile($event,false)"
+		@click.ctrl="selectFile($event,true)"
 		@dblclick="$emit('open-file',item)"
 		@contextmenu.prevent="$emit('context-menu',$event,item)"
 		>
@@ -51,8 +52,8 @@ export default {
 			this.isOpen = !this.isOpen;
 		},
 
-		selectFile(e) {
-			this.$emit('select-file',this);
+		selectFile(e, ctrlKey) {
+			this.$emit('select-file',this, ctrlKey);
 		},
 
 	},

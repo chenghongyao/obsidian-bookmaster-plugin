@@ -102,11 +102,12 @@ export class BookExplorerView extends ItemView {
 				self.plugin.updateBookTree();
 			}
 		})
-		this.navHeader.addAction("document","占位",(evt) => {
-			console.log(evt);
+		this.navHeader.addAction("stacked-levels","排序",(evt) => {
+			new Notice("未实现");
+			// console.log(evt);
 		})
-		this.navHeader.addAction("document","占位",(evt) => {
-			console.log(evt);
+		this.navHeader.addAction("search","搜索",(evt) => {
+			new Notice("未实现");
 		})
 
 
@@ -125,13 +126,16 @@ export class BookExplorerView extends ItemView {
 						style: "overflow: auto"
 					},
 					on: {
-						'select-file': function (item: any) {
+						'select-file': function (item: any, ctrlKey: boolean) {
 							const description = self.plugin.getBookAttrs(item.path)?.["description"];
 							self.descriptionContainer.setText(description ? description : '');
+							if (ctrlKey) {
+								self.plugin.openBookInBookView(item.path, true);
+							}
 				
 						},
 						'open-file': function (item: any) {
-							self.plugin.openBookInBookView(item.path);
+							self.plugin.openBookInBookView(item.path,false);
 						},
 						'context-menu': function(evt: MouseEvent, item: any) {
 							self.openContextMenu(evt,item);

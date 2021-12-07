@@ -33,7 +33,8 @@ export class BookView extends ItemView {
 		this.documentReady = false;
 		this.isAnnotsChanged = false;
 		
-
+		this.leaf.setPinned(true); //锁定避免被退出
+		// this.plugin.bookViews.add(this);
 		const self = this;
 		this.eventHandlerMap = {
 			viewerLoaded(data: any) {
@@ -52,24 +53,17 @@ export class BookView extends ItemView {
 				const id = data.id;
 				const node = self.xfdfDoc.getElementsByName(id)[0];
 				if (node) {
-
 					self.getAnnotationLink(node,data.zoom || 1).then((content: string) => {
 						navigator.clipboard.writeText(content);
 						new Notice("回链已复制到剪贴板");
-						if (data.ctrlKey) {
-							if (self.app.workspace.activeLeaf.view.getViewType() === "markdown") { // insert to markdown
-								(self.app.workspace.activeLeaf.view as MarkdownView).editor.replaceSelection(content);
-	
-							} else {
-								new Notice("请先激活目标Markdown窗口");
-							}
+						if (data.ctrlKey || self.plugin.autoInsertAnnotationLink) {
+							self.tryInsertAnnotationLink(content);
 						}
 				
 					});
 
 				} else {
 					new Notice("标注id不存在");
-					
 				}
 			},
 
@@ -86,9 +80,19 @@ export class BookView extends ItemView {
 				}
 
 				// TODO: 添加标签时进行复制??
-				// if (annotsAdd.length > 0) {
-				// 	self.copyAnnotationLink(annotsAdd[annotsAdd.length-1]);
-				// }
+				if (annotsAdd.length > 0 && (self.plugin.settings.copyNewAnnotationLink)) {
+					const node = annotsAdd[annotsAdd.length-1];
+
+					self.getAnnotationLink(node,data.zoom || 1).then((content: string) => {
+						if (self.plugin.settings.copyNewAnnotationLink) {
+							navigator.clipboard.writeText(content);
+						}
+
+						if (self.plugin.autoInsertAnnotationLink) {
+							self.tryInsertAnnotationLink(content);
+						}
+					});
+				}
 
 				for(var i = 0; i < annotsAdd.length; i++) {
 					self.annotsDoc.appendChild(annotsAdd[i]);
@@ -108,6 +112,14 @@ export class BookView extends ItemView {
 		}
 	}
 
+	tryInsertAnnotationLink(content: string) {
+		if (this.app.workspace.activeLeaf.view.getViewType() === "markdown") { // insert to markdown
+			(this.app.workspace.activeLeaf.view as MarkdownView).editor.replaceSelection(content);
+
+		} else {
+			new Notice("请先激活目标Markdown窗口");
+		}
+	}
 
 	parseAnnotationContent(content: string) {
 		return content.replace(/\n/g,"");
@@ -170,6 +182,10 @@ export class BookView extends ItemView {
 		this.postViewerWindowMessage("showAnnotation", id);
 	}
 
+	showBookPage(page: Number) {
+		this.postViewerWindowMessage("showBookPage", page);
+	}
+
 	getDisplayText() {
 		return "Book View";
 	}
@@ -180,6 +196,9 @@ export class BookView extends ItemView {
 		const promise = new Promise<BookView>((resolve,reject) => {
 			
 			if (self.currentBook === bookpath) {
+				if (!(page == null || page == undefined)) {
+					self.showBookPage(page);
+				}
 				resolve(self);
 				return;
 			}
@@ -194,16 +213,27 @@ export class BookView extends ItemView {
 				new Notice("文件不存在:"+fullPath);
 				reject("文件不存在");
 			} else {
-				// TODO: good time to set title??
-				self.headerTitleEl.setText(self.plugin.path.basename(bookpath));
+
 				self.plugin.getBookAnnotations(bookpath).then(xfdfString => {
 					this.plugin.fs.readFile(fullPath,(err: any, data: any) => {
 						if (err) {
-							console.error("can't read file:",fullPath);
+							new Notice("无法读取文件:"+fullPath);
 							reject(err);
 						} else {
+							// TODO: good time to set title??
+							if (self.currentBook) {
+								self.plugin.bookViewMap.delete(self.currentBook);
+							}
+							self.currentBook = bookpath;
+							self.headerTitleEl.setText(self.plugin.path.basename(bookpath));
+							self.plugin.bookViewMap.set(bookpath,self);
 
-							getPDFDocFromData(data).then(pdfDoc => {
+							let cmap = null;
+							if (self.plugin.settings.useLocalWebViewerServer) {
+								cmap = "http://127.0.0.1:"+this.plugin.settings.webviewerLocalPort+"/pdfjs/web/cmaps/"
+							}
+							console.log(cmap);
+							getPDFDocFromData(data,cmap).then(pdfDoc => {
 								this.pdfjsDoc = pdfDoc;
 							})
 
@@ -222,7 +252,6 @@ export class BookView extends ItemView {
 								if(!self.documentReady) {
 									setTimeout(waitDocumentReady,100);
 								} else {
-									self.currentBook = bookpath;
 									resolve(self);
 								}
 							}
@@ -289,7 +318,6 @@ export class BookView extends ItemView {
 			}),
 			preloadWorker: "pdf",
 		},this.contentEl).then(instance => {
-
 		});
 
 		this.listener = function(event: any) {
@@ -306,15 +334,30 @@ export class BookView extends ItemView {
 
 		const actionsContainer = this.containerEl.children[0].children[2];
 		const actionTemp = actionsContainer.children[0];
+
+		// TODO: 模式切换icon
+		actionsContainer.insertBefore(actionTemp,this.addAction("paper-plane","自动插入",()=> {
+			self.plugin.autoInsertAnnotationLink = !self.plugin.autoInsertAnnotationLink;
+			if (self.plugin.autoInsertAnnotationLink) {
+				new Notice("已启动自动插入新标注");
+			} else {
+				new Notice("已关闭自动插入新标注")
+			}
+		}));
+
+		
+
+
+
 		actionsContainer.insertBefore(actionTemp,this.addAction("dice","占位",()=> {
 			new Notice("广告位出租");
 		}));
-		actionsContainer.insertBefore(actionTemp,this.addAction("dice","占位",()=> {
+		actionsContainer.insertBefore(actionTemp,this.addAction("star","占位",()=> {
 			new Notice("广告位出租");
 		}));
-		actionsContainer.insertBefore(actionTemp,this.addAction("dice","占位",()=> {
-			new Notice("广告位出租");
-		}));
+
+
+
 		
 	}
 
@@ -327,6 +370,14 @@ export class BookView extends ItemView {
 		}
 		window.removeEventListener("message",this.listener);
 		this.viewerReady = false; 
+	}
+
+	onunload() {
+		console.log("BookView unload");
+		if (this.currentBook) {
+			this.plugin.bookViewMap.delete(this.currentBook);
+		}
+        // this.plugin.bookViews.delete(this);
 	}
 
 }
