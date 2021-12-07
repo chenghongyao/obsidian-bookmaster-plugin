@@ -94,16 +94,22 @@ export class BookProjectView extends ItemView {
 					data: self.plugin.currentBookProjectBooks
 				},
 				on: {
-					'select-file': function (item: any) {
+					'select-file': function (item: any, ctrlKey: boolean) {
 						const description = self.plugin.getBookAttrs(item.path)?.["description"];
 						self.descriptionContainer.setText(description ? description : '');
-			
+						if (ctrlKey) {
+							if (item.isUrl) {
+								self.plugin.openBookBySystem(item.path);
+							} else {
+								self.plugin.openBookInBookView(item.path,true);
+							}
+						}
 					},
 					'open-file': function (item: any) {
 						if (item.isUrl) {
 							self.plugin.openBookBySystem(item.path);
 						} else {
-							self.plugin.openBookInBookView(item.path);
+							self.plugin.openBookInBookView(item.path,false);
 						}
 					},
 					'context-menu': function(evt: MouseEvent, item: any) {

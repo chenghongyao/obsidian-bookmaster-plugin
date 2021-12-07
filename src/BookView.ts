@@ -34,6 +34,7 @@ export class BookView extends ItemView {
 		this.isAnnotsChanged = false;
 		
 		this.leaf.setPinned(true); //锁定避免被退出
+		// this.plugin.bookViews.add(this);
 		const self = this;
 		this.eventHandlerMap = {
 			viewerLoaded(data: any) {
@@ -181,6 +182,10 @@ export class BookView extends ItemView {
 		this.postViewerWindowMessage("showAnnotation", id);
 	}
 
+	showBookPage(page: Number) {
+		this.postViewerWindowMessage("showBookPage", page);
+	}
+
 	getDisplayText() {
 		return "Book View";
 	}
@@ -191,6 +196,9 @@ export class BookView extends ItemView {
 		const promise = new Promise<BookView>((resolve,reject) => {
 			
 			if (self.currentBook === bookpath) {
+				if (!(page == null || page == undefined)) {
+					self.showBookPage(page);
+				}
 				resolve(self);
 				return;
 			}
@@ -205,14 +213,20 @@ export class BookView extends ItemView {
 				new Notice("文件不存在:"+fullPath);
 				reject("文件不存在");
 			} else {
-				// TODO: good time to set title??
-				self.headerTitleEl.setText(self.plugin.path.basename(bookpath));
+
 				self.plugin.getBookAnnotations(bookpath).then(xfdfString => {
 					this.plugin.fs.readFile(fullPath,(err: any, data: any) => {
 						if (err) {
-							console.error("can't read file:",fullPath);
+							new Notice("无法读取文件:"+fullPath);
 							reject(err);
 						} else {
+							// TODO: good time to set title??
+							if (self.currentBook) {
+								self.plugin.bookViewMap.delete(self.currentBook);
+							}
+							self.currentBook = bookpath;
+							self.headerTitleEl.setText(self.plugin.path.basename(bookpath));
+							self.plugin.bookViewMap.set(bookpath,self);
 
 							getPDFDocFromData(data).then(pdfDoc => {
 								this.pdfjsDoc = pdfDoc;
@@ -233,7 +247,6 @@ export class BookView extends ItemView {
 								if(!self.documentReady) {
 									setTimeout(waitDocumentReady,100);
 								} else {
-									self.currentBook = bookpath;
 									resolve(self);
 								}
 							}
@@ -352,6 +365,14 @@ export class BookView extends ItemView {
 		}
 		window.removeEventListener("message",this.listener);
 		this.viewerReady = false; 
+	}
+
+	onunload() {
+		console.log("BookView unload");
+		if (this.currentBook) {
+			this.plugin.bookViewMap.delete(this.currentBook);
+		}
+        // this.plugin.bookViews.delete(this);
 	}
 
 }

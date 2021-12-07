@@ -13,6 +13,9 @@ if (!window.wvWindowMessageListener) {
       const anno = instance.Core.annotationManager.getAnnotationById(data);
       instance.Core.annotationManager.jumpToAnnotation(anno,{verticalOffset:"50%"});
       instance.Core.annotationManager.selectAnnotation(anno);
+    },
+    showBookPage: function(data) {
+      instance.Core.documentViewer.setCurrentPage(data);
     }
   }
 
@@ -104,7 +107,7 @@ if (!window.documentLoadedListener) {
     instance.Core.annotationManager.exportAnnotations({links:false, widgets:false}).then((xfdfString) => {
       window.postObsidianBookNoteMessage("documentLoaded",xfdfString);
     });
-    instance.UI.setFitMode(instance.UI.FitMode.FitWidth)
+    // instance.UI.setFitMode(instance.UI.FitMode.FitWidth)
   };
 
   window.addEventListener('documentLoaded', window.documentLoadedListener);

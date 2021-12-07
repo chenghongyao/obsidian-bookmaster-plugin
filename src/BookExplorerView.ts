@@ -130,12 +130,12 @@ export class BookExplorerView extends ItemView {
 							const description = self.plugin.getBookAttrs(item.path)?.["description"];
 							self.descriptionContainer.setText(description ? description : '');
 							if (ctrlKey) {
-								
+								self.plugin.openBookInBookView(item.path, true);
 							}
 				
 						},
 						'open-file': function (item: any) {
-							self.plugin.openBookInBookView(item.path);
+							self.plugin.openBookInBookView(item.path,false);
 						},
 						'context-menu': function(evt: MouseEvent, item: any) {
 							self.openContextMenu(evt,item);

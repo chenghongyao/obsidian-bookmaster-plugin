@@ -35,6 +35,7 @@ import {
 import {SUPPORT_BOOK_TYPES} from "./constants"
 
 import staticServer, { StaticServer } from './static-server'
+import { Arr } from "_@types_tern@0.23.4@@types/tern";
 
 interface BookNoteSettings {
 	bookPath: string;
@@ -74,7 +75,7 @@ const DEFAULT_SETTINGS: BookNoteSettings = {
 
 
 	selectionAnnotationLinkTemplate: "[{{content}}]({{url}})",
-	regionAnnotationLinkTemplate: "({{url}})![[{{img}}|{{width}}]]",
+	regionAnnotationLinkTemplate: "({{url}})![[{{img}}#center|{{width}}]]",
 
 	fixedAnnotImageZoom: true,
 	fixedAnnotImageZoomValue: "2",
@@ -93,14 +94,16 @@ export default class BookNotePlugin extends Plugin {
 	path: any;
 	fs: any;
 
-	bookTreeData: Array<any>
+	bookTreeData: Array<any> = new Array();
 	currentBookProjectFile: TFile;
-	currentBookProjectBooks: Array<any>;
+	currentBookProjectBooks: Array<any> = new Array();
 
 	localWebViewerServer: StaticServer;
 
 	autoInsertAnnotationLink: boolean;
 
+	// bookViews: Set<BookView> = new Set(); // TODO: remove this ,use map?
+	bookViewMap: Map<string,BookView> = new Map();
 
 	async onload() {
 
@@ -183,9 +186,12 @@ export default class BookNotePlugin extends Plugin {
 				}
 			},
 			"open-book": function(params: ObsidianProtocolData) {
-				self.getBookView().then((view: BookView) => {
+				self.getBookView(params["book"],false).then((view: BookView) => {
 					view.openBook(params["book"],Number(params["page"]));
 				})
+			},
+			"update-book-explorer": function(params: ObsidianProtocolData) {
+				self.updateBookTree();
 			}
 		}
 
@@ -213,9 +219,18 @@ export default class BookNotePlugin extends Plugin {
 						console.log("annoSrc:",src);
 						console.log("annotBook:",annotBook)
 						console.log("annotId:",annotBook)
-						this.registerDomEvent(el as HTMLAnchorElement, "dblclick", () => {
-							this.showAnnotationById(annotBook,annotId);
+
+						this.registerDomEvent(el as HTMLAnchorElement, "dblclick", (e) => {
+							this.showAnnotationById(annotBook,annotId, false);
 						});
+
+						this.registerDomEvent(el as HTMLAnchorElement, "click", (e) => {
+							if (e.ctrlKey === true) {
+								// TODO: click导致页面无法正常跳转！！
+								this.showAnnotationById(annotBook,annotId,true);
+							}
+						});
+
 						
 					}				
 				});
@@ -314,15 +329,16 @@ export default class BookNotePlugin extends Plugin {
 	}
 
 
-	async showAnnotationById(book: string, id: string) {
-		this.getBookView().then((view: BookView) => {
+	async showAnnotationById(book: string, id: string, newPanel?: boolean) {
+		this.getBookView(book,newPanel).then((view: BookView) => {
 			view.openBook(book).then((view: BookView) => {
 				view.showAnnotation(id);
+				this.app.workspace.setActiveLeaf(view.leaf); //TODO: 页面上点击无法激活？？，这里再次激活
+
 			})
 		})
 	}
 	async reactivateView(type: string, dir?: string, split?: boolean) {
-		// this.app.workspace.detachLeavesOfType(type);
 
 		var leaf;
 		if (this.app.workspace.getLeavesOfType(type).length == 0) {
@@ -330,9 +346,10 @@ export default class BookNotePlugin extends Plugin {
 				leaf = this.app.workspace.getLeftLeaf(split);
 			} else if (dir == "right") {
 				leaf = this.app.workspace.getRightLeaf(split);
-			} else {
-				leaf = this.app.workspace.getLeaf(split && !(this.app.workspace.activeLeaf.view.getViewType() === "empty"));
-			}
+			} 
+			// else {
+			// 	leaf = this.app.workspace.getLeaf(split && !(this.app.workspace.activeLeaf.view.getViewType() === "empty"));
+			// }
 			await leaf.setViewState({
 				type: type,
 				active: true,
@@ -385,11 +402,7 @@ export default class BookNotePlugin extends Plugin {
 
 	updateBookTree() {
 		if (!this.isBookPathValid()) return;
-		if (this.bookTreeData) {
-			this.bookTreeData.length = 0;
-		} else {
-			this.bookTreeData = Array<any>();
-		}
+		this.bookTreeData.length = 0;
 		this.walk("",this.bookTreeData);
 	}
 
@@ -412,19 +425,24 @@ export default class BookNotePlugin extends Plugin {
 
 
 	openBookBySystem(path: string) {
-		window.open("file://" + this.normalizeBookPath(path));
+		if(path.startsWith("http://") || path.startsWith("https://")) {
+			window.open(path);
+		} else {
+			window.open("file://" + this.normalizeBookPath(path));
+		}
 	}
 
 	isForceOpenBySystem(path: string) {
 		return this.settings.openAllBOokBySystem 
+			|| path.startsWith("http://") || path.startsWith("https://") 
 			|| (this.settings.openOfficeBookBySystem && this.path.extname(path).substr(1) != "pdf"); // TODO: office book mean not pdf book?
 	}
 
-	openBookInBookView(path: string) {
+	openBookInBookView(path: string, newPanel?: boolean) {
 		if (this.isForceOpenBySystem(path)) {
 			this.openBookBySystem(path);
 		} else {
-			this.getBookView().then(view => {
+			this.getBookView(path, newPanel).then(view => {
 						view.openBook(path);
 					});
 		}
@@ -440,15 +458,12 @@ export default class BookNotePlugin extends Plugin {
 				this.currentBookProjectFile,
 				"booknote-books"
 			);
-			if (!bookpaths) {
-				this.currentBookProjectBooks = [];
-			} else {
+
+			this.currentBookProjectBooks.length = 0;
+
+			if (bookpaths) {
 				const self = this;
-				if (this.currentBookProjectBooks)
-					this.currentBookProjectBooks.length = 0;
-				else 
-					this.currentBookProjectBooks = Array<any>();
-				
+				this.currentBookProjectBooks.length = 0;
 				bookpaths.forEach((filepath: string) => {
 					const regUrl = /^\[(.*)\]\((http(s)?:\/\/[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&'\*\+,;=.]+)\)$/
 					const urlGroup = regUrl.exec(filepath);
@@ -472,11 +487,36 @@ export default class BookNotePlugin extends Plugin {
 	}
 
 
-	async getBookView() {
-		if (this.app.workspace.getLeavesOfType(VIEW_TYPE_BOOK_VIEW).length == 0) {
-			await this.reactivateView(VIEW_TYPE_BOOK_VIEW,'center',true);
+	async getBookView(path?: string, newPanel?: boolean) {
+		
+		if (path) {
+			let view = this.bookViewMap.get(path);
+			if (view) {
+				this.app.workspace.revealLeaf(view.leaf);
+				// this.app.workspace.setActiveLeaf(view.leaf);
+				return view;
+			}
 		}
-		return this.app.workspace.getLeavesOfType(VIEW_TYPE_BOOK_VIEW)[0].view as BookView;
+		
+
+
+		newPanel = newPanel || (this.app.workspace.getLeavesOfType(VIEW_TYPE_BOOK_VIEW).length === 0);
+		let leaf = null;
+		if (newPanel) {
+			leaf = this.app.workspace.getLeaf(!(this.app.workspace.activeLeaf.view.getViewType() === "empty"));
+			await leaf.setViewState({
+				type: VIEW_TYPE_BOOK_VIEW,
+				active: true,
+			});
+		} else {
+			const act = this.app.workspace.getActiveViewOfType(BookView);
+			leaf = act ? act.leaf : this.app.workspace.getLeavesOfType(VIEW_TYPE_BOOK_VIEW)[0];
+		}
+
+		this.app.workspace.revealLeaf(leaf);
+		// this.app.workspace.setActiveLeaf(leaf);
+		return leaf.view as BookView;
+	
 	}
 
 	getBookAttrs(bookpath: string) {
