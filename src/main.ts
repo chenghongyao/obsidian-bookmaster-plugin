@@ -186,7 +186,7 @@ export default class BookNotePlugin extends Plugin {
 				}
 			},
 			"open-book": function(params: ObsidianProtocolData) {
-				self.getBookView(params["book"],false).then((view: BookView) => {
+				self.getBookView(params["book"],true).then((view: BookView) => {
 					view.openBook(params["book"],Number(params["page"]));
 				})
 			},
