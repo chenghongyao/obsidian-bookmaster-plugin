@@ -47,7 +47,7 @@ interface BookNoteSettings {
 
 	webviewerExternalServerAddress: string;
 
-	openAllBOokBySystem: boolean,
+	openAllBookBySystem: boolean,
 	openOfficeBookBySystem: boolean,
 
 	selectionAnnotationLinkTemplate: string, // highlight,underline ,strikeout,squiggly,freetext 
@@ -70,7 +70,7 @@ const DEFAULT_SETTINGS: BookNoteSettings = {
 
 	webviewerExternalServerAddress: "https://relaxed-torvalds-5a5c77.netlify.app",
 
-	openAllBOokBySystem: false,
+	openAllBookBySystem: false,
 	openOfficeBookBySystem: false,
 
 
@@ -137,7 +137,7 @@ export default class BookNotePlugin extends Plugin {
 			id: "open-advance-book-explorer",
 			name: "Open Advance Book Explorer",
 			callback: () => {
-				this.reactivateView(VIEW_TYPE_ADVANCE_BOOK_EXPLORER_VIEW);
+				this.reactivateView(VIEW_TYPE_ADVANCE_BOOK_EXPLORER_VIEW,'center',true);
 			},
 		});
 
@@ -282,11 +282,11 @@ export default class BookNotePlugin extends Plugin {
 						});
 
 						const books = self.getPropertyValue(file, "booknote-books");
-						if (books && books.length > 0) {
+						if (books && books.length > 0 && books[0]) {
 							menu.addItem((item) => {
 								item.setTitle("OpenBook").onClick(() => {
 									// console.log(books[0]);
-									self.openBookInBookView(books[0]);
+									self.openBookInBookView(books[0], true);
 								});
 							});
 						}
@@ -347,9 +347,9 @@ export default class BookNotePlugin extends Plugin {
 			} else if (dir == "right") {
 				leaf = this.app.workspace.getRightLeaf(split);
 			} 
-			// else {
-			// 	leaf = this.app.workspace.getLeaf(split && !(this.app.workspace.activeLeaf.view.getViewType() === "empty"));
-			// }
+			else {
+				leaf = this.app.workspace.getLeaf(split && !(this.app.workspace.activeLeaf.view.getViewType() === "empty"));
+			}
 			await leaf.setViewState({
 				type: type,
 				active: true,
@@ -433,7 +433,7 @@ export default class BookNotePlugin extends Plugin {
 	}
 
 	isForceOpenBySystem(path: string) {
-		return this.settings.openAllBOokBySystem 
+		return this.settings.openAllBookBySystem 
 			|| path.startsWith("http://") || path.startsWith("https://") 
 			|| (this.settings.openOfficeBookBySystem && this.path.extname(path).substr(1) != "pdf"); // TODO: office book mean not pdf book?
 	}
@@ -465,6 +465,8 @@ export default class BookNotePlugin extends Plugin {
 				const self = this;
 				this.currentBookProjectBooks.length = 0;
 				bookpaths.forEach((filepath: string) => {
+					if (!filepath)return;
+
 					const regUrl = /^\[(.*)\]\((http(s)?:\/\/[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&'\*\+,;=.]+)\)$/
 					const urlGroup = regUrl.exec(filepath);
 					if (urlGroup) {
@@ -731,8 +733,8 @@ class SampleSettingTab extends PluginSettingTab {
 			.setName("使用默认应用打开所有书籍")
 			.setDesc("使能时双击书籍总是使用系统默认应用打开")
 			.addToggle((toggle) => {
-				toggle.setValue(this.plugin.settings.openAllBOokBySystem).onChange(async (value) => {
-					this.plugin.settings.openAllBOokBySystem = value;
+				toggle.setValue(this.plugin.settings.openAllBookBySystem).onChange(async (value) => {
+					this.plugin.settings.openAllBookBySystem = value;
 					await this.plugin.saveSettings();
 				})
 			});

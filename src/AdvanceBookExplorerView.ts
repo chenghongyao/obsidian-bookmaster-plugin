@@ -19,7 +19,7 @@ export class AdvanceBookExplorerView extends ItemView {
 	constructor(leaf: WorkspaceLeaf, plugin: BookNotePlugin) {
 		super(leaf);
 		this.plugin = plugin;
-
+		leaf.setPinned(true);
 		this.settingMap = {
 			author: {
 				label: "作者",

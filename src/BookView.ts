@@ -143,27 +143,31 @@ export class BookView extends ItemView {
 			needComment = template.indexOf("{{comment}}") >= 0;
 		}
 
+		
 		if (template.indexOf("{{img}}") >= 0) {
-
-			const realZoom = this.plugin.settings.fixedAnnotImageZoom ? Number(this.plugin.settings.fixedAnnotImageZoomValue) : Number(zoom);
-			const imgPath = this.plugin.normalizeBookDataPath(`(annotations)${this.currentBook}/p${annoPage}r${annoRect}z${realZoom}i(${annoId}).png`);
-			const clipBox = annoRect.split(",").map(t => Number(t));
-
+			if (!this.pdfjsDoc) { // 只支持PDF
+				new Notice("当前文件不支持截图");
+			} else {
+				const realZoom = this.plugin.settings.fixedAnnotImageZoom ? Number(this.plugin.settings.fixedAnnotImageZoomValue) : Number(zoom);
+				const imgPath = this.plugin.normalizeBookDataPath(`(annotations)${this.currentBook}/p${annoPage}r${annoRect}z${realZoom}i(${annoId}).png`);
+				const clipBox = annoRect.split(",").map(t => Number(t));
 	
-			clipPDF(this.plugin, 
-				realZoom,
-				this.pdfjsDoc,Number(annoPage)+1,
-				clipBox,
-				imgPath);
-
-			template = template.replace("{{img}}",imgPath);
-
-
-			// TODO:图像模糊，暂时通过设置宽度解决
-			const clipWidth = Math.round((clipBox[2] - clipBox[0])*realZoom/1.2);
-			const clipHeight = Math.round((clipBox[3] - clipBox[1])*realZoom/1.2);
-			template = template.replace("{{width}}",clipWidth.toString());
-			template = template.replace("{{height}}",clipHeight.toString());
+		
+				clipPDF(this.plugin, 
+					realZoom,
+					this.pdfjsDoc,Number(annoPage)+1,
+					clipBox,
+					imgPath);
+	
+				template = template.replace("{{img}}",imgPath);
+	
+	
+				// TODO:图像模糊，暂时通过设置宽度解决
+				const clipWidth = Math.round((clipBox[2] - clipBox[0])*realZoom/1.2);
+				const clipHeight = Math.round((clipBox[3] - clipBox[1])*realZoom/1.2);
+				template = template.replace("{{width}}",clipWidth.toString());
+				template = template.replace("{{height}}",clipHeight.toString());
+			}
 		}
 
 		template.replace("{{page}}",annoPage);
@@ -208,14 +212,14 @@ export class BookView extends ItemView {
 				self.plugin.saveBookAnnotations(self.currentBook, self.xfdfDoc);
 			}
 
-			const fullPath = this.plugin.normalizeBookPath(bookpath);
+			const fullPath = self.plugin.normalizeBookPath(bookpath);
 			if (!self.plugin.fs.existsSync(fullPath)) {
 				new Notice("文件不存在:"+fullPath);
 				reject("文件不存在");
 			} else {
 
 				self.plugin.getBookAnnotations(bookpath).then(xfdfString => {
-					this.plugin.fs.readFile(fullPath,(err: any, data: any) => {
+					self.plugin.fs.readFile(fullPath,(err: any, data: any) => {
 						if (err) {
 							new Notice("无法读取文件:"+fullPath);
 							reject(err);
@@ -224,29 +228,37 @@ export class BookView extends ItemView {
 							if (self.currentBook) {
 								self.plugin.bookViewMap.delete(self.currentBook);
 							}
+						
+							self.pdfjsDoc = null;
+							
 							self.currentBook = bookpath;
 							self.headerTitleEl.setText(self.plugin.path.basename(bookpath));
 							self.plugin.bookViewMap.set(bookpath,self);
 
-							let cmap = null;
-							if (self.plugin.settings.useLocalWebViewerServer) {
-								cmap = "http://127.0.0.1:"+this.plugin.settings.webviewerLocalPort+"/pdfjs/web/cmaps/"
-							}
-							console.log(cmap);
-							getPDFDocFromData(data,cmap).then(pdfDoc => {
-								this.pdfjsDoc = pdfDoc;
-							})
-
+	
+					
 							const ext = self.plugin.path.extname(bookpath).substr(1)
 							const arr = new Uint8Array(data);
 							const blob = new Blob([arr], { type: 'application/'+ext });
-							this.postViewerWindowMessage("openFile",{
+							self.postViewerWindowMessage("openFile",{
 								blob:blob,
 								xfdfString: xfdfString,
 								path: fullPath,
 								extension: ext,
 								page: page,
-							})
+							});
+
+							if (ext === "pdf") { //只支持pdf!!
+								let cmap = null;
+								if (self.plugin.settings.useLocalWebViewerServer) {
+									cmap = "http://127.0.0.1:"+self.plugin.settings.webviewerLocalPort+"/pdfjs/web/cmaps/"
+								}
+								console.log(cmap);
+								getPDFDocFromData(data,cmap).then(pdfDoc => {
+									self.pdfjsDoc = pdfDoc;
+								})
+							}
+							
 
 							function waitDocumentReady() {
 								if(!self.documentReady) {
