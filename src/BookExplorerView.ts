@@ -32,6 +32,74 @@ export class BookExplorerView extends ItemView {
 		return "bold-glyph";	
 	}
 
+	openSortContextMenu(evt: MouseEvent) {
+		const menu = new Menu(this.app);
+		const self = this;
+		menu.addItem((item) => 
+		item
+			.setTitle("升序")
+			.setIcon("up-arrow-with-tail")
+			.onClick(()=> {
+				console.log("升序");
+			}));
+		menu.addItem((item) => 
+			item
+				.setTitle("降序")
+				.setIcon("up-arrow-with-tail")
+				.onClick(()=> {
+					console.log("降序");
+				}));
+		menu.addSeparator();
+
+		menu.addItem((item) => {
+			item
+			.setTitle("按文件夹")
+			.onClick(async ()=> {
+				if (self.plugin.settings.bookTreeSortType !== 0) {
+					self.plugin.settings.bookTreeSortType = 0;
+					await self.plugin.saveSettings();
+					self.plugin.updateBookTree();
+				}
+			});
+
+			if (self.plugin.settings.bookTreeSortType === 0)
+				item.setIcon("checkmark");
+
+		});
+
+		menu.addItem((item) => 
+			item
+				.setTitle("按作者")
+				.onClick(()=> {
+					console.log("按作者");
+				}));	
+		menu.addItem((item) => 
+			item
+				.setTitle("按发表年份")
+				.onClick(()=> {
+					console.log("按发表年份");
+				}));
+
+		menu.addItem((item) => {
+			item
+			.setTitle("按标签")
+			.onClick(async ()=> {
+				if (self.plugin.settings.bookTreeSortType !== 1) {
+					self.plugin.settings.bookTreeSortType = 1;
+					await self.plugin.saveSettings();
+					self.plugin.updateBookTree();
+				}
+			});
+
+			if (self.plugin.settings.bookTreeSortType === 1)
+				item.setIcon("checkmark");
+			
+			
+		});	
+						
+		menu.showAtMouseEvent(evt);
+	}
+
 
 	openContextMenu(evt: MouseEvent, fileitem:any) {
 		const self = this;
@@ -85,6 +153,7 @@ export class BookExplorerView extends ItemView {
 	}
 
 
+
 	async onOpen() {
 
 		console.log("BookExplorerView Open");
@@ -102,8 +171,10 @@ export class BookExplorerView extends ItemView {
 				self.plugin.updateBookTree();
 			}
 		})
-		this.navHeader.addAction("stacked-levels","排序",(evt) => {
-			new Notice("未实现");
+		this.navHeader.addAction("stacked-levels","排序方式与顺序",(evt) => {
+			// new Notice("未实现");
+			this.openSortContextMenu(evt);
+
 			// console.log(evt);
 		})
 		this.navHeader.addAction("search","搜索",(evt) => {

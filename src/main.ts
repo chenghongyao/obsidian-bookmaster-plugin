@@ -35,7 +35,6 @@ import {
 import {SUPPORT_BOOK_TYPES} from "./constants"
 
 import staticServer, { StaticServer } from './static-server'
-import { Arr } from "_@types_tern@0.23.4@@types/tern";
 
 interface BookNoteSettings {
 	bookPath: string;
@@ -59,6 +58,8 @@ interface BookNoteSettings {
 
 	autoOpenProjectView: boolean, // when project note is opened
 	copyNewAnnotationLink: boolean,
+
+	bookTreeSortType: Number,
 }
 
 const DEFAULT_SETTINGS: BookNoteSettings = {
@@ -84,6 +85,8 @@ const DEFAULT_SETTINGS: BookNoteSettings = {
 
 	autoOpenProjectView: true,
 	copyNewAnnotationLink: true,
+
+	bookTreeSortType: 0,
 };
 
 
@@ -368,7 +371,7 @@ export default class BookNotePlugin extends Plugin {
 		return cache?.frontmatter?.[propertyName];
 	}
 
-	private walk(root: string, arr: Array<any>) {
+	private walkByFolder(root: string, arr: Array<any>) {
 		const fs = (this.app as any).vault.adapter.fs;
 		const path = (this.app as any).vault.adapter.path;
 		const self = this;
@@ -379,7 +382,7 @@ export default class BookNotePlugin extends Plugin {
 			const stat = fs.statSync(path.join(self.settings.bookPath, filepath));
 			if (stat.isDirectory() && !filepath.startsWith(".")) {
 				arr.push({ name: filename, path: filepath, children: Array<any>() });
-				self.walk(filepath,arr.last().children);
+				self.walkByFolder(filepath,arr.last().children);
 			} else {
 				const ext = path.extname(filename).substr(1);
 				
@@ -399,11 +402,67 @@ export default class BookNotePlugin extends Plugin {
 		});
 
 	}
+	private insertTagNode(tagRoot: string,tags: Array<string>, tagMap: Map<string,Array<any>>,tree: Array<any>,i: number,obj:any) {
+		if (i === tags.length) {
+			tree.push(obj);
+		} else {
+			const nxt = tagRoot + tags[i];
+			let arr = tagMap.get(nxt);
+			if (!arr) {
+				arr = new Array<any>();
+				tagMap.set(nxt,arr);
+				tree.push({name:tags[i],children:arr});
+			}
+			this.insertTagNode(nxt+"/",tags,tagMap,arr,i+1,obj);
+		}
+	}
 
+	private walkByTag(tagMap: Map<string,Array<any>>,tree: Array<any>, root: string) {
+
+		const self = this;
+		const files = this.fs.readdirSync(this.path.join(this.settings.bookPath, root));
+		files.forEach(function (filename: string) {
+			const bookpath = self.path.join(root, filename);
+			const stat = self.fs.statSync(self.path.join(self.settings.bookPath, bookpath));
+			if (stat.isDirectory() && !bookpath.startsWith(".")) {
+				self.walkByTag(tagMap,tree, root+"/"+filename);
+			} else {
+				const ext = self.path.extname(filename).substr(1);
+				if (!filename.startsWith("~$") && !filename.startsWith(".") && SUPPORT_BOOK_TYPES.indexOf(ext) >= 0) { // window 下的临时文件
+					const datapath = self.normalizeBookDataPath(root+"/"+filename+".md")
+					const datafile = self.app.vault.getAbstractFileByPath(datapath) as TFile;
+					if (datafile && self.app.metadataCache.getFileCache(datafile).frontmatter["tags"]) {
+						
+						const bookobj = {name:filename,path:bookpath,ext:ext ? ext : "unknown"};
+
+						const tags = self.app.metadataCache.getFileCache(datafile).frontmatter["tags"].split(",");
+						for (var i = 0; i < tags.length; i++) {
+							const tag = tags[i];
+							if (tagMap.get(tag)) {
+								tagMap.get(tag).push(bookobj);
+							} else {
+								self.insertTagNode("",tag.split("/"),tagMap,tree,0,bookobj);
+							}
+						}	
+					} else {
+						tagMap.get("unknown").push({name:filename,path:bookpath,ext:ext ? ext : "unknown"});
+					}
+				}
+			}
+		});
+	}
 	updateBookTree() {
 		if (!this.isBookPathValid()) return;
 		this.bookTreeData.length = 0;
-		this.walk("",this.bookTreeData);
+
+		if (this.settings.bookTreeSortType === 0) {
+			this.walkByFolder("",this.bookTreeData);
+		} else {
+			const tagMap: Map<string,Array<any>> = new Map();
+			tagMap.set("unknown", new Array<any>());
+			this.bookTreeData.push({name:"unknown",children: tagMap.get("unknown")})
+			this.walkByTag(tagMap,this.bookTreeData,"");
+		}
 	}
 
 	isBookPathValid() {
