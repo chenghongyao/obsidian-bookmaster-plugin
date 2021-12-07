@@ -173,7 +173,7 @@ export class BookView extends ItemView {
 			}
 		}
 
-		template.replace("{{page}}",annoPage);
+		template = template.replace("{{page}}",annoPage);
 		template = template.replace("{{url}}",link);
 
 		// TODO: more comment!
