@@ -61,6 +61,7 @@ interface BookNoteSettings {
 	copyNewAnnotationLink: boolean,
 
 	bookTreeSortType: Number,
+	bookTreeSortAsc: boolean,
 }
 
 const DEFAULT_SETTINGS: BookNoteSettings = {
@@ -89,6 +90,7 @@ const DEFAULT_SETTINGS: BookNoteSettings = {
 	copyNewAnnotationLink: true,
 
 	bookTreeSortType: 0,
+	bookTreeSortAsc: true,
 };
 
 
@@ -373,36 +375,25 @@ export default class BookNotePlugin extends Plugin {
 		return cache?.frontmatter?.[propertyName];
 	}
 
-	private walkByFolder(root: string, arr: Array<any>) {
-		const fs = (this.app as any).vault.adapter.fs;
-		const path = (this.app as any).vault.adapter.path;
+	private walkByFolder(root: string, tree: Array<any>) {
+	
 		const self = this;
-		const files = fs.readdirSync(path.join(self.settings.bookPath, root));
-		const fi = Array<string>();
+		const files = self.fs.readdirSync(self.path.join(self.settings.bookPath, root));
 		files.forEach(function (filename: string) {
-			const filepath = path.join(root, filename);
-			const stat = fs.statSync(path.join(self.settings.bookPath, filepath));
+			const filepath = self.path.join(root, filename);
+			const stat = self.fs.statSync(self.path.join(self.settings.bookPath, filepath));
 			if (stat.isDirectory() && !filepath.startsWith(".")) {
-				arr.push({ name: filename, path: filepath, children: Array<any>() });
-				self.walkByFolder(filepath,arr.last().children);
+				const arr = new Array<any>();
+				tree.push({ name: filename, path: filepath, children:  arr});
+				self.walkByFolder(filepath,arr);
 			} else {
-				const ext = path.extname(filename).substr(1);
-				
+				const ext = self.path.extname(filename).substr(1);
 				if (!filename.startsWith("~$") && !filename.startsWith(".") && SUPPORT_BOOK_TYPES.indexOf(ext) >= 0) { // window 下的临时文件
-					fi.push(filename);
+					const bookobj = {name:filename,path:filepath,ext:ext ? ext : "unknown"};
+					tree.push(bookobj);
 				}
 			}
 		});
-
-		fi.forEach(function (filename: string) {
-			const ext = path.extname(filename).substr(1);
-			arr.push({
-				name: filename,
-				path: path.join(root, filename),
-				ext: ext ? ext : "unknown",
-			});
-		});
-
 	}
 	private insertTagNode(tagRoot: string,tags: Array<string>, tagMap: Map<string,Array<any>>,tree: Array<any>,i: number,obj:any) {
 		if (i === tags.length) {
@@ -433,13 +424,12 @@ export default class BookNotePlugin extends Plugin {
 				if (!filename.startsWith("~$") && !filename.startsWith(".") && SUPPORT_BOOK_TYPES.indexOf(ext) >= 0) { // window 下的临时文件
 					const datapath = self.normalizeBookDataPath(root+"/"+filename+".md")
 					const datafile = self.app.vault.getAbstractFileByPath(datapath) as TFile;
-					if (datafile && self.app.metadataCache.getFileCache(datafile).frontmatter["tags"]) {
-						
-						const bookobj = {name:filename,path:bookpath,ext:ext ? ext : "unknown"};
+					const bookobj = {name:filename,path:bookpath,ext:ext ? ext : "unknown"};
 
+					if (datafile && self.app.metadataCache.getFileCache(datafile).frontmatter["tags"]) {
 						const tags = self.app.metadataCache.getFileCache(datafile).frontmatter["tags"].split(",");
 						for (var i = 0; i < tags.length; i++) {
-							const tag = tags[i];
+							const tag = tags[i].trim();
 							if (tagMap.get(tag)) {
 								tagMap.get(tag).push(bookobj);
 							} else {
@@ -447,24 +437,130 @@ export default class BookNotePlugin extends Plugin {
 							}
 						}	
 					} else {
-						tagMap.get("unknown").push({name:filename,path:bookpath,ext:ext ? ext : "unknown"});
+						tagMap.get("unknown").push(bookobj);
 					}
 				}
 			}
 		});
 	}
+	private walkByAuthor(map: Map<string,Array<any>>,tree: Array<any>, root: string) {
+
+		const self = this;
+		const files = this.fs.readdirSync(this.path.join(this.settings.bookPath, root));
+		files.forEach(function (filename: string) {
+			const bookpath = self.path.join(root, filename);
+			const stat = self.fs.statSync(self.path.join(self.settings.bookPath, bookpath));
+			if (stat.isDirectory() && !bookpath.startsWith(".")) {
+				self.walkByAuthor(map,tree, root+"/"+filename);
+			} else {
+				const ext = self.path.extname(filename).substr(1);
+				if (!filename.startsWith("~$") && !filename.startsWith(".") && SUPPORT_BOOK_TYPES.indexOf(ext) >= 0) { // window 下的临时文件
+					const datapath = self.normalizeBookDataPath(root+"/"+filename+".md")
+					const datafile = self.app.vault.getAbstractFileByPath(datapath) as TFile;
+					const bookobj = {name:filename,path:bookpath,ext:ext ? ext : "unknown"};
+					if (datafile && self.app.metadataCache.getFileCache(datafile).frontmatter["author"]) {
+						
+						const authors = self.app.metadataCache.getFileCache(datafile).frontmatter["author"].split(",");
+						for (var i = 0; i < authors.length; i++) {
+							const author = authors[i].trim();
+							if (!map.get(author)) {
+								const arr = new Array<any>();
+								tree.push({name: author, children: arr })
+								map.set(author, arr);
+							} 
+
+							map.get(author).push(bookobj);
+						}	
+					} else {
+						map.get("unknown").push(bookobj);
+					}
+				}
+			}
+		});
+	}
+
+	private walkByPublishDate(map: Map<string,Array<any>>,tree: Array<any>, root: string) {
+
+		const self = this;
+		const files = this.fs.readdirSync(this.path.join(this.settings.bookPath, root));
+		files.forEach(function (filename: string) {
+			const bookpath = self.path.join(root, filename);
+			const stat = self.fs.statSync(self.path.join(self.settings.bookPath, bookpath));
+			if (stat.isDirectory() && !bookpath.startsWith(".")) {
+				self.walkByPublishDate(map,tree, root+"/"+filename);
+			} else {
+				const ext = self.path.extname(filename).substr(1);
+				if (!filename.startsWith("~$") && !filename.startsWith(".") && SUPPORT_BOOK_TYPES.indexOf(ext) >= 0) { // window 下的临时文件
+					const datapath = self.normalizeBookDataPath(root+"/"+filename+".md")
+					const datafile = self.app.vault.getAbstractFileByPath(datapath) as TFile;
+					const bookobj = {name:filename,path:bookpath,ext:ext ? ext : "unknown"};
+					if (datafile && self.app.metadataCache.getFileCache(datafile).frontmatter["publish date"]) {
+						// TODO: more robust??
+						const dates = self.app.metadataCache.getFileCache(datafile).frontmatter["publish date"].split("/");
+						const year = dates[0].trim();
+						if (!map.get(year)) {
+							const arr = new Array<any>();
+							tree.push({name: year, children: arr })
+							map.set(year, arr);
+						} 
+						map.get(year).push(bookobj);
+					} else {
+						map.get("unknown").push(bookobj);
+					}
+				}
+			}
+		});
+	}
+
+	private sortBookTree(tree: Array<any>) {
+
+		tree.sort((a:any,b:any)=> {
+			if (Boolean(a.children) !== Boolean(b.children)) {
+				if (a.children) return -1;
+				else return 1;
+			} else {
+				if (a.children && a.name === "unknown") {
+					return 1;
+				} else if (b.children && b.name === "unknown") {
+					return -1;
+				}
+				else if (this.settings.bookTreeSortAsc)
+					return a.name > b.name ? 1 : -1;
+				else
+					return a.name < b.name ? 1 : -1;
+			}
+		})
+
+		for(var i = 0; i < tree.length; i++) {
+			if (tree[i].children) {
+				this.sortBookTree(tree[i].children);
+			}
+		}
+	}
+
 	updateBookTree() {
 		if (!this.isBookPathValid()) return;
 		this.bookTreeData.length = 0;
 
 		if (this.settings.bookTreeSortType === 0) {
 			this.walkByFolder("",this.bookTreeData);
+		} else if (this.settings.bookTreeSortType === 1) {
+			const map: Map<string,Array<any>> = new Map();
+			map.set("unknown", new Array<any>());
+			this.bookTreeData.push({name:"unknown",children: map.get("unknown")})
+			this.walkByTag(map,this.bookTreeData,"");
+		} else if (this.settings.bookTreeSortType == 2) {
+			const map: Map<string,Array<any>> = new Map();
+			map.set("unknown", new Array<any>());
+			this.bookTreeData.push({name:"unknown",children: map.get("unknown")})
+			this.walkByAuthor(map,this.bookTreeData,"");
 		} else {
-			const tagMap: Map<string,Array<any>> = new Map();
-			tagMap.set("unknown", new Array<any>());
-			this.bookTreeData.push({name:"unknown",children: tagMap.get("unknown")})
-			this.walkByTag(tagMap,this.bookTreeData,"");
+			const map: Map<string,Array<any>> = new Map();
+			map.set("unknown", new Array<any>());
+			this.bookTreeData.push({name:"unknown",children: map.get("unknown")})
+			this.walkByPublishDate(map,this.bookTreeData,"");
 		}
+		this.sortBookTree(this.bookTreeData);
 	}
 
 	isBookPathValid() {

@@ -35,20 +35,35 @@ export class BookExplorerView extends ItemView {
 	openSortContextMenu(evt: MouseEvent) {
 		const menu = new Menu(this.app);
 		const self = this;
-		menu.addItem((item) => 
-		item
-			.setTitle("升序")
-			.setIcon("up-arrow-with-tail")
-			.onClick(()=> {
-				console.log("升序");
-			}));
-		menu.addItem((item) => 
+		menu.addItem((item) => {
 			item
-				.setTitle("降序")
-				.setIcon("up-arrow-with-tail")
-				.onClick(()=> {
-					console.log("降序");
-				}));
+			.setTitle("升序")
+			.onClick(async ()=> {
+				if (!self.plugin.settings.bookTreeSortAsc) {
+					self.plugin.settings.bookTreeSortAsc = true;
+					await self.plugin.saveSettings(); 
+					self.plugin.updateBookTree();
+				}
+			});
+			if (self.plugin.settings.bookTreeSortAsc) {
+				item.setIcon("checkmark");
+			}
+		});
+
+		menu.addItem((item) => {
+			item
+			.setTitle("降序")
+			.onClick(async ()=> {
+				if (self.plugin.settings.bookTreeSortAsc) {
+					self.plugin.settings.bookTreeSortAsc = false;
+					await self.plugin.saveSettings(); 
+					self.plugin.updateBookTree();
+				}
+			});
+			if (!self.plugin.settings.bookTreeSortAsc) {
+				item.setIcon("checkmark");
+			}
+		});
 		menu.addSeparator();
 
 		menu.addItem((item) => {
@@ -66,20 +81,6 @@ export class BookExplorerView extends ItemView {
 				item.setIcon("checkmark");
 
 		});
-
-		menu.addItem((item) => 
-			item
-				.setTitle("按作者")
-				.onClick(()=> {
-					console.log("按作者");
-				}));	
-		menu.addItem((item) => 
-			item
-				.setTitle("按发表年份")
-				.onClick(()=> {
-					console.log("按发表年份");
-				}));
-
 		menu.addItem((item) => {
 			item
 			.setTitle("按标签")
@@ -96,6 +97,40 @@ export class BookExplorerView extends ItemView {
 			
 			
 		});	
+		menu.addItem((item) => {
+			item
+			.setTitle("按作者")
+			.onClick(async ()=> {
+				if (self.plugin.settings.bookTreeSortType !== 2) {
+					self.plugin.settings.bookTreeSortType = 2;
+					await self.plugin.saveSettings();
+					self.plugin.updateBookTree();
+				}
+			});
+
+			if (self.plugin.settings.bookTreeSortType === 2)
+				item.setIcon("checkmark");
+
+		});
+
+		menu.addItem((item) => {
+			item
+			.setTitle("按发表年份")
+			.onClick(async ()=> {
+				if (self.plugin.settings.bookTreeSortType !== 3) {
+					self.plugin.settings.bookTreeSortType = 3;
+					await self.plugin.saveSettings();
+					self.plugin.updateBookTree();
+				}
+			});
+
+			if (self.plugin.settings.bookTreeSortType === 3)
+				item.setIcon("checkmark");
+
+		});
+	
+
+		
 						
 		menu.showAtMouseEvent(evt);
 	}
