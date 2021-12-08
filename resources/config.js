@@ -17,6 +17,10 @@ if (!window.wvWindowMessageListener) {
     },
     showBookPage: function(data) {
       instance.Core.documentViewer.setCurrentPage(data);
+    },
+    copyCurrentPageLink: function(data) {
+      const page = instance.Core.documentViewer.getCurrentPage();
+      window.postObsidianBookNoteMessage("copyCurrentPageLink",page);
     }
   }
 

@@ -66,6 +66,14 @@ export class BookView extends ItemView {
 					new Notice("标注id不存在");
 				}
 			},
+			copyCurrentPageLink(data: any) {
+				const link = encodeURI(`obsidian://booknote?type=open-book&book=${self.currentBook}&page=${data}`);
+				let template = self.plugin.settings.currentPageLinkTemplage;
+				template = template.replace("{{page}}",data);
+				template = template.replace("{{url}}",link);
+				navigator.clipboard.writeText(template);
+				new Notice("回链已复制");
+			},
 
 			annotationChanged(data: any) {
 
@@ -198,6 +206,10 @@ export class BookView extends ItemView {
 
 	showBookPage(page: Number) {
 		this.postViewerWindowMessage("showBookPage", page);
+	}
+	
+	sendCopyCurrentPageLinkRequest() {
+		this.postViewerWindowMessage("copyCurrentPageLink");
 	}
 
 	getDisplayText() {
@@ -340,6 +352,7 @@ export class BookView extends ItemView {
 			}),
 			preloadWorker: "pdf",
 		},this.contentEl).then(instance => {
+			
 		});
 
 		this.listener = function(event: any) {
@@ -394,6 +407,16 @@ export class BookView extends ItemView {
 		this.viewerReady = false; 
 	}
 
+
+	onMoreOptionsMenu(menu: Menu) {
+		const self = this;
+		menu.addItem((item) => {
+			item.setTitle("复制当前页回链")
+				.onClick((evt) => {
+					self.sendCopyCurrentPageLinkRequest();
+				})
+		})
+	}
 	onunload() {
 		console.log("BookView unload");
 		if (this.currentBook) {

@@ -51,6 +51,7 @@ interface BookNoteSettings {
 
 	selectionAnnotationLinkTemplate: string, // highlight,underline ,strikeout,squiggly,freetext 
 	regionAnnotationLinkTemplate: string, // 
+	currentPageLinkTemplage: string,
 
 	fixedAnnotImageZoom: boolean,
 	fixedAnnotImageZoomValue: string,
@@ -77,6 +78,7 @@ const DEFAULT_SETTINGS: BookNoteSettings = {
 
 	selectionAnnotationLinkTemplate: "[{{content}}]({{url}})",
 	regionAnnotationLinkTemplate: "![[{{img}}#center|{{width}}]]",
+	currentPageLinkTemplage: "[**P{{page}}**]({{url}})",
 
 	fixedAnnotImageZoom: true,
 	fixedAnnotImageZoomValue: "2",
@@ -829,6 +831,15 @@ class SampleSettingTab extends PluginSettingTab {
 				})
 			});
 
+		new Setting(containerEl)
+			.setName("当前页回链模板")
+			.setDesc("可用命令包括page,url")
+			.addTextArea((text) => {
+				text.setValue(this.plugin.settings.currentPageLinkTemplage).onChange(async (value) => {
+					this.plugin.settings.currentPageLinkTemplage = value;
+					await this.plugin.saveSettings();
+				})
+			});
 		
 		new Setting(containerEl)
 			.setName("摘录截图使用固定比例")
