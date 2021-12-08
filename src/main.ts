@@ -122,7 +122,7 @@ export default class BookNotePlugin extends Plugin {
 		this.autoInsertAnnotationLink = false;
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new SampleSettingTab(this.app, this));
+		this.addSettingTab(new BookNoteSettingTab(this.app, this));
 
 		// this.addRibbonIcon("dice", "opp", (evt) => {
 		// 	new Notice((this.app.vault.adapter as any).getBasePath());
@@ -137,6 +137,29 @@ export default class BookNotePlugin extends Plugin {
 			callback: () => {
 				this.reactivateView(VIEW_TYPE_BOOK_EXPLORER_VIEW,'left');
 			},
+		});
+
+		this.addCommand({
+			id: 'open-book-of-project',
+			name: '打开当前工程的第一本书',
+			checkCallback: (checking: boolean) => {
+				// Conditions to check
+				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
+				if (markdownView
+					&& markdownView.file 
+					&& this.getPropertyValue(markdownView.file,"booknote-plugin") === true 
+					&& this.getPropertyValue(markdownView.file,"booknote-books")
+					&& this.getPropertyValue(markdownView.file,"booknote-books")[0]) {
+						// If checking is true, we're simply "checking" if the command can be run.
+						// If checking is false, then we want to actually perform the operation.
+						if (!checking) {
+							self.openBookInBookView(this.getPropertyValue(markdownView.file,"booknote-books")[0], true);
+						}
+
+						// This command will only show up in Command Palette when the check function returns true
+						return true;
+					}
+				}
 		});
 
 
@@ -798,7 +821,7 @@ export default class BookNotePlugin extends Plugin {
 
 }
 
-class SampleSettingTab extends PluginSettingTab {
+class BookNoteSettingTab extends PluginSettingTab {
 	plugin: BookNotePlugin;
 
 	constructor(app: App, plugin: BookNotePlugin) {
