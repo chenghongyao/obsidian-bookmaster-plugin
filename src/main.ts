@@ -32,6 +32,7 @@ import {
 	VIEW_TYPE_BOOK_VIEW
 } from "./BookView";
 
+import SearchBookModal from "./SearchBookModal";
 import {SUPPORT_BOOK_TYPES} from "./constants"
 
 import staticServer, { StaticServer } from './static-server'
@@ -122,7 +123,7 @@ export default class BookNotePlugin extends Plugin {
 		this.autoInsertAnnotationLink = false;
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new SampleSettingTab(this.app, this));
+		this.addSettingTab(new BookNoteSettingTab(this.app, this));
 
 		// this.addRibbonIcon("dice", "opp", (evt) => {
 		// 	new Notice((this.app.vault.adapter as any).getBasePath());
@@ -145,6 +146,14 @@ export default class BookNotePlugin extends Plugin {
 			name: "Open Advance Book Explorer",
 			callback: () => {
 				this.reactivateView(VIEW_TYPE_ADVANCE_BOOK_EXPLORER_VIEW,'center',true);
+			},
+		});
+
+		this.addCommand({
+			id: "search-book",
+			name: "Search Book",
+			callback: () => {
+				new SearchBookModal(this.app,this).open();
 			},
 		});
 
@@ -388,7 +397,7 @@ export default class BookNotePlugin extends Plugin {
 				self.walkByFolder(filepath,arr);
 			} else {
 				const ext = self.path.extname(filename).substr(1);
-				if (!filename.startsWith("~$") && !filename.startsWith(".") && SUPPORT_BOOK_TYPES.indexOf(ext) >= 0) { // window 下的临时文件
+				if (self.isBookSupported(filename, ext)) { // window 下的临时文件
 					const bookobj = {name:filename,path:filepath,ext:ext ? ext : "unknown"};
 					tree.push(bookobj);
 				}
@@ -421,7 +430,7 @@ export default class BookNotePlugin extends Plugin {
 				self.walkByTag(tagMap,tree, root+"/"+filename);
 			} else {
 				const ext = self.path.extname(filename).substr(1);
-				if (!filename.startsWith("~$") && !filename.startsWith(".") && SUPPORT_BOOK_TYPES.indexOf(ext) >= 0) { // window 下的临时文件
+				if (self.isBookSupported(filename,ext)) { // window 下的临时文件
 					const datapath = self.normalizeBookDataPath(root+"/"+filename+".md")
 					const datafile = self.app.vault.getAbstractFileByPath(datapath) as TFile;
 					const bookobj = {name:filename,path:bookpath,ext:ext ? ext : "unknown"};
@@ -454,7 +463,7 @@ export default class BookNotePlugin extends Plugin {
 				self.walkByAuthor(map,tree, root+"/"+filename);
 			} else {
 				const ext = self.path.extname(filename).substr(1);
-				if (!filename.startsWith("~$") && !filename.startsWith(".") && SUPPORT_BOOK_TYPES.indexOf(ext) >= 0) { // window 下的临时文件
+				if (self.isBookSupported(filename,ext)) { // window 下的临时文件
 					const datapath = self.normalizeBookDataPath(root+"/"+filename+".md")
 					const datafile = self.app.vault.getAbstractFileByPath(datapath) as TFile;
 					const bookobj = {name:filename,path:bookpath,ext:ext ? ext : "unknown"};
@@ -490,7 +499,7 @@ export default class BookNotePlugin extends Plugin {
 				self.walkByPublishDate(map,tree, root+"/"+filename);
 			} else {
 				const ext = self.path.extname(filename).substr(1);
-				if (!filename.startsWith("~$") && !filename.startsWith(".") && SUPPORT_BOOK_TYPES.indexOf(ext) >= 0) { // window 下的临时文件
+				if (self.isBookSupported(filename,ext)) { // window 下的临时文件
 					const datapath = self.normalizeBookDataPath(root+"/"+filename+".md")
 					const datafile = self.app.vault.getAbstractFileByPath(datapath) as TFile;
 					const bookobj = {name:filename,path:bookpath,ext:ext ? ext : "unknown"};
@@ -569,6 +578,10 @@ export default class BookNotePlugin extends Plugin {
 			this.fs.existsSync(this.settings.bookPath) &&
 			this.fs.statSync(this.settings.bookPath).isDirectory()
 		);
+	}
+
+	isBookSupported(bookname:string, ext: string) {
+		return !bookname.startsWith("~$") && !bookname.startsWith(".") && SUPPORT_BOOK_TYPES.indexOf(ext) >= 0;
 	}
 
 
@@ -798,7 +811,7 @@ export default class BookNotePlugin extends Plugin {
 
 }
 
-class SampleSettingTab extends PluginSettingTab {
+class BookNoteSettingTab extends PluginSettingTab {
 	plugin: BookNotePlugin;
 
 	constructor(app: App, plugin: BookNotePlugin) {

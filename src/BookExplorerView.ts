@@ -4,7 +4,7 @@ import BookNotePlugin from "./main";
 import NavHeader from "./NavHeader";
 import obtree from "./view/obtree.vue"
 
-
+import SearchBookModal from "./SearchBookModal";
 
 
 
@@ -213,7 +213,7 @@ export class BookExplorerView extends ItemView {
 			// console.log(evt);
 		})
 		this.navHeader.addAction("search","搜索",(evt) => {
-			new Notice("未实现");
+			new SearchBookModal(this.app, this.plugin).open();
 		})
 
 

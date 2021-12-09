@@ -415,7 +415,29 @@ export class BookView extends ItemView {
 				.onClick((evt) => {
 					self.sendCopyCurrentPageLinkRequest();
 				})
-		})
+		});
+
+		menu.addSeparator();
+		menu.addItem((item) => {
+			item.setTitle("关闭其他")
+				.onClick((evt) => {
+					self.plugin.bookViewMap.forEach((view, key) => {
+						if (view == self)return;
+						view.leaf.detach();
+						self.plugin.bookViewMap.delete(key);
+					});
+				})
+		});
+
+		menu.addItem((item) => {
+			item.setTitle("关闭全部")
+				.onClick((evt) => {
+					self.plugin.bookViewMap.forEach((view, key) => {
+						view.leaf.detach();
+						self.plugin.bookViewMap.delete(key);
+					});
+				});
+		});
 	}
 	onunload() {
 		console.log("BookView unload");
