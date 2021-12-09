@@ -155,6 +155,29 @@ export default class BookNotePlugin extends Plugin {
 			},
 		});
 
+		this.addCommand({
+			id: 'open-book-of-project',
+			name: '打开当前工程的第一本书',
+			checkCallback: (checking: boolean) => {
+				// Conditions to check
+				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
+				if (markdownView
+					&& markdownView.file 
+					&& this.getPropertyValue(markdownView.file,"booknote-plugin") === true 
+					&& this.getPropertyValue(markdownView.file,"booknote-books")
+					&& this.getPropertyValue(markdownView.file,"booknote-books")[0]) {
+						// If checking is true, we're simply "checking" if the command can be run.
+						// If checking is false, then we want to actually perform the operation.
+						if (!checking) {
+							self.openBookInBookView(this.getPropertyValue(markdownView.file,"booknote-books")[0], true);
+						}
+
+						// This command will only show up in Command Palette when the check function returns true
+						return true;
+					}
+				}
+		});
+
 
 		this.addCommand({
 			id: "open-advance-book-explorer",
