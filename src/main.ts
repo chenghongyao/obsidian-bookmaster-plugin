@@ -131,6 +131,9 @@ export default class BookNotePlugin extends Plugin {
 		this.fs = (this.app.vault.adapter as any).fs;
 
 		await this.loadSettings();
+
+		this.app.workspace.detachLeavesOfType(VIEW_TYPE_BOOK_PROJECT_VIEW);
+		this.app.workspace.detachLeavesOfType(VIEW_TYPE_BOOK_VIEW);
 	
 		this.autoInsertAnnotationLink = false;
 
