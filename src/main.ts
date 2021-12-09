@@ -37,6 +37,22 @@ import {SUPPORT_BOOK_TYPES} from "./constants"
 
 import staticServer, { StaticServer } from './static-server'
 
+
+interface BookAttribute {
+	title: string;
+	alias: string|null;
+}
+
+interface AbstractBook {
+	name: string;
+	path: string;
+	attrs?: BookAttribute;
+	children?: Array<AbstractBook>;
+}
+
+
+
+
 interface BookNoteSettings {
 	bookPath: string;
 	bookSettingPath: string;
@@ -44,7 +60,6 @@ interface BookNoteSettings {
 	useLocalWebViewerServer: boolean,
 	webviewerRootPath: string,
 	webviewerLocalPort: string,
-
 	webviewerExternalServerAddress: string;
 
 	openAllBookBySystem: boolean,
@@ -105,12 +120,9 @@ export default class BookNotePlugin extends Plugin {
 	bookTreeData: Array<any> = new Array();
 	currentBookProjectFile: TFile;
 	currentBookProjectBooks: Array<any> = new Array();
-
 	localWebViewerServer: StaticServer;
-
 	autoInsertAnnotationLink: boolean;
 
-	// bookViews: Set<BookView> = new Set(); // TODO: remove this ,use map?
 	bookViewMap: Map<string,BookView> = new Map();
 
 	async onload() {
