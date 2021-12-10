@@ -13,6 +13,7 @@ export class BookExplorerView extends ItemView {
 	plugin: BookNotePlugin;
 	navHeader: NavHeader;
 	descriptionContainer: HTMLDivElement;
+	obtree: any;
 
 	constructor(leaf: WorkspaceLeaf, plugin: BookNotePlugin) {
 		super(leaf);
@@ -41,7 +42,7 @@ export class BookExplorerView extends ItemView {
 				if (!self.plugin.settings.bookTreeSortAsc) {
 					self.plugin.settings.bookTreeSortAsc = true;
 					await self.plugin.saveSettings(); 
-					self.plugin.updateBookTree();
+					self.plugin.updateBookDispTree();
 				}
 			});
 			if (self.plugin.settings.bookTreeSortAsc) {
@@ -56,7 +57,7 @@ export class BookExplorerView extends ItemView {
 				if (self.plugin.settings.bookTreeSortAsc) {
 					self.plugin.settings.bookTreeSortAsc = false;
 					await self.plugin.saveSettings(); 
-					self.plugin.updateBookTree();
+					self.plugin.updateBookDispTree();
 				}
 			});
 			if (!self.plugin.settings.bookTreeSortAsc) {
@@ -72,7 +73,7 @@ export class BookExplorerView extends ItemView {
 				if (self.plugin.settings.bookTreeSortType !== 0) {
 					self.plugin.settings.bookTreeSortType = 0;
 					await self.plugin.saveSettings();
-					self.plugin.updateBookTree();
+					self.plugin.updateBookDispTree();
 				}
 			});
 
@@ -87,7 +88,7 @@ export class BookExplorerView extends ItemView {
 				if (self.plugin.settings.bookTreeSortType !== 1) {
 					self.plugin.settings.bookTreeSortType = 1;
 					await self.plugin.saveSettings();
-					self.plugin.updateBookTree();
+					self.plugin.updateBookDispTree();
 				}
 			});
 
@@ -103,7 +104,7 @@ export class BookExplorerView extends ItemView {
 				if (self.plugin.settings.bookTreeSortType !== 2) {
 					self.plugin.settings.bookTreeSortType = 2;
 					await self.plugin.saveSettings();
-					self.plugin.updateBookTree();
+					self.plugin.updateBookDispTree();
 				}
 			});
 
@@ -119,7 +120,7 @@ export class BookExplorerView extends ItemView {
 				if (self.plugin.settings.bookTreeSortType !== 3) {
 					self.plugin.settings.bookTreeSortType = 3;
 					await self.plugin.saveSettings();
-					self.plugin.updateBookTree();
+					self.plugin.updateBookDispTree();
 				}
 			});
 
@@ -128,9 +129,7 @@ export class BookExplorerView extends ItemView {
 
 		});
 	
-
-		
-						
+	
 		menu.showAtMouseEvent(evt);
 	}
 
@@ -192,24 +191,19 @@ export class BookExplorerView extends ItemView {
 
 		console.log("BookExplorerView Open");
 
-		this.plugin.updateBookDispTree();
 		const self = this;
 		// this.containerEl.children[0].empty();
 		this.contentEl.empty();
 		this.navHeader = new NavHeader(this,this.contentEl);
 		this.navHeader.addAction("reset","更新",(evt) => {
 			if (!this.plugin.isCurrentBooksPathValid()) {
-				// TODO 书籍路径错误
 				new Notice("书籍路径解析错误,请检查设置后重新打开");
 			} else {
 				self.plugin.updateBookDispTree();
 			}
 		})
 		this.navHeader.addAction("stacked-levels","排序方式与顺序",(evt) => {
-			// new Notice("未实现");
 			this.openSortContextMenu(evt);
-
-			// console.log(evt);
 		})
 		this.navHeader.addAction("search","搜索",(evt) => {
 			// new SearchBookModal(this.app, this.plugin).open();
@@ -220,37 +214,41 @@ export class BookExplorerView extends ItemView {
 			const ele = this.contentEl.createDiv();
 			ele.textContent = "无效书籍路径，请检查设置";
 		} else {
+			this.plugin.updateBookDispTree();
 			const title = this.plugin.path.basename(this.plugin.settings.bookPath);
 			const el = this.contentEl.createDiv()
-			new Vue({
+			const vueApp = new Vue({
 				el: el,
 				render: h => h('obtree', {
 					attrs: {
 						title: title,
 						data: this.plugin.bookDispTree,
-						style: "overflow: auto"
+						// style: "overflow: auto"
 					},
 					on: {
 						'select-file': function (item: any, ctrlKey: boolean) {
 							// const description = self.plugin.getBookAttrs(item.path)?.["description"];
 							// self.descriptionContainer.setText(description ? description : '');
 							if (ctrlKey) {
-								self.plugin.openBookInBookView(item.path, true);
+								self.plugin.openBookInBookView(item, true);
 							}
 				
 						},
 						'open-file': function (item: any) {
-							self.plugin.openBookInBookView(item.path,false);
+							self.plugin.openBookInBookView(item,false);
 						},
 						'context-menu': function(evt: MouseEvent, item: any) {
 							self.openContextMenu(evt,item);
 						}
-					}
+					},
+					ref: "obtree",
 				}),
 				components: {
 					obtree,
 				}
 			});
+			this.obtree = vueApp.$refs["obtree"];
+			console.log(this.obtree);
 
 
 			this.descriptionContainer = this.containerEl.createDiv({cls:"book-description-container"});

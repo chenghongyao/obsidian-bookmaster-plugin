@@ -25,7 +25,7 @@ export default {
 	data() {
 		return {
 			activatedFile:null,
-			treeData: this.data, // TODO:??
+			treeData: this.data, // TODO:可以保证data更新时，视图同步更新
 		}
 	},
 	props: {

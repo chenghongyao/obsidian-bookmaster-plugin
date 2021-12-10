@@ -149,7 +149,7 @@ export default class BookNotePlugin extends Plugin {
 		// 	// this.reactivateView(VIEW_TYPE_BOOK_VIEW,"center",true);
 		// });
 
-		this.addRibbonIcon("bold-glyph","书库",async () => {
+		this.addRibbonIcon("bold-glyph","书库", () => {
 			this.reactivateView(VIEW_TYPE_BOOK_EXPLORER_VIEW,'left');
 		});
 
@@ -631,6 +631,10 @@ export default class BookNotePlugin extends Plugin {
 		return !bookname.startsWith("~$") && !bookname.startsWith(".") && SUPPORT_BOOK_TYPES.indexOf(ext) >= 0;
 	}
 
+	getCurrentBooksPath() {
+		return this.getBooksDataPathOfVault(this.settings.currentBookVault);
+	}
+
 	isCurrentBooksPathValid() {
 		const temp = this.getCurrentBooksPath();
 		return (
@@ -648,85 +652,129 @@ export default class BookNotePlugin extends Plugin {
 			return this.settings.bookPath;
 		}
 	}
-
-	getCurrentBooksPath() {
-		if (this.settings.currentBookVault == "default") {
-			return this.settings.bookPath;
+	getBooksDataPathOfVault(vault: string) {
+		if (vault === "default") {
+			return this.settings.bookSettingPath+"/books-data";
 		} else {
-			new Notice("unsupported");
-			return this.settings.bookPath;
-		}
-	}
-
-	normalizeBooksPathOfCurrentVault(bookpath: string) {
-		return this.path.join(this.getCurrentBooksPath(),bookpath);
-	}
-
-	normalizeBooksDataPathOfCurrentVault(path: string) {
-		if (this.settings.currentBookVault === "default") {
-			return normalizePath(this.settings.bookSettingPath+"/books-data/"+path);
-		} else {
-			return normalizePath(this.settings.bookSettingPath+"/extra-books-data/"+this.settings.currentBookVault+"/"+path);
+			new Notice("not supported");
+			return this.settings.bookSettingPath+"/books-data";
 		}
 	}
 
 
-	async walkByFolderOfCurrentVault(root: string, tree: Array<AbstractBook>) {
+	normalizeBooksPathOfVault(vault: string, bookpath: string) {
+		return this.path.join(this.getBooksPathOfVault(vault),bookpath);
+	}
 
-		(this.app.vault.adapter as any).fsPromises.readdir(this.normalizeBooksPathOfCurrentVault(root)).then((files: Array<string>) => {
-			files.forEach((name) => {
+	normalizeBooksDataPathOfVault(vault: string, path: string) {
+		return normalizePath(this.getBooksDataPathOfVault(vault)+"/"+path);
+	}
 
-				const bookpath = root ? root+"/"+name : name;
-				const absBookPath = this.normalizeBooksPathOfCurrentVault(bookpath); 
-				(this.app.vault.adapter as any).fsPromises.stat(absBookPath).then((stat: any) => {
-					if (stat.isDirectory()) {
-						if (name.startsWith(".")) return;
-						const arr = new Array<AbstractBook>();
-						tree.push({
-							name:name,
-							path:bookpath,
-							vault:this.settings.currentBookVault,
-							children: arr,
-						});
+	walkByFolderOfVault(vault: string, root: string, tree: Array<AbstractBook>) {
 
-						return this.walkByFolderOfCurrentVault(bookpath,arr);
-					} else {
-						const ext = this.path.extname(name).substr(1);
-						if(!this.isBookSupported(name,ext))return;
-						const datapath = this.normalizeBooksDataPathOfCurrentVault(bookpath+".md");
-						const datafile = this.app.vault.getAbstractFileByPath(datapath) as TFile;
-						const attrs = datafile ? this.app.metadataCache.getFileCache(datafile).frontmatter : null;
-						tree.push({
-							name:name,
-							path:bookpath,
-							vault: this.settings.currentBookVault,
-							ext:ext,
-							attrs: attrs,
-						});
-					}
-				})
-			});
+		const files = this.fs.readdirSync(this.normalizeBooksPathOfVault(vault,root));
+		files.forEach((name: string) => {
+			const bookpath = root ? root+"/"+name : name;
+			const absBookPath = this.normalizeBooksPathOfVault(vault, bookpath); 
+			const stat = this.fs.statSync(this.normalizeBooksPathOfVault(vault,bookpath));
+
+			if (stat.isDirectory()) {
+				if (name.startsWith(".")) return;
+				const arr = new Array<AbstractBook>();
+				tree.push({
+					name:name,
+					path:bookpath,
+					vault:this.settings.currentBookVault,
+					children: arr,
+				});
+				this.walkByFolderOfVault(vault, bookpath,arr);
+			} else {
+				const ext = this.path.extname(name).substr(1);
+				if(!this.isBookSupported(name,ext))return;
+				const datapath = this.normalizeBooksDataPathOfVault(vault,bookpath+".md");
+				const datafile = this.app.vault.getAbstractFileByPath(datapath) as TFile;
+				const attrs = datafile ? this.app.metadataCache.getFileCache(datafile).frontmatter : null;
+				tree.push({
+					name:name,
+					path:bookpath,
+					vault: this.settings.currentBookVault,
+					ext:ext,
+					attrs: attrs,
+				});
+
+			}
 		});
+		return tree;
 	}
 
+	walkTreeByTag(map: Map<string,Array<AbstractBook>>, tree: Array<AbstractBook>, root: string) {
 
+		tree.forEach((book) => {
+			if (book.children) {
+				this.walkTreeByTag(map,
+			}
+		});
 
+		if (stat.isDirectory() && !bookpath.startsWith(".")) {
+			self.walkByTag(tagMap,tree, root+"/"+filename);
+		} else {
+			const ext = self.path.extname(filename).substr(1);
+			if (self.isBookSupported(filename,ext)) { // window 下的临时文件
+				const datapath = self.normalizeBookDataPath(root+"/"+filename+".md")
+				const datafile = self.app.vault.getAbstractFileByPath(datapath) as TFile;
+				const bookobj = {name:filename,path:bookpath,ext:ext ? ext : "unknown"};
 
+				if (datafile && self.app.metadataCache.getFileCache(datafile).frontmatter["tags"]) {
+					const tags = self.app.metadataCache.getFileCache(datafile).frontmatter["tags"].split(",");
+					for (var i = 0; i < tags.length; i++) {
+						const tag = tags[i].trim();
+						if (tagMap.get(tag)) {
+							tagMap.get(tag).push(bookobj);
+						} else {
+							self.insertTagNode("",tag.split("/"),tagMap,tree,0,bookobj);
+						}
+					}	
+				} else {
+					tagMap.get("unknown").push(bookobj);
+				}
+			}
+		}
+	}
 
-	
-	async updateBookDispTree() {
+	// TODO: async??
+	updateBookDispTree() {
 		if (!this.isCurrentBooksPathValid()) return;
+		console.log("update");
+		const vault = this.settings.currentBookVault;
 		this.bookRawTree.length = 0;
-		await this.walkByFolderOfCurrentVault("",this.bookRawTree).then(() => {
-			this.bookDispTree.length = 0;
-			console.log("finish");
-
-			this.bookRawTree.forEach((book) =>{
-				this.bookDispTree.push(book);
+		this.walkByFolderOfVault(vault,"",this.bookRawTree);
+		
+		this.bookDispTree.length = 0;
+		if (this.settings.bookTreeSortType === 0) {
+			this.bookDispTree = this.bookRawTree;
+		} else if (this.settings.bookTreeSortType === 1) {
+			const map: Map<string,Array<AbstractBook>> = new Map();
+			map.set("unknown", new Array<any>());
+			this.bookDispTree.push({
+				vault: vault,
+				name:"unknown",
+				path:"unknown",
+				children: map.get("unknown")
 			});
-			console.log(this.bookDispTree);
-			this.sortBookDispTree(this.bookDispTree);
-		});
+			this.walkTreeByTag(map,this.bookDispTree,"");
+		} else if (this.settings.bookTreeSortType == 2) {
+			const map: Map<string,Array<any>> = new Map();
+			map.set("unknown", new Array<any>());
+			this.bookTreeData.push({name:"unknown",children: map.get("unknown")})
+			this.walkByAuthor(map,this.bookTreeData,"");
+		} else {
+			const map: Map<string,Array<any>> = new Map();
+			map.set("unknown", new Array<any>());
+			this.bookTreeData.push({name:"unknown",children: map.get("unknown")})
+			this.walkByPublishDate(map,this.bookTreeData,"");
+		}
+
+		this.sortBookDispTree(this.bookDispTree);
 	}
 
 
