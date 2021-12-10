@@ -12,7 +12,6 @@ export const VIEW_TYPE_BOOK_EXPLORER_VIEW = "book-explorer-view"
 export class BookExplorerView extends ItemView {
 	plugin: BookNotePlugin;
 	navHeader: NavHeader;
-	vueApp: Vue;
 	descriptionContainer: HTMLDivElement;
 
 	constructor(leaf: WorkspaceLeaf, plugin: BookNotePlugin) {
@@ -180,7 +179,7 @@ export class BookExplorerView extends ItemView {
 			.setTitle("删除")
 			.setIcon("trash")
 			.onClick(()=>{
-				new Notice("删除文件,展不实现");
+				new Notice("删除文件,暂不实现");
 			})
 		)
 
@@ -193,17 +192,17 @@ export class BookExplorerView extends ItemView {
 
 		console.log("BookExplorerView Open");
 
-		this.plugin.updateBookTree();
+		this.plugin.updateBookDispTree();
 		const self = this;
 		// this.containerEl.children[0].empty();
 		this.contentEl.empty();
 		this.navHeader = new NavHeader(this,this.contentEl);
 		this.navHeader.addAction("reset","更新",(evt) => {
-			if (!this.plugin.isBookPathValid()) {
+			if (!this.plugin.isCurrentBooksPathValid()) {
 				// TODO 书籍路径错误
 				new Notice("书籍路径解析错误,请检查设置后重新打开");
 			} else {
-				self.plugin.updateBookTree();
+				self.plugin.updateBookDispTree();
 			}
 		})
 		this.navHeader.addAction("stacked-levels","排序方式与顺序",(evt) => {
@@ -213,28 +212,28 @@ export class BookExplorerView extends ItemView {
 			// console.log(evt);
 		})
 		this.navHeader.addAction("search","搜索",(evt) => {
-			new SearchBookModal(this.app, this.plugin).open();
+			// new SearchBookModal(this.app, this.plugin).open();
 		})
 
 
-		if (!this.plugin.isBookPathValid()) {
+		if (!this.plugin.isCurrentBooksPathValid()) {
 			const ele = this.contentEl.createDiv();
 			ele.textContent = "无效书籍路径，请检查设置";
 		} else {
 			const title = this.plugin.path.basename(this.plugin.settings.bookPath);
 			const el = this.contentEl.createDiv()
-			this.vueApp = new Vue({
+			new Vue({
 				el: el,
 				render: h => h('obtree', {
 					attrs: {
 						title: title,
-						data: this.plugin.bookTreeData,
+						data: this.plugin.bookDispTree,
 						style: "overflow: auto"
 					},
 					on: {
 						'select-file': function (item: any, ctrlKey: boolean) {
-							const description = self.plugin.getBookAttrs(item.path)?.["description"];
-							self.descriptionContainer.setText(description ? description : '');
+							// const description = self.plugin.getBookAttrs(item.path)?.["description"];
+							// self.descriptionContainer.setText(description ? description : '');
 							if (ctrlKey) {
 								self.plugin.openBookInBookView(item.path, true);
 							}

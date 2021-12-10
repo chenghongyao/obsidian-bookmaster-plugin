@@ -25,8 +25,7 @@ export default {
 	data() {
 		return {
 			activatedFile:null,
-			treeData: this.data,
-			
+			treeData: this.data, // TODO:??
 		}
 	},
 	props: {

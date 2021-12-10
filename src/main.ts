@@ -14,41 +14,31 @@ import {
 	ViewCreator,
 } from "obsidian";
 import { around } from "monkey-around";
+import staticServer, { StaticServer } from './static-server'
 
 import {
 	BookExplorerView,
 	VIEW_TYPE_BOOK_EXPLORER_VIEW,
 } from "./BookExplorerView";
-import {
-	BookProjectView,
-	VIEW_TYPE_BOOK_PROJECT_VIEW,
-} from "./BookProjectView";
-import {
-	AdvanceBookExplorerView,
-	VIEW_TYPE_ADVANCE_BOOK_EXPLORER_VIEW,
-} from "./AdvanceBookExplorerView";
-import {
-	BookView,
-	VIEW_TYPE_BOOK_VIEW
-} from "./BookView";
 
-import SearchBookModal from "./SearchBookModal";
+// import {
+// 	BookProjectView,
+// 	VIEW_TYPE_BOOK_PROJECT_VIEW,
+// } from "./BookProjectView";
+// import {
+// 	AdvanceBookExplorerView,
+// 	VIEW_TYPE_ADVANCE_BOOK_EXPLORER_VIEW,
+// } from "./AdvanceBookExplorerView";
+// import {
+// 	BookView,
+// 	VIEW_TYPE_BOOK_VIEW
+// } from "./BookView";
+
+// import SearchBookModal from "./SearchBookModal";
 import {SUPPORT_BOOK_TYPES} from "./constants"
+import {BookAttribute,AbstractBook} from "./types"
 
-import staticServer, { StaticServer } from './static-server'
 
-
-interface BookAttribute {
-	title: string;
-	alias: string|null;
-}
-
-interface AbstractBook {
-	name: string;
-	path: string;
-	attrs?: BookAttribute;
-	children?: Array<AbstractBook>;
-}
 
 
 
@@ -78,6 +68,7 @@ interface BookNoteSettings {
 
 	bookTreeSortType: Number,
 	bookTreeSortAsc: boolean,
+	currentBookVault: string,
 }
 
 const DEFAULT_SETTINGS: BookNoteSettings = {
@@ -107,6 +98,8 @@ const DEFAULT_SETTINGS: BookNoteSettings = {
 
 	bookTreeSortType: 0,
 	bookTreeSortAsc: true,
+	currentBookVault: "default",
+
 };
 
 
@@ -117,27 +110,36 @@ export default class BookNotePlugin extends Plugin {
 	path: any;
 	fs: any;
 
-	bookTreeData: Array<any> = new Array();
+	// bookTreeData: Array<any> = new Array();
+	bookRawTree: Array<AbstractBook> = new Array();  	// 原始文档树
+	bookDispTree: Array<AbstractBook> = new Array();	// 用于显示的文档树
+
 	currentBookProjectFile: TFile;
-	currentBookProjectBooks: Array<any> = new Array();
+	currentBookProjectBooks: Array<any> = new Array();	// todo: book of url??
+
 	localWebViewerServer: StaticServer;
+
 	autoInsertAnnotationLink: boolean;
 
-	bookViewMap: Map<string,BookView> = new Map();
+	// bookViewMap: Map<string,BookView> = new Map();
+	currentBooksPath: string;
+	currentBooksDataPath: string;
+	
+
+
 
 	async onload() {
 
+		
+		await this.loadSettings();
+		
+		// this.app.workspace.detachLeavesOfType(VIEW_TYPE_BOOK_PROJECT_VIEW);
+		// this.app.workspace.detachLeavesOfType(VIEW_TYPE_BOOK_VIEW);
+	
 		this.path = (this.app.vault.adapter as any).path;
 		this.fs = (this.app.vault.adapter as any).fs;
-
-		await this.loadSettings();
-
-		this.app.workspace.detachLeavesOfType(VIEW_TYPE_BOOK_PROJECT_VIEW);
-		this.app.workspace.detachLeavesOfType(VIEW_TYPE_BOOK_VIEW);
-	
 		this.autoInsertAnnotationLink = false;
 
-		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new BookNoteSettingTab(this.app, this));
 
 		// this.addRibbonIcon("dice", "opp", (evt) => {
@@ -147,6 +149,10 @@ export default class BookNotePlugin extends Plugin {
 		// 	// this.reactivateView(VIEW_TYPE_BOOK_VIEW,"center",true);
 		// });
 
+		this.addRibbonIcon("bold-glyph","书库",async () => {
+			this.reactivateView(VIEW_TYPE_BOOK_EXPLORER_VIEW,'left');
+		});
+
 		this.addCommand({
 			id: "open-book-explorer",
 			name: "Open Book Explorer",
@@ -154,31 +160,7 @@ export default class BookNotePlugin extends Plugin {
 				this.reactivateView(VIEW_TYPE_BOOK_EXPLORER_VIEW,'left');
 			},
 		});
-
-		this.addCommand({
-			id: 'open-book-of-project',
-			name: '打开当前工程的第一本书',
-			checkCallback: (checking: boolean) => {
-				// Conditions to check
-				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
-				if (markdownView
-					&& markdownView.file 
-					&& this.getPropertyValue(markdownView.file,"booknote-plugin") === true 
-					&& this.getPropertyValue(markdownView.file,"booknote-books")
-					&& this.getPropertyValue(markdownView.file,"booknote-books")[0]) {
-						// If checking is true, we're simply "checking" if the command can be run.
-						// If checking is false, then we want to actually perform the operation.
-						if (!checking) {
-							self.openBookInBookView(this.getPropertyValue(markdownView.file,"booknote-books")[0], true);
-						}
-
-						// This command will only show up in Command Palette when the check function returns true
-						return true;
-					}
-				}
-		});
-
-
+/*
 		this.addCommand({
 			id: "open-advance-book-explorer",
 			name: "Open Advance Book Explorer",
@@ -194,16 +176,12 @@ export default class BookNotePlugin extends Plugin {
 				new SearchBookModal(this.app,this).open();
 			},
 		});
-
-		this.addRibbonIcon("bold-glyph","书库",() => {
-			this.reactivateView(VIEW_TYPE_BOOK_EXPLORER_VIEW,'left');
-		});
-
+*/
 		this.safeRegisterView(
 			VIEW_TYPE_BOOK_EXPLORER_VIEW,
 			(leaf) => new BookExplorerView(leaf, this)
 		);
-
+/*
 		this.safeRegisterView(
 			VIEW_TYPE_BOOK_PROJECT_VIEW,
 			(leaf) => new BookProjectView(leaf, this)
@@ -223,12 +201,12 @@ export default class BookNotePlugin extends Plugin {
 
 
 		const self = this;
+			// bp:bookpath in protocal
 		const obProtocalHandler: any = {
 			"annotation": function(params: ObsidianProtocolData) {
 				const annotId = params["id"];
 				const annotBook = params["book"];
 				if (annotId && annotBook) {
-					
 					// TODO:还需要支持?
 					if (self.isForceOpenBySystem(annotBook)) {
 						self.openBookBySystem(annotBook);
@@ -258,11 +236,10 @@ export default class BookNotePlugin extends Plugin {
 
 
 		this.registerMarkdownPostProcessor((secEl, ctx) => {
-
 			if (this.settings.addClickEventForAnnotImage) {
+				//bp
 				const reg = new RegExp(this.settings.bookSettingPath+"/books-data/((?:\\S+)/)?\\(annotations\\)(\\S+)/p(\\d+)r((?:\\d+(?:\\.\\d+)?,?){4})z(\\d+(?:\\.\\d+)?)i\\((\\w+-\\w+-\\w+-\\w+-\\w+)\\).png")
 				secEl.querySelectorAll("span.internal-embed").forEach(async (el) => {
-					
 					const src = el.getAttr("src");
 					const group = reg.exec(src);
 					if (group) {
@@ -295,10 +272,11 @@ export default class BookNotePlugin extends Plugin {
 
 		if (this.settings.useLocalWebViewerServer) {
 			this.startStaticServer();
-		}
+		}*/
 
 	}
 
+	
 	startStaticServer() {
 		this.localWebViewerServer = staticServer(this.settings.webviewerRootPath,this.settings.webviewerLocalPort,this);
 		this.localWebViewerServer.listen();
@@ -311,11 +289,9 @@ export default class BookNotePlugin extends Plugin {
 		}
 	}
 
-	parseXfdfString(xfdfString: string) {
-		return new DOMParser().parseFromString(xfdfString,'text/xml');	
-	}
+/*
 
-	registerBookProject() {
+	private registerBookProject() {
 		const self = this;
 		// add item in more options
 		this.register(
@@ -339,7 +315,7 @@ export default class BookNotePlugin extends Plugin {
 						if (books && books.length > 0 && books[0]) {
 							menu.addItem((item) => {
 								item.setTitle("OpenBook").onClick(() => {
-									// console.log(books[0]);
+									// bp
 									self.openBookInBookView(books[0], true);
 								});
 							});
@@ -353,6 +329,30 @@ export default class BookNotePlugin extends Plugin {
 			})
 		);
 
+		// quick command for opening first book
+		this.addCommand({
+			id: 'open-book-of-project',
+			name: '打开当前工程的第一本书',
+			checkCallback: (checking: boolean) => {
+				// Conditions to check
+				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
+				if (markdownView
+					&& markdownView.file 
+					&& this.getPropertyValue(markdownView.file,"booknote-plugin") === true 
+					&& this.getPropertyValue(markdownView.file,"booknote-books")
+					&& this.getPropertyValue(markdownView.file,"booknote-books")[0]) {
+						// If checking is true, we're simply "checking" if the command can be run.
+						// If checking is false, then we want to actually perform the operation.
+						if (!checking) {
+							// bp
+							self.openBookInBookView(this.getPropertyValue(markdownView.file,"booknote-books")[0], true);
+						}
+
+						return true;
+					}
+				}
+		});
+
 		// TODO:窗口激活也会响应file-open???
 		// this.registerEvent(this.app.workspace.on)
 		// this.registerEvent(this.app.workspace.on("file-open",(file) => {
@@ -361,7 +361,7 @@ export default class BookNotePlugin extends Plugin {
 		//		self.reactivateView(VIEW_TYPE_BOOK_PROJECT_VIEW, "right");
 		// 	}
 		// }))
-	}
+	}*/
 
 	private safeRegisterView(type: string, viewCreator: ViewCreator) {
 		this.registerView(type, viewCreator);
@@ -370,38 +370,15 @@ export default class BookNotePlugin extends Plugin {
 		});
 	}
 
-	onunload() {
-		this.stopStaticServer();
-	}
-
-	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-	}
-
-	async saveSettings() {
-		await this.saveData(this.settings);
-	}
-
-
-	async showAnnotationById(book: string, id: string, newPanel?: boolean) {
-		this.getBookView(book,newPanel).then((view: BookView) => {
-			view.openBook(book).then((view: BookView) => {
-				view.showAnnotation(id);
-				this.app.workspace.setActiveLeaf(view.leaf); //TODO: 页面上点击无法激活？？，这里再次激活
-
-			})
-		})
-	}
 	async reactivateView(type: string, dir?: string, split?: boolean) {
 
-		var leaf;
-		if (this.app.workspace.getLeavesOfType(type).length == 0) {
+		if (this.app.workspace.getLeavesOfType(type).length == 0) { // if dont exists, create new one,
+			var leaf;
 			if (dir === "left") {
 				leaf = this.app.workspace.getLeftLeaf(split);
 			} else if (dir == "right") {
 				leaf = this.app.workspace.getRightLeaf(split);
-			} 
-			else {
+			} else {
 				leaf = this.app.workspace.getLeaf(split && !(this.app.workspace.activeLeaf.view.getViewType() === "empty"));
 			}
 			await leaf.setViewState({
@@ -413,6 +390,26 @@ export default class BookNotePlugin extends Plugin {
 		this.app.workspace.revealLeaf(this.app.workspace.getLeavesOfType(type)[0]);
 	}
 
+
+	onunload() {
+		// this.stopStaticServer();
+	}
+
+	async loadSettings() {
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+	}
+
+	async saveSettings() {
+		await this.saveData(this.settings);
+	}
+
+	// parse Xfdf String to DOM
+	private parseXfdfString(xfdfString: string) {
+		return new DOMParser().parseFromString(xfdfString,'text/xml');	
+	}
+
+
+
 	// copy from obsidian-annotator
 	getPropertyValue(file: TFile, propertyName: string) {
 		if (!file) {
@@ -422,146 +419,319 @@ export default class BookNotePlugin extends Plugin {
 		return cache?.frontmatter?.[propertyName];
 	}
 
-	private walkByFolder(root: string, tree: Array<any>) {
+	// private walkByFolder(root: string, tree: Array<any>) {
 	
-		const self = this;
-		const files = self.fs.readdirSync(self.path.join(self.settings.bookPath, root));
-		files.forEach(function (filename: string) {
-			const filepath = self.path.join(root, filename);
-			const stat = self.fs.statSync(self.path.join(self.settings.bookPath, filepath));
-			if (stat.isDirectory() && !filepath.startsWith(".")) {
-				const arr = new Array<any>();
-				tree.push({ name: filename, path: filepath, children:  arr});
-				self.walkByFolder(filepath,arr);
-			} else {
-				const ext = self.path.extname(filename).substr(1);
-				if (self.isBookSupported(filename, ext)) { // window 下的临时文件
-					const bookobj = {name:filename,path:filepath,ext:ext ? ext : "unknown"};
-					tree.push(bookobj);
-				}
-			}
-		});
+	// 	const self = this;
+	// 	const files = self.fs.readdirSync(self.path.join(self.settings.bookPath, root));
+	// 	files.forEach(function (filename: string) {
+	// 		const filepath = self.path.join(root, filename);
+	// 		const stat = self.fs.statSync(self.path.join(self.settings.bookPath, filepath));
+	// 		if (stat.isDirectory() && !filepath.startsWith(".")) {
+	// 			const arr = new Array<any>();
+	// 			tree.push({ name: filename, path: filepath, children:  arr});
+	// 			self.walkByFolder(filepath,arr);
+	// 		} else {
+	// 			const ext = self.path.extname(filename).substr(1);
+	// 			if (self.isBookSupported(filename, ext)) { // window 下的临时文件
+	// 				const bookobj = {name:filename,path:filepath,ext:ext ? ext : "unknown"};
+	// 				tree.push(bookobj);
+	// 			}
+	// 		}
+	// 	});
+	// }
+	// private insertTagNode(tagRoot: string,tags: Array<string>, tagMap: Map<string,Array<any>>,tree: Array<any>,i: number,obj:any) {
+	// 	if (i === tags.length) {
+	// 		tree.push(obj);
+	// 	} else {
+	// 		const nxt = tagRoot + tags[i];
+	// 		let arr = tagMap.get(nxt);
+	// 		if (!arr) {
+	// 			arr = new Array<any>();
+	// 			tagMap.set(nxt,arr);
+	// 			tree.push({name:tags[i],children:arr});
+	// 		}
+	// 		this.insertTagNode(nxt+"/",tags,tagMap,arr,i+1,obj);
+	// 	}
+	// }
+
+	// private walkByTag(tagMap: Map<string,Array<any>>,tree: Array<any>, root: string) {
+
+	// 	const self = this;
+	// 	const files = this.fs.readdirSync(this.path.join(this.settings.bookPath, root));
+	// 	files.forEach(function (filename: string) {
+	// 		const bookpath = self.path.join(root, filename);
+	// 		const stat = self.fs.statSync(self.path.join(self.settings.bookPath, bookpath));
+	// 		if (stat.isDirectory() && !bookpath.startsWith(".")) {
+	// 			self.walkByTag(tagMap,tree, root+"/"+filename);
+	// 		} else {
+	// 			const ext = self.path.extname(filename).substr(1);
+	// 			if (self.isBookSupported(filename,ext)) { // window 下的临时文件
+	// 				const datapath = self.normalizeBookDataPath(root+"/"+filename+".md")
+	// 				const datafile = self.app.vault.getAbstractFileByPath(datapath) as TFile;
+	// 				const bookobj = {name:filename,path:bookpath,ext:ext ? ext : "unknown"};
+
+	// 				if (datafile && self.app.metadataCache.getFileCache(datafile).frontmatter["tags"]) {
+	// 					const tags = self.app.metadataCache.getFileCache(datafile).frontmatter["tags"].split(",");
+	// 					for (var i = 0; i < tags.length; i++) {
+	// 						const tag = tags[i].trim();
+	// 						if (tagMap.get(tag)) {
+	// 							tagMap.get(tag).push(bookobj);
+	// 						} else {
+	// 							self.insertTagNode("",tag.split("/"),tagMap,tree,0,bookobj);
+	// 						}
+	// 					}	
+	// 				} else {
+	// 					tagMap.get("unknown").push(bookobj);
+	// 				}
+	// 			}
+	// 		}
+	// 	});
+	// }
+	// private walkByAuthor(map: Map<string,Array<any>>,tree: Array<any>, root: string) {
+
+	// 	const self = this;
+	// 	const files = this.fs.readdirSync(this.path.join(this.settings.bookPath, root));
+	// 	files.forEach(function (filename: string) {
+	// 		const bookpath = self.path.join(root, filename);
+	// 		const stat = self.fs.statSync(self.path.join(self.settings.bookPath, bookpath));
+	// 		if (stat.isDirectory() && !bookpath.startsWith(".")) {
+	// 			self.walkByAuthor(map,tree, root+"/"+filename);
+	// 		} else {
+	// 			const ext = self.path.extname(filename).substr(1);
+	// 			if (self.isBookSupported(filename,ext)) { // window 下的临时文件
+	// 				const datapath = self.normalizeBookDataPath(root+"/"+filename+".md")
+	// 				const datafile = self.app.vault.getAbstractFileByPath(datapath) as TFile;
+	// 				const bookobj = {name:filename,path:bookpath,ext:ext ? ext : "unknown"};
+	// 				if (datafile && self.app.metadataCache.getFileCache(datafile).frontmatter["author"]) {
+						
+	// 					const authors = self.app.metadataCache.getFileCache(datafile).frontmatter["author"].split(",");
+	// 					for (var i = 0; i < authors.length; i++) {
+	// 						const author = authors[i].trim();
+	// 						if (!map.get(author)) {
+	// 							const arr = new Array<any>();
+	// 							tree.push({name: author, children: arr })
+	// 							map.set(author, arr);
+	// 						} 
+
+	// 						map.get(author).push(bookobj);
+	// 					}	
+	// 				} else {
+	// 					map.get("unknown").push(bookobj);
+	// 				}
+	// 			}
+	// 		}
+	// 	});
+	// }
+
+	// private walkByPublishDate(map: Map<string,Array<any>>,tree: Array<any>, root: string) {
+
+	// 	const self = this;
+	// 	const files = this.fs.readdirSync(this.path.join(this.settings.bookPath, root));
+	// 	files.forEach(function (filename: string) {
+	// 		const bookpath = self.path.join(root, filename);
+	// 		const stat = self.fs.statSync(self.path.join(self.settings.bookPath, bookpath));
+	// 		if (stat.isDirectory() && !bookpath.startsWith(".")) {
+	// 			self.walkByPublishDate(map,tree, root+"/"+filename);
+	// 		} else {
+	// 			const ext = self.path.extname(filename).substr(1);
+	// 			if (self.isBookSupported(filename,ext)) { // window 下的临时文件
+	// 				const datapath = self.normalizeBookDataPath(root+"/"+filename+".md")
+	// 				const datafile = self.app.vault.getAbstractFileByPath(datapath) as TFile;
+	// 				const bookobj = {name:filename,path:bookpath,ext:ext ? ext : "unknown"};
+	// 				if (datafile && self.app.metadataCache.getFileCache(datafile).frontmatter["publish date"]) {
+	// 					// TODO: more robust??
+	// 					const dates = self.app.metadataCache.getFileCache(datafile).frontmatter["publish date"].split("/");
+	// 					const year = dates[0].trim();
+	// 					if (!map.get(year)) {
+	// 						const arr = new Array<any>();
+	// 						tree.push({name: year, children: arr })
+	// 						map.set(year, arr);
+	// 					} 
+	// 					map.get(year).push(bookobj);
+	// 				} else {
+	// 					map.get("unknown").push(bookobj);
+	// 				}
+	// 			}
+	// 		}
+	// 	});
+	// }
+
+	// private sortBookTree(tree: Array<any>) {
+
+	// 	tree.sort((a:any,b:any)=> {
+	// 		if (Boolean(a.children) !== Boolean(b.children)) {
+	// 			if (a.children) return -1;
+	// 			else return 1;
+	// 		} else {
+	// 			if (a.children && a.name === "unknown") {
+	// 				return 1;
+	// 			} else if (b.children && b.name === "unknown") {
+	// 				return -1;
+	// 			}
+	// 			else if (this.settings.bookTreeSortAsc)
+	// 				return a.name > b.name ? 1 : -1;
+	// 			else
+	// 				return a.name < b.name ? 1 : -1;
+	// 		}
+	// 	})
+
+	// 	for(var i = 0; i < tree.length; i++) {
+	// 		if (tree[i].children) {
+	// 			this.sortBookTree(tree[i].children);
+	// 		}
+	// 	}
+	// }
+
+
+	// updateBookTree() {
+	// 	if (!this.isBookPathValid()) return;
+	// 	this.bookTreeData.length = 0;
+
+	// 	if (this.settings.bookTreeSortType === 0) {
+	// 		this.walkByFolder("",this.bookTreeData);
+	// 	} else if (this.settings.bookTreeSortType === 1) {
+	// 		const map: Map<string,Array<any>> = new Map();
+	// 		map.set("unknown", new Array<any>());
+	// 		this.bookTreeData.push({name:"unknown",children: map.get("unknown")})
+	// 		this.walkByTag(map,this.bookTreeData,"");
+	// 	} else if (this.settings.bookTreeSortType == 2) {
+	// 		const map: Map<string,Array<any>> = new Map();
+	// 		map.set("unknown", new Array<any>());
+	// 		this.bookTreeData.push({name:"unknown",children: map.get("unknown")})
+	// 		this.walkByAuthor(map,this.bookTreeData,"");
+	// 	} else {
+	// 		const map: Map<string,Array<any>> = new Map();
+	// 		map.set("unknown", new Array<any>());
+	// 		this.bookTreeData.push({name:"unknown",children: map.get("unknown")})
+	// 		this.walkByPublishDate(map,this.bookTreeData,"");
+	// 	}
+	// 	this.sortBookTree(this.bookTreeData);
+	// }
+
+	
+
+	decodeBookFromPath(bookpath: string) : AbstractBook {
+		const reg = /^(?:@(\w+)\/)?((?:[\w\/]+\/)?((?:\w+)(?:\.(\w+)?)?))$/;
+		const grp = reg.exec(bookpath);
+		if (!grp) return null;
+
+		return {
+			vault: grp[1] || "default",
+			path: grp[2],
+			name: grp[3],
+			ext: grp[4],			
+		}
 	}
-	private insertTagNode(tagRoot: string,tags: Array<string>, tagMap: Map<string,Array<any>>,tree: Array<any>,i: number,obj:any) {
-		if (i === tags.length) {
-			tree.push(obj);
+	
+
+	isSameBook(l: AbstractBook, r: AbstractBook) {
+		return (l.path === r.path && l.vault && r.vault);
+	}
+	isBookSupported(bookname:string, ext: string) {
+		return !bookname.startsWith("~$") && !bookname.startsWith(".") && SUPPORT_BOOK_TYPES.indexOf(ext) >= 0;
+	}
+
+	isCurrentBooksPathValid() {
+		const temp = this.getCurrentBooksPath();
+		return (
+			temp &&
+			this.fs.existsSync(temp) &&
+			this.fs.statSync(temp).isDirectory()
+		);
+	}
+
+	getBooksPathOfVault(vault: string) {
+		if (vault === "default") {
+			return this.settings.bookPath;
 		} else {
-			const nxt = tagRoot + tags[i];
-			let arr = tagMap.get(nxt);
-			if (!arr) {
-				arr = new Array<any>();
-				tagMap.set(nxt,arr);
-				tree.push({name:tags[i],children:arr});
-			}
-			this.insertTagNode(nxt+"/",tags,tagMap,arr,i+1,obj);
+			new Notice("not supported");
+			return this.settings.bookPath;
 		}
 	}
 
-	private walkByTag(tagMap: Map<string,Array<any>>,tree: Array<any>, root: string) {
-
-		const self = this;
-		const files = this.fs.readdirSync(this.path.join(this.settings.bookPath, root));
-		files.forEach(function (filename: string) {
-			const bookpath = self.path.join(root, filename);
-			const stat = self.fs.statSync(self.path.join(self.settings.bookPath, bookpath));
-			if (stat.isDirectory() && !bookpath.startsWith(".")) {
-				self.walkByTag(tagMap,tree, root+"/"+filename);
-			} else {
-				const ext = self.path.extname(filename).substr(1);
-				if (self.isBookSupported(filename,ext)) { // window 下的临时文件
-					const datapath = self.normalizeBookDataPath(root+"/"+filename+".md")
-					const datafile = self.app.vault.getAbstractFileByPath(datapath) as TFile;
-					const bookobj = {name:filename,path:bookpath,ext:ext ? ext : "unknown"};
-
-					if (datafile && self.app.metadataCache.getFileCache(datafile).frontmatter["tags"]) {
-						const tags = self.app.metadataCache.getFileCache(datafile).frontmatter["tags"].split(",");
-						for (var i = 0; i < tags.length; i++) {
-							const tag = tags[i].trim();
-							if (tagMap.get(tag)) {
-								tagMap.get(tag).push(bookobj);
-							} else {
-								self.insertTagNode("",tag.split("/"),tagMap,tree,0,bookobj);
-							}
-						}	
-					} else {
-						tagMap.get("unknown").push(bookobj);
-					}
-				}
-			}
-		});
+	getCurrentBooksPath() {
+		if (this.settings.currentBookVault == "default") {
+			return this.settings.bookPath;
+		} else {
+			new Notice("unsupported");
+			return this.settings.bookPath;
+		}
 	}
-	private walkByAuthor(map: Map<string,Array<any>>,tree: Array<any>, root: string) {
 
-		const self = this;
-		const files = this.fs.readdirSync(this.path.join(this.settings.bookPath, root));
-		files.forEach(function (filename: string) {
-			const bookpath = self.path.join(root, filename);
-			const stat = self.fs.statSync(self.path.join(self.settings.bookPath, bookpath));
-			if (stat.isDirectory() && !bookpath.startsWith(".")) {
-				self.walkByAuthor(map,tree, root+"/"+filename);
-			} else {
-				const ext = self.path.extname(filename).substr(1);
-				if (self.isBookSupported(filename,ext)) { // window 下的临时文件
-					const datapath = self.normalizeBookDataPath(root+"/"+filename+".md")
-					const datafile = self.app.vault.getAbstractFileByPath(datapath) as TFile;
-					const bookobj = {name:filename,path:bookpath,ext:ext ? ext : "unknown"};
-					if (datafile && self.app.metadataCache.getFileCache(datafile).frontmatter["author"]) {
-						
-						const authors = self.app.metadataCache.getFileCache(datafile).frontmatter["author"].split(",");
-						for (var i = 0; i < authors.length; i++) {
-							const author = authors[i].trim();
-							if (!map.get(author)) {
-								const arr = new Array<any>();
-								tree.push({name: author, children: arr })
-								map.set(author, arr);
-							} 
+	normalizeBooksPathOfCurrentVault(bookpath: string) {
+		return this.path.join(this.getCurrentBooksPath(),bookpath);
+	}
 
-							map.get(author).push(bookobj);
-						}	
+	normalizeBooksDataPathOfCurrentVault(path: string) {
+		if (this.settings.currentBookVault === "default") {
+			return normalizePath(this.settings.bookSettingPath+"/books-data/"+path);
+		} else {
+			return normalizePath(this.settings.bookSettingPath+"/extra-books-data/"+this.settings.currentBookVault+"/"+path);
+		}
+	}
+
+
+	async walkByFolderOfCurrentVault(root: string, tree: Array<AbstractBook>) {
+
+		(this.app.vault.adapter as any).fsPromises.readdir(this.normalizeBooksPathOfCurrentVault(root)).then((files: Array<string>) => {
+			files.forEach((name) => {
+
+				const bookpath = root ? root+"/"+name : name;
+				const absBookPath = this.normalizeBooksPathOfCurrentVault(bookpath); 
+				(this.app.vault.adapter as any).fsPromises.stat(absBookPath).then((stat: any) => {
+					if (stat.isDirectory()) {
+						if (name.startsWith(".")) return;
+						const arr = new Array<AbstractBook>();
+						tree.push({
+							name:name,
+							path:bookpath,
+							vault:this.settings.currentBookVault,
+							children: arr,
+						});
+
+						return this.walkByFolderOfCurrentVault(bookpath,arr);
 					} else {
-						map.get("unknown").push(bookobj);
+						const ext = this.path.extname(name).substr(1);
+						if(!this.isBookSupported(name,ext))return;
+						const datapath = this.normalizeBooksDataPathOfCurrentVault(bookpath+".md");
+						const datafile = this.app.vault.getAbstractFileByPath(datapath) as TFile;
+						const attrs = datafile ? this.app.metadataCache.getFileCache(datafile).frontmatter : null;
+						tree.push({
+							name:name,
+							path:bookpath,
+							vault: this.settings.currentBookVault,
+							ext:ext,
+							attrs: attrs,
+						});
 					}
-				}
-			}
+				})
+			});
 		});
 	}
 
-	private walkByPublishDate(map: Map<string,Array<any>>,tree: Array<any>, root: string) {
 
-		const self = this;
-		const files = this.fs.readdirSync(this.path.join(this.settings.bookPath, root));
-		files.forEach(function (filename: string) {
-			const bookpath = self.path.join(root, filename);
-			const stat = self.fs.statSync(self.path.join(self.settings.bookPath, bookpath));
-			if (stat.isDirectory() && !bookpath.startsWith(".")) {
-				self.walkByPublishDate(map,tree, root+"/"+filename);
-			} else {
-				const ext = self.path.extname(filename).substr(1);
-				if (self.isBookSupported(filename,ext)) { // window 下的临时文件
-					const datapath = self.normalizeBookDataPath(root+"/"+filename+".md")
-					const datafile = self.app.vault.getAbstractFileByPath(datapath) as TFile;
-					const bookobj = {name:filename,path:bookpath,ext:ext ? ext : "unknown"};
-					if (datafile && self.app.metadataCache.getFileCache(datafile).frontmatter["publish date"]) {
-						// TODO: more robust??
-						const dates = self.app.metadataCache.getFileCache(datafile).frontmatter["publish date"].split("/");
-						const year = dates[0].trim();
-						if (!map.get(year)) {
-							const arr = new Array<any>();
-							tree.push({name: year, children: arr })
-							map.set(year, arr);
-						} 
-						map.get(year).push(bookobj);
-					} else {
-						map.get("unknown").push(bookobj);
-					}
-				}
-			}
+
+
+
+	
+	async updateBookDispTree() {
+		if (!this.isCurrentBooksPathValid()) return;
+		this.bookRawTree.length = 0;
+		await this.walkByFolderOfCurrentVault("",this.bookRawTree).then(() => {
+			this.bookDispTree.length = 0;
+			console.log("finish");
+
+			this.bookRawTree.forEach((book) =>{
+				this.bookDispTree.push(book);
+			});
+			console.log(this.bookDispTree);
+			this.sortBookDispTree(this.bookDispTree);
 		});
 	}
 
-	private sortBookTree(tree: Array<any>) {
 
-		tree.sort((a:any,b:any)=> {
+	private sortBookDispTree(tree: Array<AbstractBook>) {
+		tree.sort((a:AbstractBook,b:AbstractBook)=> {
 			if (Boolean(a.children) !== Boolean(b.children)) {
 				if (a.children) return -1;
 				else return 1;
@@ -580,36 +750,55 @@ export default class BookNotePlugin extends Plugin {
 
 		for(var i = 0; i < tree.length; i++) {
 			if (tree[i].children) {
-				this.sortBookTree(tree[i].children);
+				this.sortBookDispTree(tree[i].children);
 			}
 		}
 	}
 
-	updateBookTree() {
-		if (!this.isBookPathValid()) return;
-		this.bookTreeData.length = 0;
+	async safeWriteFile(path: string, data: Buffer|string, overwrite: boolean) {
 
-		if (this.settings.bookTreeSortType === 0) {
-			this.walkByFolder("",this.bookTreeData);
-		} else if (this.settings.bookTreeSortType === 1) {
-			const map: Map<string,Array<any>> = new Map();
-			map.set("unknown", new Array<any>());
-			this.bookTreeData.push({name:"unknown",children: map.get("unknown")})
-			this.walkByTag(map,this.bookTreeData,"");
-		} else if (this.settings.bookTreeSortType == 2) {
-			const map: Map<string,Array<any>> = new Map();
-			map.set("unknown", new Array<any>());
-			this.bookTreeData.push({name:"unknown",children: map.get("unknown")})
-			this.walkByAuthor(map,this.bookTreeData,"");
+		const file = this.app.vault.getAbstractFileByPath(path) as TFile;
+		
+		if (file) {
+			if (!overwrite)return;
+			if (typeof data === "string") {
+				this.app.vault.modify(file,data as string);
+			} else {
+				this.app.vault.modifyBinary(file, data as Buffer);
+			}
 		} else {
-			const map: Map<string,Array<any>> = new Map();
-			map.set("unknown", new Array<any>());
-			this.bookTreeData.push({name:"unknown",children: map.get("unknown")})
-			this.walkByPublishDate(map,this.bookTreeData,"");
+			// cant not write to file if folder doesn't exists
+			// TODO: ob api to get folder?
+			const folderPath = this.path.dirname(path);
+			const folder = this.app.vault.getAbstractFileByPath(folderPath) as TFolder;
+			if (!folder) {
+				await this.app.vault.createFolder(folderPath);
+			}
+
+			if (typeof path === "string") {
+				this.app.vault.create(path, data as string);
+			} else {
+				this.app.vault.createBinary(path, data as Buffer);
+			}
+
+			
 		}
-		this.sortBookTree(this.bookTreeData);
+
 	}
 
+
+/*
+	// bp
+	async showAnnotationById(book: AbstractBook, id: string, newPanel?: boolean) {
+		this.getBookView(book,newPanel).then((view: BookView) => {
+			view.openBook(book).then((view: BookView) => {
+				view.showAnnotation(id);
+				//FIXME: 页面上点击无法激活，这里再次激活
+				this.app.workspace.setActiveLeaf(view.leaf); 
+
+			})
+		})
+	}
 	isBookPathValid() {
 		return (
 			this.settings.bookPath &&
@@ -752,36 +941,7 @@ export default class BookNotePlugin extends Plugin {
 		return content;
 	}
 
-	async safeWriteFile(path: string, data: Buffer|string, overwrite: boolean) {
-
-		const file = this.app.vault.getAbstractFileByPath(path) as TFile;
-		
-		if (file) {
-			if (!overwrite)return;
-			if (typeof data === "string") {
-				this.app.vault.modify(file,data as string);
-			} else {
-				this.app.vault.modifyBinary(file, data as Buffer);
-			}
-		} else {
-			// cant not write to file if folder doesn't exists
-			// TODO: ob api to get folder?
-			const folderPath = this.path.dirname(path);
-			const folder = this.app.vault.getAbstractFileByPath(folderPath) as TFolder;
-			if (!folder) {
-				await this.app.vault.createFolder(folderPath);
-			}
-
-			if (typeof path === "string") {
-				this.app.vault.create(path, data as string);
-			} else {
-				this.app.vault.createBinary(path, data as Buffer);
-			}
-
-			
-		}
-
-	}
+	
 
 
 	saveBookAttrs(bookpath: string, attrs: any) {
@@ -846,8 +1006,10 @@ export default class BookNotePlugin extends Plugin {
 	// isUrlBook(path: string) {
 	// 	return path.startsWith("http://") || path.startsWith("https://");
 	// }
+	*/
 
 }
+
 
 class BookNoteSettingTab extends PluginSettingTab {
 	plugin: BookNotePlugin;
