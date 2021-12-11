@@ -262,7 +262,7 @@ export class BookView extends ItemView {
 							self.currentBookPath = self.plugin.encodeBookPath(book);
 							self.headerTitleEl.setText((book.attrs && book.attrs.title) || book.name);
 							self.plugin.bookViewMap.set(self.currentBookPath,self);
-
+							self.documentReady = false; 
 	
 							const arr = new Uint8Array(data);
 							const blob = new Blob([arr], { type: 'application/'+book.ext });
