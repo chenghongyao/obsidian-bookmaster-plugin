@@ -5,6 +5,7 @@ import NavHeader from "./NavHeader";
 import obtree from "./view/obtree.vue"
 
 import SearchBookModal from "./SearchBookModal";
+import { AbstractBook } from "./types";
 
 
 
@@ -13,7 +14,7 @@ export class BookExplorerView extends ItemView {
 	plugin: BookNotePlugin;
 	navHeader: NavHeader;
 	descriptionContainer: HTMLDivElement;
-	obtree: any;
+	obtree: any;	
 
 	constructor(leaf: WorkspaceLeaf, plugin: BookNotePlugin) {
 		super(leaf);
@@ -134,7 +135,7 @@ export class BookExplorerView extends ItemView {
 	}
 
 
-	openContextMenu(evt: MouseEvent, fileitem:any) {
+	openContextMenu(evt: MouseEvent, book:AbstractBook) {
 		const self = this;
 		const menu = new Menu(this.app);
 		menu.addItem((item) =>
@@ -142,7 +143,7 @@ export class BookExplorerView extends ItemView {
 			.setTitle("复制路径")
 			.setIcon("link")
 			.onClick(()=>{
-				navigator.clipboard.writeText(fileitem.path.replaceAll('\\','/'));
+				navigator.clipboard.writeText(self.plugin.encodeBookPath(book));
 			})
 		)
 
@@ -151,7 +152,7 @@ export class BookExplorerView extends ItemView {
 			.setTitle("使用默认应用打开")
 			.setIcon("popup-open")
 			.onClick(()=>{
-				self.plugin.openBookBySystem(fileitem.path);
+				self.plugin.openBookBySystem(book);
 			})
 		)
 
@@ -160,7 +161,6 @@ export class BookExplorerView extends ItemView {
 			.setTitle("设置(未实现")
 			.setIcon("popup-open")
 			.onClick(()=>{
-				// self.plugin.openFileBySystem(self.plugin.normalizeBookPath(fileitem.path));
 			})
 		)
 
@@ -169,7 +169,6 @@ export class BookExplorerView extends ItemView {
 			.setTitle("引用(未实现")
 			.setIcon("popup-open")
 			.onClick(()=>{
-				// self.plugin.openFileBySystem(self.plugin.normalizeBookPath(fileitem.path));
 			})
 		)
 
@@ -183,6 +182,11 @@ export class BookExplorerView extends ItemView {
 		)
 
 		menu.showAtMouseEvent(evt);
+	}
+
+
+	setTitle(title: string) {
+		this.obtree.setTitle(title);
 	}
 
 
@@ -206,7 +210,7 @@ export class BookExplorerView extends ItemView {
 			this.openSortContextMenu(evt);
 		})
 		this.navHeader.addAction("search","搜索",(evt) => {
-			// new SearchBookModal(this.app, this.plugin).open();
+			new SearchBookModal(this.app, this.plugin).open();
 		})
 
 
@@ -215,7 +219,11 @@ export class BookExplorerView extends ItemView {
 			ele.textContent = "无效书籍路径，请检查设置";
 		} else {
 			this.plugin.updateBookDispTree();
-			const title = this.plugin.path.basename(this.plugin.settings.bookPath);
+			// TODO: custom name of default vault
+			const title = this.plugin.settings.currentBookVault === "default" ? 
+				this.plugin.settings.defaultVaultName || this.plugin.path.basename(this.plugin.settings.bookPath) 
+				: this.plugin.settings.currentBookVault;
+
 			const el = this.contentEl.createDiv()
 			const vueApp = new Vue({
 				el: el,
@@ -226,19 +234,19 @@ export class BookExplorerView extends ItemView {
 						// style: "overflow: auto"
 					},
 					on: {
-						'select-file': function (item: any, ctrlKey: boolean) {
-							// const description = self.plugin.getBookAttrs(item.path)?.["description"];
-							// self.descriptionContainer.setText(description ? description : '');
+						'select-file': function (book: AbstractBook, ctrlKey: boolean) {
+							const description = book.attrs?.description;
+							self.descriptionContainer.setText(description ? description : '');
 							if (ctrlKey) {
-								self.plugin.openBookInBookView(item, true);
+								self.plugin.openBookInBookView(book, true);
 							}
 				
 						},
-						'open-file': function (item: any) {
-							self.plugin.openBookInBookView(item,false);
+						'open-file': function (book: AbstractBook) {
+							self.plugin.openBookInBookView(book,false);
 						},
-						'context-menu': function(evt: MouseEvent, item: any) {
-							self.openContextMenu(evt,item);
+						'context-menu': function(evt: MouseEvent, book: AbstractBook) {
+							self.openContextMenu(evt,book);
 						}
 					},
 					ref: "obtree",
@@ -247,9 +255,8 @@ export class BookExplorerView extends ItemView {
 					obtree,
 				}
 			});
-			this.obtree = vueApp.$refs["obtree"];
-			console.log(this.obtree);
 
+			this.obtree = vueApp.$refs.obtree;
 
 			this.descriptionContainer = this.containerEl.createDiv({cls:"book-description-container"});
 		}

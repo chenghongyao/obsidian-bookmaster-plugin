@@ -19,7 +19,7 @@
 				@dblclick="$emit('open-file',item,false)"
 			>
 				<div class="nav-file-title-content" >
-					{{item.name}}
+					{{(item.attrs && item.attrs.title) || item.name}}
 				</div>
 
 			</div>
@@ -32,6 +32,7 @@
 </template>
 
 <script>
+
 export default {
 	data() {
 		return {
@@ -45,14 +46,26 @@ export default {
 	},
 
 	methods: {
+
+		_searchBooks(tree) {
+			tree.forEach((b) => {
+				if (b.children) {
+					this._searchBooks(b.children);
+				} else {
+					// search title only if title exists
+					const name = (b.attrs && b.attrs.title) || b.name.substr(0,b.name.lastIndexOf("."));
+					if (name.indexOf(this.query) >= 0) {
+						this.result.push(b);
+					}
+				}
+				
+			});
+		},
+
 		searchBooks() {
 			this.result.length = 0;
 			if (this.query !== "") {
-				this.books.forEach((b) => {
-					if (b.name.substr(0,b.name.lastIndexOf(".")).indexOf(this.query) >= 0) {
-						this.result.push(b);
-					}
-				});
+				this._searchBooks(this.books);
 				if (this.selectedIndex >= this.result.length)this.selectedIndex = 0;
 			} else {
 				this.selectedIndex = 0;

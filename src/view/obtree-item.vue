@@ -24,7 +24,7 @@
 		@contextmenu.prevent="$emit('context-menu',$event,item)"
 		>
 		<div class="nav-file-title-content" >
-			{{item.name}}
+			{{(item.attrs && item.attrs.title) || item.name}}
 		</div>
 	</div>
 </div>

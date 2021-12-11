@@ -1,6 +1,7 @@
 <template>
 	<div  class="view-content" style="display: flex">
 
+		
 		<obtree v-show="!isSetting" class="book-setting-tree-container" :title="title" :data="bookData" 
 			v-on:select-file="onSelectFile" />
 
@@ -10,16 +11,16 @@
 			<template v-if="!isSetting">
 
 				<template v-if="selectedBook" >
-					<div class="book-title-container">{{selectedBook.name}}</div>
+					<div class="book-title-container">{{ selectedBook.name}}</div>
 					<button class="mod-cta" @click="onEditBookAttrs">编辑</button>
 					<button class="mod-cta" @click="onImportBookAttrs">导入</button>
 
 
-					<template v-if="selectedBookAttrs">
-						<div  v-for="(value,name) in selectedBookAttrs" :key="name" style="margin: 1em 0;">
-							<strong>{{(settingMap[name] && settingMap[name].label)? settingMap[name].label : name}}:</strong>
+					<template v-if="selectedBook.attrs">
+						<div  v-for="(v,k) in BOOK_ATTR_MAP" :key="k" style="margin: 1em 0;">
+							<strong>{{BOOK_ATTR_MAP[k].label ? BOOK_ATTR_MAP[k].label : k}}:</strong>
 							<br>
-							{{!value ? '-' : value}}
+							{{selectedBook.attrs[k] || '-' }}
 						</div>
 					</template>
 					<div v-else>
@@ -34,7 +35,7 @@
 				<button class="mod-cta" @click="onCancelSetting">取消</button>
 				<button class="mod-cta" @click="onImportBookAttrs">导入</button>
 				
-				<div  v-for="(item,key) in settingMap" :key="key">
+				<div  v-for="(item,key) in BOOK_ATTR_MAP" :key="key">
 
 					<div style="margin: 0.5em 0">{{item.label ? item.label : key}}</div>	
 
@@ -53,37 +54,40 @@
 
 <script>
 import obtree from './obtree.vue'
+import {BOOK_ATTR_MAP} from '../constants'
 export default {
 
 	data() {
 		return {
-			selectedBookAttrs: null,
 			selectedBook: null,
 
 			settingBook: null,
 			settingBookAttrs: null, 
 			isSetting: false,
+			BOOK_ATTR_MAP: BOOK_ATTR_MAP,
 		}
 	},
 	methods: {
 		onSelectFile(item) {
 			this.selectedBook = item;
-			this.selectedBookAttrs = this.plugin.getBookAttrs(item.path);
 		},
 
 		onSaveBookAttrs() {
 			// TODO: 直接修改，可能会出事
-			this.selectedBook = this.settingBook;
-			this.selectedBookAttrs = this.settingBookAttrs;
+			if (!this.settingBook.attrs)
+				this.settingBook.attrs = {};
+			for(const key in this.BOOK_ATTR_MAP) {
+				this.settingBook.attrs[key] = this.settingBookAttrs[key].trim();
+			}
+			this.$emit('save-book-attrs',this.settingBook);
 			this.isSetting = false;
-			this.$emit('save-book-attrs',this.settingBook.path, this.settingBookAttrs);
 		},
 
 		onEditBookAttrs() {
 			this.settingBook = this.selectedBook;
 			this.settingBookAttrs = {}
-			for(const key in this.settingMap) {
-				this.settingBookAttrs[key] = (this.selectedBookAttrs && this.selectedBookAttrs[key]) ? this.selectedBookAttrs[key] : '';
+			for(const key in this.BOOK_ATTR_MAP) {
+				this.settingBookAttrs[key] = (this.settingBook.attrs && this.settingBook.attrs[key]) || '';
 			}
 			this.isSetting = true;
 		},
@@ -93,8 +97,10 @@ export default {
 		},
 		
 		onImportBookAttrs() {
+			// TODO:
 			this.$refs["fileinput"].click();
 		},
+
 		onSelectImportFile(event) {
 			const self = this;
 			const file = event.target.files[0];
@@ -118,7 +124,6 @@ export default {
 		title: String,
 		bookData: Array,
 		plugin: Object,
-		settingMap: Object,
 	}
 
 }

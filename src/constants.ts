@@ -27,3 +27,39 @@ export const SUPPORT_BOOK_TYPES = [
 					'svg','bmp','gif','jpg','png',
 					'mp4','ogg','webm'
 				];
+
+export const BOOK_ATTR_MAP = {
+    title: {
+        label: "标题",
+    },
+    author: {
+        label: "作者",
+        placeholder: "以逗号分隔"
+    },
+    "publish date": {
+        label: "出版时间",
+    },
+    "publisher": {
+        label: "出版商",
+    },
+    "description": {
+        label: "描述"
+    },
+    "abstract": {
+        label: "摘要",
+        type: "textarea",
+    },
+    "rating": {
+        label: "评分",
+    },
+    "cover": {
+        label: "封面"
+    },
+    "url": {
+        label: "链接"
+    },
+    "tags": {
+        label: "标签",
+        placeholder: "以逗号分隔",
+    }
+}

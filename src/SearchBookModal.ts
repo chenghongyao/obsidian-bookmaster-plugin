@@ -3,6 +3,7 @@ import BookNotePlugin from "./main";
 import searchBook from "./view/search-book.vue";
 
 import Vue from "vue"
+import { AbstractBook } from "./types";
 export default class SearchBookModal extends Modal {
 	plugin: BookNotePlugin;
 
@@ -10,34 +11,14 @@ export default class SearchBookModal extends Modal {
 		super(app);
 		this.plugin = plugin;
 	}
-
-
-	walk(root: string, result: Array<any>) {
-		const self = this;
-		const files = this.plugin.fs.readdirSync(this.plugin.path.join(this.plugin.settings.bookPath, root));
-		files.forEach((filename: string) => {
-			const filepath = self.plugin.path.join(root, filename);
-			const stat = self.plugin.fs.statSync(self.plugin.path.join(self.plugin.settings.bookPath, filepath));
-			if (stat.isDirectory() && !filepath.startsWith(".")) {
-				self.walk(filepath,result);
-			} else {
-				const ext = self.plugin.path.extname(filename).substr(1);
-				if (self.plugin.isBookSupported(filename,ext)) { // window 下的临时文件
-					const bookobj = {name:filename,path:filepath,ext:ext ? ext : "unknown"};
-					result.push(bookobj);
-				}
-			}
-		});
-	}
-	
-	
-
 	onOpen() {
 		console.log("search model open");
 
 		this.titleEl.setText("Search Book");
-		const books = new Array<any>();
-		this.walk("",books);
+
+		if (this.plugin.bookRawTree.length === 0) {
+			this.plugin.updateBookDispTree();
+		}
 		this.contentEl.style.margin = "0.2em -1em"
 		const container = this.contentEl.createDiv();
 		const self = this;
@@ -45,11 +26,11 @@ export default class SearchBookModal extends Modal {
 			el: container,
 			render: h => h("search-book",{
 				attrs: {
-					books: books,
+					books: this.plugin.bookRawTree,
 				},
 				on: {
-					"open-file": function(item: any) {
-						self.plugin.openBookInBookView(item.path,true);
+					"open-file": function(book: AbstractBook) {
+						self.plugin.openBookInBookView(book,true);
 						self.close();
 					}
 				}

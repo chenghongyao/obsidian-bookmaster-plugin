@@ -2,6 +2,7 @@ import { ItemView, Menu, Notice, WorkspaceLeaf } from "obsidian";
 import Vue from "vue";
 import BookNotePlugin from "./main";
 import NavHeader from "./NavHeader";
+import { AbstractBook } from "./types";
 import obtree from "./view/obtree.vue"
 
 
@@ -31,7 +32,7 @@ export class BookProjectView extends ItemView {
 	}
 
 
-	openContextMenu(evt: MouseEvent, fileitem:any) {
+	openContextMenu(evt: MouseEvent, book:AbstractBook) {
 		const self = this;
 		const menu = new Menu(this.app);
 		menu.addItem((item) =>
@@ -39,7 +40,7 @@ export class BookProjectView extends ItemView {
 			.setTitle("复制路径")
 			.setIcon("link")
 			.onClick(()=>{
-				navigator.clipboard.writeText(fileitem.path.replaceAll('\\','/'));
+				navigator.clipboard.writeText(self.plugin.encodeBookPath(book));
 			})
 		)
 
@@ -48,7 +49,7 @@ export class BookProjectView extends ItemView {
 			.setTitle("使用默认应用打开")
 			.setIcon("popup-open")
 			.onClick(()=>{
-				self.plugin.openBookBySystem(fileitem.path);
+				self.plugin.openBookBySystem(book);
 			})
 		)
 
@@ -75,7 +76,7 @@ export class BookProjectView extends ItemView {
 		this.contentEl.empty();
 		this.navHeader = new NavHeader(this,this.contentEl);
 		this.navHeader.addAction("reset","更新",(evt) => {
-			self.plugin.updateBookProject(self.plugin.currentBookProjectFile);
+			self.plugin.updateBookProject();
 		})
 		this.navHeader.addAction("document","占位",(evt) => {
 			console.log(evt);
@@ -94,23 +95,16 @@ export class BookProjectView extends ItemView {
 					data: self.plugin.currentBookProjectBooks
 				},
 				on: {
-					'select-file': function (item: any, ctrlKey: boolean) {
-						const description = self.plugin.getBookAttrs(item.path)?.["description"];
+					'select-file': function (book: AbstractBook, ctrlKey: boolean) {
+						const description = book.attrs?.description;
 						self.descriptionContainer.setText(description ? description : '');
 						if (ctrlKey) {
-							if (item.isUrl) {
-								self.plugin.openBookBySystem(item.path);
-							} else {
-								self.plugin.openBookInBookView(item.path,true);
-							}
+							self.plugin.openBookInBookView(book,true);
 						}
 					},
-					'open-file': function (item: any) {
-						if (item.isUrl) {
-							self.plugin.openBookBySystem(item.path);
-						} else {
-							self.plugin.openBookInBookView(item.path,false);
-						}
+					'open-file': function (book: AbstractBook) {
+						self.plugin.openBookInBookView(book,false);
+						
 					},
 					'context-menu': function(evt: MouseEvent, item: any) {
 						self.openContextMenu(evt,item);
