@@ -895,6 +895,7 @@ export default class BookNotePlugin extends Plugin {
 							name: urlGroup[1],
 							path: urlGroup[2],
 							vault: "default",
+							ext: "url",
 						})
 					} else {
 						self.currentBookProjectBooks.push(self.decodeBookFromPath(bookpath));
