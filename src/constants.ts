@@ -27,20 +27,36 @@ export const SUPPORT_BOOK_TYPES = [
 					'svg','bmp','gif','jpg','png',
 					'mp4','ogg','webm'
 				];
-
+// issn,isbn,lccn
 export const BOOK_ATTR_MAP = {
     title: {
         label: "标题",
     },
     author: {
         label: "作者",
-        placeholder: "以逗号分隔"
+        placeholder: "以逗号分隔",
+        type: "array",
     },
     "publish date": {
         label: "出版时间",
     },
+    "lang": {
+        label: "语言",
+    },
+    "booktype": {
+        label: "类型",
+    },
     "publisher": {
         label: "出版商",
+    },
+    "journal": {
+        label: "期刊",
+    },
+    "citekey": {
+        label: "citekey",
+    },
+    "doi": {
+        label: "DOI",
     },
     "description": {
         label: "描述"
@@ -61,5 +77,6 @@ export const BOOK_ATTR_MAP = {
     "tags": {
         label: "标签",
         placeholder: "以逗号分隔",
+        type: "array",
     }
 }

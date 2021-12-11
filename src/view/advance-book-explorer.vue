@@ -8,6 +8,7 @@
 		<div class="book-setting-container" >
 			
 			<input ref="fileinput" type="file" accept=".ris" class="mod-cta" @change="onSelectImportFile" style="display:none"/>
+
 			<template v-if="!isSetting">
 
 				<template v-if="selectedBook" >
@@ -20,7 +21,7 @@
 						<div  v-for="(v,k) in BOOK_ATTR_MAP" :key="k" style="margin: 1em 0;">
 							<strong>{{BOOK_ATTR_MAP[k].label ? BOOK_ATTR_MAP[k].label : k}}:</strong>
 							<br>
-							{{selectedBook.attrs[k] || '-' }}
+							{{(selectedBook.attrs[k] || '-') }}
 						</div>
 					</template>
 					<div v-else>
@@ -88,6 +89,10 @@ export default {
 			this.settingBookAttrs = {}
 			for(const key in this.BOOK_ATTR_MAP) {
 				this.settingBookAttrs[key] = (this.settingBook.attrs && this.settingBook.attrs[key]) || '';
+
+				// if (this.settingBookAttrs[key] && this.BOOK_ATTR_MAP[key].type === "array") {
+				// 	this.settingBookAttrs[key] = '' + this.settingBookAttrs[key];
+				// }
 			}
 			this.isSetting = true;
 		},

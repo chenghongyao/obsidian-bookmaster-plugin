@@ -23,6 +23,7 @@
 		@dblclick="$emit('open-file',item)"
 		@contextmenu.prevent="$emit('context-menu',$event,item)"
 		>
+		<div class="nav-file-tag">{{item.ext}}</div>
 		<div class="nav-file-title-content" >
 			{{(item.attrs && item.attrs.title) || item.name}}
 		</div>

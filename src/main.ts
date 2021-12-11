@@ -76,6 +76,8 @@ interface BookNoteSettings {
 	currentBookVault: string,
 
 	bookVaults: Array<BookVault>,
+
+	zoteroImportPath: string,
 }
 
 const DEFAULT_SETTINGS: BookNoteSettings = {
@@ -108,6 +110,8 @@ const DEFAULT_SETTINGS: BookNoteSettings = {
 	bookTreeSortAsc: true,
 	currentBookVault: "default",
 	bookVaults: [],
+
+	zoteroImportPath: "",
 };
 
 
@@ -311,6 +315,7 @@ export default class BookNotePlugin extends Plugin {
 		if (this.settings.useLocalWebViewerServer) {
 			this.startStaticServer();
 		}
+
 
 	}
 
@@ -700,7 +705,7 @@ export default class BookNotePlugin extends Plugin {
 				this.walkTreeByTag(map,book.children,result);
 			} else {
 				if (book.attrs && book.attrs.tags) {
-					const tags = book.attrs.tags.split(",");
+					const tags =  typeof book.attrs.tags === "string" ? book.attrs.author.split(",") : book.attrs.tags;
 					for (var i = 0; i < tags.length; i++) {
 						const tag = tags[i].trim();
 						if (!tag)continue; // FIXME: all empty??
@@ -725,7 +730,7 @@ export default class BookNotePlugin extends Plugin {
 				this.walkTreeByAuthor(map,book.children,result);
 			} else {
 				if (book.attrs && book.attrs.author) {
-					const authors = book.attrs.author.split(",");
+					const authors = typeof book.attrs.author === "string" ? book.attrs.author.split(",") : book.attrs.author;
 					for (var i = 0; i < authors.length; i++) {
 						const author = authors[i].trim();
 						if (!author)continue; // FIXME: all empty??
@@ -938,11 +943,11 @@ export default class BookNotePlugin extends Plugin {
 	}
 
 
-	saveBookAttrs(book: AbstractBook) {
+	saveBookAttrs(book: AbstractBook, ntip: boolean) {
 		const dataPath = this.normalizeBooksDataPathOfVault(book.vault, book.path+".md");
 		const content = this.genBootAttrMeta(book.attrs);
 		this.safeWriteFile(dataPath,content,true).then(() => {
-			new Notice("已保存");
+			if (!ntip)new Notice("已保存");
 		})
 	}
 
@@ -978,6 +983,155 @@ export default class BookNotePlugin extends Plugin {
 	}
 
 
+
+	importBetterBibTex(path: string) {
+		const regTypeKey =  /@(\w+)\{(\w+),/;
+		const regField = /(\w+)\s*=\s*(?:(\w+)|(?:\{(.*)\})),?/;
+		const content = this.fs.readFileSync(path,'utf-8');
+		const items = content.split("\n\n");
+		const results = new Array<any>()
+		for (var i = 0; i < items.length; i++) {
+			const item = items[i].trim();
+			if (!item) continue;
+			const lines = item.split("\n");
+			const typeAndKey = regTypeKey.exec(lines[0]);
+			if (!typeAndKey)continue;
+			const res:any = {};
+			res["itemtype"] = typeAndKey[1];
+			res["citekey"] = typeAndKey[2];
+			for (var j = 1; j < lines.length; j++) {
+				const line = lines[j].trim();
+				if (!line)continue;
+
+				const kv = regField.exec(line);
+				if (!kv)continue;
+				const key = kv[1];
+				let value = kv[2] ? kv[2] : kv[3];
+				res[key] = value.replace(/\{|\}/g,"");
+			}	
+
+
+			if (res["file"]) {
+				res["file"] = res["file"].replace(/\\\\/g,"\\").replace(/([A-Z])\\:/g,"$1:").split(";");
+			}	
+			
+			if (res["author"]) {
+				res["author"] = (res["author"].split("and") as Array<string>).map(s => s.replace(/,/g,"").trim());
+			}	
+
+			if (!res["date"]) {
+
+				if (res["year"]) {
+					res["date"] = res["year"];
+
+					if (res["month"] && res["month"].length === 3) {
+						const allMon = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
+						let mon = allMon.indexOf(res["month"]);
+						if (mon >= 0) {
+							const monstr = String(mon+1);
+							res["date"] += monstr.length == 1 ? "-0"+monstr : monstr;
+						}
+					}
+				}
+
+
+			}
+			results.push(res);
+		}
+
+		return results;
+	}
+
+	
+	buildBookPathMap(tree: Array<AbstractBook>, map: Map<string,AbstractBook>) {
+		tree.forEach((book) => {
+			if(book.children) {
+				this.buildBookPathMap(book.children,map);
+			} else {
+				const absPath = this.normalizeBooksPathOfVault(book.vault,book.path);
+				map.set(absPath,book);
+			}
+		})
+	}
+	
+	writeBookAttrsFromBetterBitTex(path: string) {
+
+
+		if (!this.fs.existsSync(path)) {
+			new Notice("找不到文件");
+			return;
+		}
+
+		if (!path.endsWith(".bib")) {
+			new Notice("仅支持.bib格式文件")
+			return;
+		}
+
+		const items = this.importBetterBibTex(path);
+		if (this.bookRawTree.length === 0) {
+			this.updateBookDispTree();
+		}
+
+		const map : Map<string,AbstractBook> = new Map();
+		this.buildBookPathMap(this.bookRawTree,map);
+
+
+		// for (var i = 0; i < items.length; i++) {
+		// 	const item = items[i];
+		// 	console.log("========================================");
+		// 	console.log(item["title"]);
+		// 	console.log(item["itemtype"],item["citekey"]);
+
+		// 	for (let key in item) {
+		// 		if (["title","itemtype","citekey"].indexOf(key) >= 0)continue;
+		// 		console.log(key+":"+item[key]);
+		// 	}
+		// }
+
+		let count = 0;
+		for (var i = 0; i < items.length; i++) {
+			const item = items[i];
+
+			if (!item.file) {
+				console.warn(item);
+				console.warn("can't find file from item");
+				continue;
+			}
+
+			let book: AbstractBook = null;
+			for(let i in item.file) {
+				book = map.get(item["file"][i]);
+				if (book)break;
+			}
+			if (!book) {
+				console.warn(item);
+				console.warn("can't find book in current vault");
+				continue;
+			}
+
+			if (!book.attrs) book.attrs = {};
+			// issn,isbn,lccn
+			book.attrs["title"] = item["title"] || "";
+			book.attrs["author"] = item["author"] || "";
+			book.attrs["tags"] = item["keywords"] || "";
+			book.attrs["lang"] = item["langid"] || "";
+			book.attrs["publisher"] = item["publisher"] || "";
+			book.attrs["publish date"] = item["date"] || "";
+			book.attrs["doi"] = item["doi"] || "";
+			book.attrs["abstract"] = item["abstract"] || "";
+			book.attrs["booktype"] = item["itemtype"] || "";
+			book.attrs["citekey"] = item["citekey"] || "";
+			count++;
+
+			this.saveBookAttrs(book,true);
+		}
+		
+		new Notice(`成功导入${count}/${items.length}项`);
+		console.log(`成功导入${count}/${items.length}项`);
+
+		map.clear();
+		items.length = 0;
+	}
 
 }
 
@@ -1187,6 +1341,26 @@ class BookNoteSettingTab extends PluginSettingTab {
 				})
 			});
 
+
+
+		new Setting(containerEl)
+			.setName("zotero导入路径")
+			.setDesc("使用Better BibTex类型数据\n测试！！，请先备份books-data中的数据！！！")
+			.addText((text) => {
+				text.setValue(this.plugin.settings.zoteroImportPath).onChange(async (value) => {
+					this.plugin.settings.zoteroImportPath = value;
+					await this.plugin.saveSettings();
+				})
+			});
+		new Setting(containerEl)
+			.setName("导入zotero数据(beta)")
+			.setDesc("使用Better BibTex类型数据\n测试！！，请先备份books-data中的数据！！！")
+			.addButton((btn) => {
+				btn.setButtonText("导入").onClick((evt) => {
+					this.plugin.writeBookAttrsFromBetterBitTex(this.plugin.settings.zoteroImportPath);
+				})
+			})
+
 		
 	
 		for(let i in this.plugin.settings.bookVaults) {
@@ -1215,7 +1389,6 @@ class BookNoteSettingTab extends PluginSettingTab {
 			});
 		}
 
-		
 		new Setting(containerEl)
 			.setName("添加书库")
 			.setDesc("设置后请重启")
