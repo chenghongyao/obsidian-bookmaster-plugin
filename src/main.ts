@@ -41,8 +41,9 @@ import {BookAttribute,AbstractBook} from "./types"
 
 
 
-interface BookVaultMap {
-	[key:string]:string;
+interface BookVault {
+	name: string,
+	path: string,
 }
 
 
@@ -74,7 +75,7 @@ interface BookNoteSettings {
 	bookTreeSortAsc: boolean,
 	currentBookVault: string,
 
-	bookVaults: BookVaultMap,
+	bookVaults: Array<BookVault>,
 }
 
 const DEFAULT_SETTINGS: BookNoteSettings = {
@@ -106,7 +107,7 @@ const DEFAULT_SETTINGS: BookNoteSettings = {
 	bookTreeSortType: 0,
 	bookTreeSortAsc: true,
 	currentBookVault: "default",
-	bookVaults: {},
+	bookVaults: [],
 };
 
 
@@ -132,6 +133,8 @@ export default class BookNotePlugin extends Plugin {
 	currentBooksPath: string;
 	currentBooksDataPath: string;
 
+	bookVaultMap: {[key:string]:string} = {};
+
 	
 
 
@@ -148,9 +151,11 @@ export default class BookNotePlugin extends Plugin {
 		this.fs = (this.app.vault.adapter as any).fs;
 		this.autoInsertAnnotationLink = false;
 
-
+		this.rebuildBookVaultMap();
 
 		this.addSettingTab(new BookNoteSettingTab(this.app, this));
+
+
 
 		// this.addRibbonIcon("dice", "opp", (evt) => {
 		// 	new Notice((this.app.vault.adapter as any).getBasePath());
@@ -309,6 +314,13 @@ export default class BookNotePlugin extends Plugin {
 
 	}
 
+	rebuildBookVaultMap() {
+		this.bookVaultMap = {};
+		for(let i in this.settings.bookVaults) {
+			const key = this.settings.bookVaults[i].name;
+			this.bookVaultMap[key] = this.settings.bookVaults[i].path;
+		}
+	}
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
 	}
@@ -488,8 +500,8 @@ export default class BookNotePlugin extends Plugin {
 		menu.addSeparator();
 		menu.showAtMouseEvent(evt);
 
-		for(let key in this.settings.bookVaults) {
-
+		for(let i in this.settings.bookVaults) {
+			const key = this.settings.bookVaults[i].name;
 			menu.addItem((item) => {
 				
 				item.setTitle(key)
@@ -562,8 +574,8 @@ export default class BookNotePlugin extends Plugin {
 		if (vault === "default") {
 			return this.settings.bookPath;
 		} else {
-			if (this.settings.bookVaults[vault]) {
-				return this.settings.bookVaults[vault];
+			if (this.bookVaultMap[vault]) {
+				return this.bookVaultMap[vault];
 			} else {
 				new Notice("not supported vault:"+vault);
 				this.settings.bookPath;
@@ -575,7 +587,7 @@ export default class BookNotePlugin extends Plugin {
 		if (vault === "default") {
 			return this.settings.bookSettingPath+"/books-data";
 		} else {
-			if (this.settings.bookVaults[vault]) {
+			if (this.bookVaultMap[vault]) {
 				return this.settings.bookSettingPath+"/extra-books-data/"+vault;
 			} else {
 				new Notice("not supported vault:"+vault);
@@ -978,6 +990,8 @@ class BookNoteSettingTab extends PluginSettingTab {
 		this.plugin = plugin;
 	}
 
+
+	
 	display(): void {
 		const { containerEl } = this;
 
@@ -1174,9 +1188,74 @@ class BookNoteSettingTab extends PluginSettingTab {
 			});
 
 		
+	
+		for(let i in this.plugin.settings.bookVaults) {
+			new Setting(containerEl)
+				.setName(`第${Number(i)+1}个书库名`)
+				.setDesc("设置后请重启")
+				.addText((text) => {
+				text.setValue(this.plugin.settings.bookVaults[i].name).onChange((async (value) => {
+					this.plugin.settings.bookVaults[i].name = value;
+					await this.plugin.saveSettings();
+					this.plugin.rebuildBookVaultMap();
+
+				}))
+			});
+
+			new Setting(containerEl)
+				.setName(`第${Number(i)+1}个书库路径`)
+				.setDesc("设置后请重启")
+				.addText((text) => {
+					text.setValue(this.plugin.settings.bookVaults[i].path).onChange((async (value) => {
+					this.plugin.settings.bookVaults[i].path = value;
+					await this.plugin.saveSettings();
+					this.plugin.rebuildBookVaultMap();
+
+				}))
+			});
+		}
+
+		
+		new Setting(containerEl)
+			.setName("添加书库")
+			.setDesc("设置后请重启")
+			.addButton((btn) => {
+				btn.setButtonText("添加书库")
+					.onClick((evt) => {
+						const vaultIndex = Object.keys(this.plugin.settings.bookVaults).length;
+						this.plugin.settings.bookVaults.push({name:`第${vaultIndex+1}个书库`,path:this.plugin.settings.bookPath})
+
+						new Setting(containerEl)
+							.setName(`第${vaultIndex+1}个书库名`)
+							.setDesc("设置后请重启")
+							.addText((text) => {
+							text.setValue(this.plugin.settings.bookVaults[vaultIndex].name).onChange((async (value) => {
+								this.plugin.settings.bookVaults[vaultIndex].name = value;
+								await this.plugin.saveSettings();
+								this.plugin.rebuildBookVaultMap();
+
+							}))
+						});
+
+						new Setting(containerEl)
+						.setName(`第${vaultIndex+1}个书库路径`)
+						.setDesc("设置后请重启")
+						.addText((text) => {
+							text.setValue(this.plugin.settings.bookVaults[vaultIndex].path).onChange((async (value) => {
+								this.plugin.settings.bookVaults[vaultIndex].path = value;
+								await this.plugin.saveSettings();
+								this.plugin.rebuildBookVaultMap();
+
+							}))
+						});
+					})
+			})
 
 
 	
 
 	}
+
+	
+
 }
