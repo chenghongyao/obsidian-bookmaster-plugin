@@ -374,14 +374,15 @@ export class BookView extends ItemView {
 		const actionTemp = actionsContainer.children[0];
 
 		// TODO: 模式切换icon
-		actionsContainer.insertBefore(actionTemp,this.addAction("paper-plane","自动插入",()=> {
+		const autoInsertEl = this.addAction("paper-plane","自动插入",()=> {
 			self.plugin.autoInsertAnnotationLink = !self.plugin.autoInsertAnnotationLink;
 			if (self.plugin.autoInsertAnnotationLink) {
-				new Notice("已启动自动插入新标注");
+				autoInsertEl.classList.add("bookview-action-active");
 			} else {
-				new Notice("已关闭自动插入新标注")
+				autoInsertEl.classList.remove("bookview-action-active");
 			}
-		}));
+		});
+		actionsContainer.insertBefore(actionTemp,autoInsertEl);
 
 		actionsContainer.insertBefore(actionTemp,this.addAction("dice","占位",()=> {
 			new Notice("广告位出租");

@@ -131,3 +131,7 @@ div.book-search-result-container {
 	height: 25em;
 	width: 35em;
 }
+
+a.bookview-action-active {
+  color: rgb(13, 204, 93) !important;
+}
