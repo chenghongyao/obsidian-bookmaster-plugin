@@ -118,6 +118,12 @@ if (!window.documentLoadedListener) {
       window.postObsidianBookNoteMessage("documentLoaded",xfdfString);
     });
     // instance.UI.setFitMode(instance.UI.FitMode.FitWidth)
+
+    instance.Core.documentViewer.addEventListener("pageNumberUpdated",(pageNum) => {
+      window.postObsidianBookNoteMessage("pageNumberUpdated",pageNum);
+    });
+
+
   };
 
   window.addEventListener('documentLoaded', window.documentLoadedListener);

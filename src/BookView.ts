@@ -26,6 +26,7 @@ export class BookView extends ItemView {
 
 	// TODO: when needed??
 	pdfjsDoc: any;
+	currentPage: Number;
 
 	constructor(leaf: WorkspaceLeaf, plugin: BookNotePlugin) {
 		super(leaf)
@@ -112,11 +113,12 @@ export class BookView extends ItemView {
 				for(var i = 0; i < annotsDelete.length; i++) {
 					self.xfdfDoc.getElementsByName(annotsDelete[i].textContent)[0].remove();
 				}
+			},
 
-
-
-				
-			}
+			pageNumberUpdated(page: Number) {
+				this.currentPage = page;
+				console.log("upatge pate",page);
+			},
 		}
 	}
 
@@ -263,6 +265,7 @@ export class BookView extends ItemView {
 							self.headerTitleEl.setText((book.attrs && book.attrs.title) || book.name);
 							self.plugin.bookViewMap.set(self.currentBookPath,self);
 							self.documentReady = false; 
+							self.currentPage = null;
 	
 							const arr = new Uint8Array(data);
 							const blob = new Blob([arr], { type: 'application/'+book.ext });
