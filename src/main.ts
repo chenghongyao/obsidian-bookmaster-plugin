@@ -944,7 +944,7 @@ export default class BookNotePlugin extends Plugin {
 	}
 
 
-	saveBookAttrs(book: AbstractBook, ntip: boolean) {
+	saveBookAttrs(book: AbstractBook, ntip?: boolean) {
 		const dataPath = this.normalizeBooksDataPathOfVault(book.vault, book.path+".md");
 		const content = this.genBootAttrMeta(book.attrs);
 		this.safeWriteFile(dataPath,content,true).then(() => {
