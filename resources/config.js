@@ -1,3 +1,4 @@
+// for booknote-v0.2.0
 if (!window.wvWindowMessageListener) {
   // console.error("add message EventListener");
   const eventHandlerMap = {
