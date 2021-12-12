@@ -259,11 +259,13 @@ export class BookView extends ItemView {
 							}
 						
 							self.pdfjsDoc = null;
+							self.xfdfDoc = null;
+							self.annotsDoc = null;
+							self.currentBook = null;
+							self.currentBookPath = null;
 							
-							self.currentBook = book;
-							self.currentBookPath = self.plugin.encodeBookPath(book);
+							// FIXME: good time to set title??
 							self.headerTitleEl.setText((book.attrs && book.attrs.title) || book.name);
-							self.plugin.bookViewMap.set(self.currentBookPath,self);
 							self.documentReady = false; 
 							self.currentPage = null;
 	
@@ -294,6 +296,9 @@ export class BookView extends ItemView {
 								if(!self.documentReady) {
 									setTimeout(waitDocumentReady,100);
 								} else {
+									self.plugin.bookViewMap.set(self.currentBookPath,self);
+									self.currentBook = book;
+									self.currentBookPath = self.plugin.encodeBookPath(book);
 									resolve(self);
 								}
 							}

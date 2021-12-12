@@ -284,12 +284,24 @@ export default class BookNotePlugin extends Plugin {
 						const bookName = group[3];
 						const annotId = group[7];
 						
-						const bookpath = (bookvault ? "@"+bookvault+"/" : "") + this.path.join(bookDir || "",bookName);
+						const bookpath = (bookvault ? "@"+bookvault+"/" : "") + (bookDir || "") + bookName;
+						
+						console.log("annotBookVault:",bookvault)
+						console.log("bookDir:",bookDir)
+						console.log("bookName:",bookName);
 						console.log("bookpath:",bookpath);
+						console.log("annotId:",annotId)
+
+						// TODO :build book directory!!
+						// const annotBook: AbstractBook = {
+						// 	vault: bookvault || "default",
+						// 	name: bookName,
+						// 	path: bookpath,
+						// 	ext: this.path.extname(bookName);
+						// };
+						//but,just for test in beta
 						const annotBook = this.decodeBookFromPath(bookpath)
-						console.log("annotBookVault",bookvault)
 						console.log("annotBook:",annotBook)
-						console.log("annotId:",annotBook)
 
 						this.registerDomEvent(el as HTMLAnchorElement, "dblclick", (e) => {
 							console.log("dbclick:",annotBook);
@@ -544,6 +556,7 @@ export default class BookNotePlugin extends Plugin {
 
 	decodeBookFromPath(bookpath: string) : AbstractBook {
 		// FIXME http?::
+		bookpath.replace(/\\/g,"/"); // replace \ in window to /;
 		const reg = /^(?:@(.+?)\/)?((?:.+\/)?((?:.+)\.(\w+)?))$/;
 		const grp = reg.exec(bookpath);
 		if (!grp) {
