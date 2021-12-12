@@ -138,7 +138,7 @@ export class BookView extends ItemView {
 		const annoType = anno.tagName;
 		const annoId = anno.getAttr("name");
 		const annoRect = anno.getAttr("rect");
-		const annoPage = anno.getAttr("page");
+		const annoPage = Number(anno.getAttr("page")) + 1;
 		const link = encodeURI(`obsidian://booknote?type=annotation&book=${this.currentBookPath}&id=${annoId}&page=${annoPage}&rect=${annoRect}`);
 		
 		// TODO: declare moment??
@@ -170,7 +170,7 @@ export class BookView extends ItemView {
 		
 				clipPDF(this.plugin, 
 					realZoom,
-					this.pdfjsDoc,Number(annoPage)+1,
+					this.pdfjsDoc,annoPage,
 					clipBox,
 					imgPath);
 	
@@ -185,7 +185,7 @@ export class BookView extends ItemView {
 			}
 		}
 
-		template = template.replace(/\{\{page\}\}/g,annoPage);
+		template = template.replace(/\{\{page\}\}/g,String(annoPage));
 		template = template.replace(/\{\{url\}\}/g,link);
 
 		// TODO: more comment!
@@ -197,7 +197,7 @@ export class BookView extends ItemView {
 
 			} else {
 				const commentEl = anno.getElementsByTagName("contents");
-				template = template.replace(/\{\{comment\}\}/g,commentEl.length ? commentEl[0].textContent : "");
+				template = template.replace(/\{\{comment\}\}/g,commentEl?.length ? commentEl[0].textContent : "");
 			}
 		}
 
