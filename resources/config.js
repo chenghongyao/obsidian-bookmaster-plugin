@@ -12,6 +12,7 @@ if (!window.wvWindowMessageListener) {
     showAnnotation: function(data) {
       const anno = instance.Core.annotationManager.getAnnotationById(data);
       console.error("annot:"+data+"doesn't exists");
+      return;
 			instance.Core.annotationManager.deselectAllAnnotations();
       instance.Core.annotationManager.jumpToAnnotation(anno,{verticalOffset:"50%"});
       instance.Core.annotationManager.selectAnnotation(anno);
