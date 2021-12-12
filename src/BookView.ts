@@ -193,7 +193,7 @@ export class BookView extends ItemView {
 			if (textType) {
 				const allReply = this.xfdfDoc.querySelector(`text[inreplyto="${annoId}"`)
 				const commentEl = allReply ? allReply.getElementsByTagName("contents") : null;
-				template = template.replace(/\{\{comment\}\}/g,commentEl.length ? commentEl[0].textContent : "");
+				template = template.replace(/\{\{comment\}\}/g,commentEl?.length ? commentEl[0].textContent : "");
 
 			} else {
 				const commentEl = anno.getElementsByTagName("contents");
