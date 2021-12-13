@@ -716,8 +716,9 @@ export default class BookNotePlugin extends Plugin {
 			if (book.children) {
 				this.walkTreeByTag(map,book.children,result);
 			} else {
-				if (book.attrs && book.attrs.tags) {
-					const tags =  typeof book.attrs.tags === "string" ? book.attrs.author.split(",") : book.attrs.tags;
+				const tagStr = book.attrs && book.attrs.tags && String(book.attrs && book.attrs.tags);
+				if (tagStr) {
+					const tags =  tagStr.split(",");
 					for (var i = 0; i < tags.length; i++) {
 						const tag = tags[i].trim();
 						if (!tag)continue; // FIXME: all empty??
@@ -741,8 +742,9 @@ export default class BookNotePlugin extends Plugin {
 			if (book.children) {
 				this.walkTreeByAuthor(map,book.children,result);
 			} else {
-				if (book.attrs && book.attrs.author) {
-					const authors = typeof book.attrs.author === "string" ? book.attrs.author.split(",") : book.attrs.author;
+				const authorsStr = book.attrs && book.attrs.author && String(book.attrs.author); // an array will become
+				if (authorsStr) {
+					const authors = authorsStr.split(",");
 					for (var i = 0; i < authors.length; i++) {
 						const author = authors[i].trim();
 						if (!author)continue; // FIXME: all empty??
@@ -773,8 +775,10 @@ export default class BookNotePlugin extends Plugin {
 			if (book.children) {
 				this.walkTreeByPublishYear(map,book.children,result);
 			} else {
-				if (book.attrs && book.attrs["publish date"] && /^\d{4}/.test(book.attrs["publish date"])) {
-					const year =  book.attrs["publish date"].substr(0,4);
+				// FIXME: publish date could be a number!!
+				const dateStr = book.attrs && book.attrs["publish date"] && String(book.attrs["publish date"]);
+				if (dateStr && /^\d{4}/.test(dateStr)) {
+					const year =  dateStr.substr(0,4);
 
 					let arr = map.get(year);
 					if (!arr) {

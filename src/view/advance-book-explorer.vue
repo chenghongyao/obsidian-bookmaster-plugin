@@ -78,7 +78,7 @@ export default {
 			if (!this.settingBook.attrs)
 				this.settingBook.attrs = {};
 			for(const key in this.BOOK_ATTR_MAP) {
-				this.settingBook.attrs[key] = this.settingBookAttrs[key].trim();
+				this.settingBook.attrs[key] = typeof this.settingBookAttrs[key] === "string" ? this.settingBookAttrs[key].trim() : this.settingBookAttrs[key];
 			}
 			this.$emit('save-book-attrs',this.settingBook);
 			this.isSetting = false;
