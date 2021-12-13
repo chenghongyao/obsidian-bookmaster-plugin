@@ -32,7 +32,6 @@ export class QuickBookView extends ItemView {
 			el: container,
 			render: h => h("PDFViewer",{
 				attrs: {
-					plugin: this.plugin,
 				},
 				on: {
 
