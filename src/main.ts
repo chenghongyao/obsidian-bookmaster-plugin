@@ -221,8 +221,6 @@ export default class BookNotePlugin extends Plugin {
 			(leaf) => new AdvanceBookExplorerView(leaf, this)
 		);
 
-
-
 		this.registerBookProject();
 
 
@@ -388,7 +386,6 @@ export default class BookNotePlugin extends Plugin {
 	async safeWriteFile(path: string, data: Buffer|string, overwrite: boolean) {
 
 		const file = this.app.vault.getAbstractFileByPath(path) as TFile;
-		
 		if (file) {
 			if (!overwrite)return;
 			if (typeof data === "string") {
@@ -400,11 +397,13 @@ export default class BookNotePlugin extends Plugin {
 			// cant not write to file if folder doesn't exists
 			// TODO: ob api to get folder?
 			const folderPath = this.path.dirname(path);
-			const folder = this.app.vault.getAbstractFileByPath(folderPath) as TFolder;
-			if (!folder) {
-				await this.app.vault.createFolder(folderPath);
+			if (folderPath !== ".") {
+				const folder = this.app.vault.getAbstractFileByPath(folderPath) as TFolder;
+				if (!folder) {
+					await this.app.vault.createFolder(folderPath);
+				}
 			}
-
+			
 			if (typeof path === "string") {
 				this.app.vault.create(path, data as string);
 			} else {

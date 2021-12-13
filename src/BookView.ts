@@ -116,8 +116,7 @@ export class BookView extends ItemView {
 			},
 
 			pageNumberUpdated(page: Number) {
-				this.currentPage = page;
-				console.log("upatge pate",page);
+				self.currentPage = page;
 			},
 		}
 	}
@@ -411,6 +410,11 @@ export class BookView extends ItemView {
 		if (this.xfdfDoc && this.isAnnotsChanged) {
 			this.plugin.saveBookAnnotations(this.currentBook,this.xfdfDoc);
 		}
+
+		if (this.currentBook) {
+			this.plugin.bookViewMap.delete(this.currentBookPath);
+		}
+
 		window.removeEventListener("message",this.listener);
 		this.viewerReady = false; 
 	}
@@ -451,9 +455,8 @@ export class BookView extends ItemView {
 	
 	onunload() {
 		console.log("BookView unload");
-		if (this.currentBook) {
-			this.plugin.bookViewMap.delete(this.currentBookPath);
-		}
+		
+
 	}
 
 }
