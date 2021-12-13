@@ -940,7 +940,7 @@ export default class BookNotePlugin extends Plugin {
 			const act = this.app.workspace.getActiveViewOfType(BookView);
 			leaf = act ? act.leaf : this.app.workspace.getLeavesOfType(VIEW_TYPE_BOOK_VIEW)[0];
 		}
-
+		this.bookViewMap.set(this.encodeBookPath(book),leaf.view as BookView);
 		this.app.workspace.revealLeaf(leaf);
 		return leaf.view as BookView;
 	}
