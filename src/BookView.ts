@@ -1,5 +1,5 @@
 
-import { ItemView, MarkdownEditView, MarkdownView, Menu, Notice, WorkspaceLeaf } from "obsidian";
+import { debounce, ItemView, MarkdownEditView, MarkdownView, Menu, Notice, WorkspaceLeaf } from "obsidian";
 import WebViewer from "@pdftron/webviewer";
 import BookNotePlugin from "./main";
 
@@ -27,6 +27,7 @@ export class BookView extends ItemView {
 	// TODO: when needed??
 	pdfjsDoc: any;
 	currentPage: Number;
+	saveBookAnnotationsDebouncer: any; // TODO:Debouncer
 
 	constructor(leaf: WorkspaceLeaf, plugin: BookNotePlugin) {
 		super(leaf)
@@ -35,6 +36,14 @@ export class BookView extends ItemView {
 		this.viewerReady = false;
 		this.documentReady = false;
 		this.isAnnotsChanged = false;
+
+
+		this.saveBookAnnotationsDebouncer = debounce((book: AbstractBook, xfdfDoc: Document)=>{
+			this.plugin.saveBookAnnotations(book,xfdfDoc);
+			self.isAnnotsChanged = false;
+			console.log("debounce saved:"+book.path);
+		},3000,true);
+		
 		
 		this.leaf.setPinned(true); //锁定避免被退出
 
@@ -85,8 +94,9 @@ export class BookView extends ItemView {
 				const annotsDelete = annotsChanged.getElementsByTagName("delete")[0].children;
 				
 				
-				if (!self.isAnnotsChanged && (annotsAdd.length || annotsDelete.length || annotsModify.length )) {
+				if(annotsAdd.length || annotsDelete.length || annotsModify.length ) {
 					self.isAnnotsChanged = true;
+					self.saveBookAnnotationsDebouncer(self.currentBook,self.xfdfDoc); //reset timer
 				}
 
 				if (annotsAdd.length > 0 && (self.plugin.settings.copyNewAnnotationLink || self.plugin.autoInsertAnnotationLink)) {
@@ -235,8 +245,11 @@ export class BookView extends ItemView {
 			}
 
 			// TODO: save annotations safely??
+			//save annotation befor open another book
 			if (self.xfdfDoc && self.isAnnotsChanged) {
+				self.saveBookAnnotationsDebouncer.cancel();
 				self.plugin.saveBookAnnotations(self.currentBook, self.xfdfDoc);
+				self.isAnnotsChanged = false;
 			}
 
 			const fullPath = self.plugin.normalizeBooksPathOfVault(book.vault,book.path);
@@ -408,7 +421,9 @@ export class BookView extends ItemView {
 
 		// TODO: saved safely??
 		if (this.xfdfDoc && this.isAnnotsChanged) {
+			this.saveBookAnnotationsDebouncer.cancel();
 			this.plugin.saveBookAnnotations(this.currentBook,this.xfdfDoc);
+			this.isAnnotsChanged = false;
 		}
 
 		if (this.currentBook) {
@@ -452,11 +467,6 @@ export class BookView extends ItemView {
 		});
 	}
 
-	
-	onunload() {
-		console.log("BookView unload");
-		
 
-	}
 
 }
