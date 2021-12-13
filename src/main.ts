@@ -535,7 +535,7 @@ export default class BookNotePlugin extends Plugin {
 							this.settings.currentBookVault = key;
 							await this.saveSettings();
 							this.updateBookDispTree();
-							this.setBookExplorerTitle(this.path.basename(this.getCurrentBooksPath()));
+							this.setBookExplorerTitle(this.settings.bookVaults[i].name || this.path.basename(this.settings.bookPath));
 						
 						}
 					});
