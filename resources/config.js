@@ -1,3 +1,4 @@
+// for booknote-v0.2.0
 if (!window.wvWindowMessageListener) {
   // console.error("add message EventListener");
   const eventHandlerMap = {
@@ -11,12 +12,20 @@ if (!window.wvWindowMessageListener) {
     },
     showAnnotation: function(data) {
       const anno = instance.Core.annotationManager.getAnnotationById(data);
+      if (!anno) {
+        console.error("annot:"+data+"doesn't exists");
+        return;
+      }
 			instance.Core.annotationManager.deselectAllAnnotations();
       instance.Core.annotationManager.jumpToAnnotation(anno,{verticalOffset:"50%"});
       instance.Core.annotationManager.selectAnnotation(anno);
     },
     showBookPage: function(data) {
       instance.Core.documentViewer.setCurrentPage(data);
+    },
+    copyCurrentPageLink: function(data) {
+      const page = instance.Core.documentViewer.getCurrentPage();
+      window.postObsidianBookNoteMessage("copyCurrentPageLink",page);
     }
   }
 
@@ -109,6 +118,12 @@ if (!window.documentLoadedListener) {
       window.postObsidianBookNoteMessage("documentLoaded",xfdfString);
     });
     // instance.UI.setFitMode(instance.UI.FitMode.FitWidth)
+
+    instance.Core.documentViewer.addEventListener("pageNumberUpdated",(pageNum) => {
+      window.postObsidianBookNoteMessage("pageNumberUpdated",pageNum);
+    });
+
+
   };
 
   window.addEventListener('documentLoaded', window.documentLoadedListener);

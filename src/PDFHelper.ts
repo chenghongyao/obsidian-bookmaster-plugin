@@ -50,9 +50,6 @@ export async function clipPDF(plugin: BookNotePlugin, zoomLevel: number, pdfDoc:
 }
 
 export async function getPDFDocFromData(docData: Buffer,cmap?:string) {
-	if (!cmap) {
-		cmap = "https://cdn.jsdelivr.net/npm/pdfjs-dist@2.10.377/cmaps/";
-	}
 	return await pdfjsLib.getDocument({ 
 		data: docData,
 		cMapUrl: cmap,

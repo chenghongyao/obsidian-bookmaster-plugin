@@ -3,7 +3,7 @@
 		<div class="nav-folder mod-root">
 			<div class="nav-folder-title" v-show="title">
 				<div class="nav-folder-collapse-indicator collapse-icon"/>
-				<div class="nav-folder-title-content">{{title}}</div>
+				<div ref="titleEl" class="nav-folder-title-content">{{title}}</div>
 			</div>	
 			<div class="nav-folder-children">
 				<obtree-item v-for="(child, index) in treeData" 
@@ -25,8 +25,7 @@ export default {
 	data() {
 		return {
 			activatedFile:null,
-			treeData: this.data,
-			
+			treeData: this.data, // TODO:可以保证data更新时，视图同步更新
 		}
 	},
 	props: {
@@ -43,6 +42,9 @@ export default {
 			this.activatedFile.isActivate = true;
 			this.$emit('select-file',node.item, ctrlKey);
 		},
+		setTitle(title) {
+			this.$refs.titleEl.setText(title);
+		}
 	},
 	components: {
 		obtreeItem,

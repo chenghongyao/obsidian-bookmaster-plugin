@@ -24,6 +24,7 @@ div.webviewer-container {
 
 
 /* excel */
+/*
 body:not(.remove-file-icons).theme-dark .book-xlsx .nav-file-title>.nav-file-title-content::before,
 body:not(.remove-file-icons).theme-light .book-xlsx  .nav-file-title>.nav-file-title-content::before {
   content: "\ecdf";
@@ -36,10 +37,10 @@ body:not(.remove-file-icons).theme-light .book-xlsx .nav-file-title.is-active>.n
   content: "\ecde";
   opacity: 1;
   font-family: "remixicon";
-}
+} */
 
 /* pdf */
-body:not(.remove-file-icons).theme-dark .book-pdf .nav-file-title>.nav-file-title-content::before,
+/* body:not(.remove-file-icons).theme-dark .book-pdf .nav-file-title>.nav-file-title-content::before,
 body:not(.remove-file-icons).theme-light .book-pdf .nav-file-title>.nav-file-title-content::before {
   content: "\ecfd";
   opacity: 1;
@@ -51,10 +52,10 @@ body:not(.remove-file-icons).theme-light .book-pdf .nav-file-title.is-active>.na
   content: "\ecfc";
   opacity: 1;
   font-family: "remixicon";
-}
+} */
 
 /* word */
-body:not(.remove-file-icons).theme-dark .book-docx .nav-file-title>.nav-file-title-content::before,
+/* body:not(.remove-file-icons).theme-dark .book-docx .nav-file-title>.nav-file-title-content::before,
 body:not(.remove-file-icons).theme-light .book-docx .nav-file-title>.nav-file-title-content::before {
   content: "\ed1d";
   opacity: 1;
@@ -66,10 +67,10 @@ body:not(.remove-file-icons).theme-light .book-docx .nav-file-title.is-active>.n
   content: "\ed1c";
   opacity: 1;
   font-family: "remixicon";
-}
+} */
 
 /* word */
-body:not(.remove-file-icons).theme-dark .book-pptx .nav-file-title>.nav-file-title-content::before,
+/* body:not(.remove-file-icons).theme-dark .book-pptx .nav-file-title>.nav-file-title-content::before,
 body:not(.remove-file-icons).theme-light .book-pptx .nav-file-title>.nav-file-title-content::before {
   content: "\ed01";
   opacity: 1;
@@ -81,20 +82,24 @@ body:not(.remove-file-icons).theme-light .book-pptx .nav-file-title.is-active>.n
   content: "\ed00";
   opacity: 1;
   font-family: "remixicon";
-}
+}  */
 
 
 div.book-setting-container textarea,
-div.book-setting-container input[type="text"] {
+div.book-setting-container input[type="text"],
+div.book-search-query-container input[type="text"]
+{
   width: 100%;
 }
+
+
 
 div.book-setting-container {
   float: left; 
   width: 100%;
   padding:1em;
   margin: 0 0.5em;
-  overflow: auto
+  overflow: auto;
 }
 
 div.book-setting-container div.book-title-container{
@@ -116,4 +121,17 @@ div.book-setting-tree-container {
   /* margin: 0.1em; */
   padding: 0.2em;
   word-break:break-all;
+}
+
+
+div.book-search-result-container {
+	overflow: auto;
+	margin: 1em 0em !important;
+  padding: 0;
+	height: 25em;
+	width: 35em;
+}
+
+a.bookview-action-active {
+  color: rgb(13, 204, 93) !important;
 }

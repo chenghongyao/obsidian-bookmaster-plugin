@@ -4,13 +4,15 @@ import WebViewer from "@pdftron/webviewer";
 import BookNotePlugin from "./main";
 
 import {clipPDF, getPDFDocFromData} from "./PDFHelper"
+import { AbstractBook } from "./types";
 
 
 export const VIEW_TYPE_BOOK_VIEW = "book-view";
 export class BookView extends ItemView {
-	currentBook: string;
-	currentVault: string;
 	plugin: BookNotePlugin;
+	currentBook: AbstractBook;
+	currentBookPath: string;
+
 	listener: any;
 	viewerReady: boolean;
 	documentReady: boolean;
@@ -24,6 +26,7 @@ export class BookView extends ItemView {
 
 	// TODO: when needed??
 	pdfjsDoc: any;
+	currentPage: Number;
 
 	constructor(leaf: WorkspaceLeaf, plugin: BookNotePlugin) {
 		super(leaf)
@@ -34,7 +37,7 @@ export class BookView extends ItemView {
 		this.isAnnotsChanged = false;
 		
 		this.leaf.setPinned(true); //锁定避免被退出
-		// this.plugin.bookViews.add(this);
+
 		const self = this;
 		this.eventHandlerMap = {
 			viewerLoaded(data: any) {
@@ -66,9 +69,16 @@ export class BookView extends ItemView {
 					new Notice("标注id不存在");
 				}
 			},
+			copyCurrentPageLink(data: any) {
+				const link = encodeURI(`obsidian://booknote?type=open-book&book=${self.currentBookPath}&page=${data}`);
+				let template = self.plugin.settings.currentPageLinkTemplage;
+				template = template.replace(/\{\{page\}\}/g,data);
+				template = template.replace(/\{\{url\}\}/g,link);
+				navigator.clipboard.writeText(template);
+				new Notice("回链已复制");
+			},
 
 			annotationChanged(data: any) {
-
 				const annotsChanged = self.plugin.parseXfdfString(data.xfdf);
 				const annotsAdd = annotsChanged.getElementsByTagName("add")[0].children;
 				const annotsModify = annotsChanged.getElementsByTagName("modify")[0].children;
@@ -79,8 +89,7 @@ export class BookView extends ItemView {
 					self.isAnnotsChanged = true;
 				}
 
-				// TODO: 添加标签时进行复制??
-				if (annotsAdd.length > 0 && (self.plugin.settings.copyNewAnnotationLink)) {
+				if (annotsAdd.length > 0 && (self.plugin.settings.copyNewAnnotationLink || self.plugin.autoInsertAnnotationLink)) {
 					const node = annotsAdd[annotsAdd.length-1];
 
 					self.getAnnotationLink(node,data.zoom || 1).then((content: string) => {
@@ -104,14 +113,15 @@ export class BookView extends ItemView {
 				for(var i = 0; i < annotsDelete.length; i++) {
 					self.xfdfDoc.getElementsByName(annotsDelete[i].textContent)[0].remove();
 				}
+			},
 
-
-
-				
-			}
+			pageNumberUpdated(page: Number) {
+				self.currentPage = page;
+			},
 		}
 	}
 
+	// TODO:last activate markdown view?? 
 	tryInsertAnnotationLink(content: string) {
 		if (this.app.workspace.activeLeaf.view.getViewType() === "markdown") { // insert to markdown
 			(this.app.workspace.activeLeaf.view as MarkdownView).editor.replaceSelection(content);
@@ -124,55 +134,72 @@ export class BookView extends ItemView {
 	parseAnnotationContent(content: string) {
 		return content.replace(/\n/g,"");
 	}
+
 	async getAnnotationLink(anno: Element, zoom: Number) {
 		const annoType = anno.tagName;
 		const annoId = anno.getAttr("name");
 		const annoRect = anno.getAttr("rect");
-		const annoPage = anno.getAttr("page");
-		const link = encodeURI(`obsidian://booknote?type=annotation&book=${this.currentBook}&id=${annoId}&page=${annoPage}&rect=${annoRect}`);
+		const annoPage = Number(anno.getAttr("page")) + 1;
+		const link = encodeURI(`obsidian://booknote?type=annotation&book=${this.currentBookPath}&id=${annoId}&page=${annoPage}&rect=${annoRect}`);
 		
 		// TODO: declare moment??
 		let template = "";
 		let needComment = false;
+		let textType = false;
 		if (["highlight","underline" ,"strikeout","squiggly","freetext"].indexOf(annoType) >= 0) {
 			template = this.plugin.settings.selectionAnnotationLinkTemplate;
 			needComment = template.indexOf("{{comment}}") >= 0;
-			template = template.replace("{{content}}",this.parseAnnotationContent(anno.textContent));
+			template = template.replace(/\{\{content\}\}/g,this.parseAnnotationContent(anno.textContent));
+			textType = true;
 		} else {
 			template = this.plugin.settings.regionAnnotationLinkTemplate;
 			needComment = template.indexOf("{{comment}}") >= 0;
+			textType = false;
 		}
 
-		if (template.indexOf("{{img}}") >= 0) {
-
-			const realZoom = this.plugin.settings.fixedAnnotImageZoom ? Number(this.plugin.settings.fixedAnnotImageZoomValue) : Number(zoom);
-			const imgPath = this.plugin.normalizeBookDataPath(`(annotations)${this.currentBook}/p${annoPage}r${annoRect}z${realZoom}i(${annoId}).png`);
-			const clipBox = annoRect.split(",").map(t => Number(t));
-
-	
-			clipPDF(this.plugin, 
-				realZoom,
-				this.pdfjsDoc,Number(annoPage)+1,
-				clipBox,
-				imgPath);
-
-			template = template.replace("{{img}}",imgPath);
-
-
-			// TODO:图像模糊，暂时通过设置宽度解决
-			const clipWidth = Math.round((clipBox[2] - clipBox[0])*realZoom/1.2);
-			const clipHeight = Math.round((clipBox[3] - clipBox[1])*realZoom/1.2);
-			template = template.replace("{{width}}",clipWidth.toString());
-			template = template.replace("{{height}}",clipHeight.toString());
-		}
-
-		template.replace("{{page}}",annoPage);
-		template = template.replace("{{url}}",link);
 		
+		if (template.indexOf("{{img}}") >= 0) {
+			if (!this.pdfjsDoc) { // 只支持PDF
+				new Notice("当前文件不支持截图");
+			} else {
+				const realZoom = this.plugin.settings.fixedAnnotImageZoom ? Number(this.plugin.settings.fixedAnnotImageZoomValue) : Number(zoom);
+				const bookPath = this.currentBook.path;
+				const bookDir = this.plugin.path.dirname(bookPath);
+				const imgDir = bookDir === "." ? "(annots)"+this.currentBook.name : bookDir + "/(annots)" + this.currentBook.name;
+				const imgPath = this.plugin.normalizeBooksDataPathOfVault(this.currentBook.vault, `${imgDir}/p${annoPage}r${annoRect}z${realZoom}i(${annoId}).png`);
+				const clipBox = annoRect.split(",").map(t => Number(t));
+		
+				clipPDF(this.plugin, 
+					realZoom,
+					this.pdfjsDoc,annoPage,
+					clipBox,
+					imgPath);
+	
+				template = template.replace(/\{\{img\}\}/g,imgPath);
+	
+	
+				// TODO:图像模糊，暂时通过设置宽度解决
+				const clipWidth = Math.round((clipBox[2] - clipBox[0])*realZoom/1.2);
+				const clipHeight = Math.round((clipBox[3] - clipBox[1])*realZoom/1.2);
+				template = template.replace(/\{\{width\}\}/g,clipWidth.toString());
+				template = template.replace(/\{\{height\}\}/g,clipHeight.toString());
+			}
+		}
+
+		template = template.replace(/\{\{page\}\}/g,String(annoPage));
+		template = template.replace(/\{\{url\}\}/g,link);
+
 		// TODO: more comment!
 		if (needComment) {
-			const commentEl = anno.getElementsByTagName("contents");
-			template = template.replace("{{comment}}",commentEl.length ? commentEl[0].textContent : "");
+			if (textType) {
+				const allReply = this.xfdfDoc.querySelector(`text[inreplyto="${annoId}"`)
+				const commentEl = allReply ? allReply.getElementsByTagName("contents") : null;
+				template = template.replace(/\{\{comment\}\}/g,commentEl?.length ? commentEl[0].textContent : "");
+
+			} else {
+				const commentEl = anno.getElementsByTagName("contents");
+				template = template.replace(/\{\{comment\}\}/g,commentEl?.length ? commentEl[0].textContent : "");
+			}
 		}
 
 		return template;
@@ -185,17 +212,21 @@ export class BookView extends ItemView {
 	showBookPage(page: Number) {
 		this.postViewerWindowMessage("showBookPage", page);
 	}
+	
+	sendCopyCurrentPageLinkRequest() {
+		this.postViewerWindowMessage("copyCurrentPageLink");
+	}
 
 	getDisplayText() {
 		return "Book View";
 	}
 
-	async openBook(bookpath: string, page?: Number) {
+	async openBook(book: AbstractBook, page?: Number) {
 
 		const self = this;
 		const promise = new Promise<BookView>((resolve,reject) => {
 			
-			if (self.currentBook === bookpath) {
+			if (self.currentBook && self.plugin.isSameBook(self.currentBook,book)) {
 				if (!(page == null || page == undefined)) {
 					self.showBookPage(page);
 				}
@@ -208,50 +239,65 @@ export class BookView extends ItemView {
 				self.plugin.saveBookAnnotations(self.currentBook, self.xfdfDoc);
 			}
 
-			const fullPath = this.plugin.normalizeBookPath(bookpath);
+			const fullPath = self.plugin.normalizeBooksPathOfVault(book.vault,book.path);
 			if (!self.plugin.fs.existsSync(fullPath)) {
 				new Notice("文件不存在:"+fullPath);
 				reject("文件不存在");
 			} else {
 
-				self.plugin.getBookAnnotations(bookpath).then(xfdfString => {
-					this.plugin.fs.readFile(fullPath,(err: any, data: any) => {
+				self.plugin.getBookAnnotations(book).then(xfdfString => {
+					
+					self.plugin.fs.readFile(fullPath,(err: any, data: any) => {
 						if (err) {
 							new Notice("无法读取文件:"+fullPath);
 							reject(err);
 						} else {
 							// TODO: good time to set title??
 							if (self.currentBook) {
-								self.plugin.bookViewMap.delete(self.currentBook);
+								self.plugin.bookViewMap.delete(self.currentBookPath);
 							}
-							self.currentBook = bookpath;
-							self.headerTitleEl.setText(self.plugin.path.basename(bookpath));
-							self.plugin.bookViewMap.set(bookpath,self);
-
-							let cmap = null;
-							if (self.plugin.settings.useLocalWebViewerServer) {
-								cmap = "http://127.0.0.1:"+this.plugin.settings.webviewerLocalPort+"/pdfjs/web/cmaps/"
-							}
-							console.log(cmap);
-							getPDFDocFromData(data,cmap).then(pdfDoc => {
-								this.pdfjsDoc = pdfDoc;
-							})
-
-							const ext = self.plugin.path.extname(bookpath).substr(1)
+						
+							self.pdfjsDoc = null;
+							self.xfdfDoc = null;
+							self.annotsDoc = null;
+							self.currentBook = null;
+							self.currentBookPath = null;
+							
+							// FIXME: good time to set title??
+							self.headerTitleEl.setText((book.attrs && book.attrs.title) || book.name);
+							self.documentReady = false; 
+							self.currentPage = null;
+	
 							const arr = new Uint8Array(data);
-							const blob = new Blob([arr], { type: 'application/'+ext });
-							this.postViewerWindowMessage("openFile",{
+							const blob = new Blob([arr], { type: 'application/'+book.ext });
+							self.postViewerWindowMessage("openFile",{
 								blob:blob,
 								xfdfString: xfdfString,
 								path: fullPath,
-								extension: ext,
+								extension: book.ext,
 								page: page,
-							})
+							});
+
+							if (book.ext === "pdf") { //只支持pdf!!
+								let cmap = null;
+								if (self.plugin.settings.useLocalWebViewerServer) {
+									cmap = "http://127.0.0.1:"+self.plugin.settings.webviewerLocalPort+"/pdfjs/web/cmaps/"
+								} else {
+									cmap = "https://cdn.jsdelivr.net/npm/pdfjs-dist@2.10.377/cmaps/";
+								}
+								getPDFDocFromData(data,cmap).then(pdfDoc => {
+									self.pdfjsDoc = pdfDoc;
+								})
+							}
+							
 
 							function waitDocumentReady() {
 								if(!self.documentReady) {
 									setTimeout(waitDocumentReady,100);
 								} else {
+									self.plugin.bookViewMap.set(self.currentBookPath,self);
+									self.currentBook = book;
+									self.currentBookPath = self.plugin.encodeBookPath(book);
 									resolve(self);
 								}
 							}
@@ -299,8 +345,6 @@ export class BookView extends ItemView {
 		return VIEW_TYPE_BOOK_VIEW;
 	}
 
-
-
 	async onOpen() {
 		console.log("BookView Open");
 
@@ -318,6 +362,7 @@ export class BookView extends ItemView {
 			}),
 			preloadWorker: "pdf",
 		},this.contentEl).then(instance => {
+			
 		});
 
 		this.listener = function(event: any) {
@@ -336,18 +381,15 @@ export class BookView extends ItemView {
 		const actionTemp = actionsContainer.children[0];
 
 		// TODO: 模式切换icon
-		actionsContainer.insertBefore(actionTemp,this.addAction("paper-plane","自动插入",()=> {
+		const autoInsertEl = this.addAction("paper-plane","自动插入",()=> {
 			self.plugin.autoInsertAnnotationLink = !self.plugin.autoInsertAnnotationLink;
 			if (self.plugin.autoInsertAnnotationLink) {
-				new Notice("已启动自动插入新标注");
+				autoInsertEl.classList.add("bookview-action-active");
 			} else {
-				new Notice("已关闭自动插入新标注")
+				autoInsertEl.classList.remove("bookview-action-active");
 			}
-		}));
-
-		
-
-
+		});
+		actionsContainer.insertBefore(actionTemp,autoInsertEl);
 
 		actionsContainer.insertBefore(actionTemp,this.addAction("dice","占位",()=> {
 			new Notice("广告位出租");
@@ -368,16 +410,53 @@ export class BookView extends ItemView {
 		if (this.xfdfDoc && this.isAnnotsChanged) {
 			this.plugin.saveBookAnnotations(this.currentBook,this.xfdfDoc);
 		}
+
+		if (this.currentBook) {
+			this.plugin.bookViewMap.delete(this.currentBookPath);
+		}
+
 		window.removeEventListener("message",this.listener);
 		this.viewerReady = false; 
 	}
 
+
+	onMoreOptionsMenu(menu: Menu) {
+		const self = this;
+		menu.addItem((item) => {
+			item.setTitle("复制当前页回链")
+				.onClick((evt) => {
+					self.sendCopyCurrentPageLinkRequest();
+				})
+		});
+
+		menu.addSeparator();
+		menu.addItem((item) => {
+			item.setTitle("关闭其他")
+				.onClick((evt) => {
+					self.plugin.bookViewMap.forEach((view, key) => {
+						if (view == self)return;
+						view.leaf.detach();
+						self.plugin.bookViewMap.delete(key);
+					});
+				})
+		});
+
+		menu.addItem((item) => {
+			item.setTitle("关闭全部")
+				.onClick((evt) => {
+					self.plugin.bookViewMap.forEach((view, key) => {
+						view.leaf.detach();
+						self.plugin.bookViewMap.delete(key);
+					});
+				});
+		});
+	}
+
+	
 	onunload() {
 		console.log("BookView unload");
-		if (this.currentBook) {
-			this.plugin.bookViewMap.delete(this.currentBook);
-		}
-        // this.plugin.bookViews.delete(this);
+		
+
 	}
 
 }
