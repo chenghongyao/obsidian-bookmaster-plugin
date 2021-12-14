@@ -196,6 +196,19 @@ export class BookView extends ItemView {
 			}
 		}
 
+		if (template.indexOf("{{color}}") >= 0) {
+			let color = "";
+			try{
+				const hexColor = anno.getAttr("color");
+				const r = parseInt(hexColor.substr(1,2),16);
+				const g = parseInt(hexColor.substr(3,2),16);
+				const b = parseInt(hexColor.substr(5,2),16);
+				color = `${r},${g},${b}`;
+			} finally {
+				template = template.replace(/\{\{color\}\}/g,color);
+			}
+		}
+
 		template = template.replace(/\{\{page\}\}/g,String(annoPage));
 		template = template.replace(/\{\{url\}\}/g,link);
 
