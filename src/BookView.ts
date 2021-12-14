@@ -222,6 +222,10 @@ export class BookView extends ItemView {
 	showBookPage(page: Number) {
 		this.postViewerWindowMessage("showBookPage", page);
 	}
+
+	setFitMode(mode: string) {
+		this.postViewerWindowMessage("setFitMode", mode);
+	}
 	
 	sendCopyCurrentPageLinkRequest() {
 		this.postViewerWindowMessage("copyCurrentPageLink");

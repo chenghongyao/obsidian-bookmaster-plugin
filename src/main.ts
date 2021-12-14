@@ -580,7 +580,10 @@ export default class BookNotePlugin extends Plugin {
 	
 
 	isSameBook(l: AbstractBook, r: AbstractBook) {
-		return (l.path === r.path && l.vault && r.vault);
+		if (!l || !r) return false;
+		else {
+			return (l.path === r.path && l.vault && r.vault);
+		}
 	}
 
 	isBookSupported(bookname:string, ext: string) {
