@@ -460,6 +460,19 @@ export class BookView extends ItemView {
 				})
 		});
 
+		menu.addItem((item) =>
+		item
+			.setTitle("复制链接")
+			.setIcon("link")
+			.onClick(()=>{
+				const book = this.currentBook;
+				const path = `${book.vault ? '@'+book.vault + "/" : "/"}${book.path}`;
+				const title = book?.attrs?.title || book.name.substring(0,book.name.length - book.ext.length-1);
+				navigator.clipboard.writeText(`[${title}](obsidian://booknote?type=open-book&book=${encodeURIComponent(path)})`);
+
+			})
+		)
+
 		menu.addSeparator();
 		menu.addItem((item) => {
 			item.setTitle("关闭其他")

@@ -145,6 +145,18 @@ export class BookExplorerView extends ItemView {
 			.onClick(()=>{
 				navigator.clipboard.writeText(self.plugin.encodeBookPath(book));
 			})
+		);
+
+		menu.addItem((item) =>
+		item
+			.setTitle("复制链接")
+			.setIcon("link")
+			.onClick(()=>{
+				const path = `${book.vault ? '@'+book.vault + "/" : "/"}${book.path}`;
+				const title = book?.attrs?.title || book.name.substring(0,book.name.length - book.ext.length-1);
+				navigator.clipboard.writeText(`[${title}](obsidian://booknote?type=open-book&book=${encodeURIComponent(path)})`);
+
+			})
 		)
 
 		menu.addItem((item: any) =>
