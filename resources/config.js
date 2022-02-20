@@ -52,10 +52,11 @@ if (!window.viewerLoadedListener) {
   // console.error("add viewerLoad EventListener");
   window.viewerLoadedListener = function () {
     
-    const { Actions, documentViewer } = instance;
+    const { Actions, docViewer } = instance;
+
     const onTriggered = Actions.GoTo.prototype.onTriggered;
     Actions.GoTo.prototype.onTriggered = function(target, event) {
-      if (target === documentViewer.getDocument() && event.name === 'Open') {
+      if (target === docViewer.getDocument() && event.name === 'Open') {
         return;
       }
       onTriggered.apply(this, arguments);
