@@ -1,29 +1,12 @@
-import {
-	App,
-	MarkdownView,
-	Menu,
-	normalizePath,
-	Notice,
-	Plugin,
-	PluginSettingTab,
-	Setting,
-	TFile,
-	TFolder,
-	ViewCreator,
-} from "obsidian";
+import {Notice,Plugin} from "obsidian";
 import { around } from "monkey-around";
 
+import { BookMasterSettings,DEFAULT_SETTINGS,DeviceSettings,DEFAULT_DEVICE_SETTINGS } from "./settings";
+import * as utils from './utils'
 
-interface BookNoteSettings {
-	bookPath: string;
-}
 
-const DEFAULT_SETTINGS: BookNoteSettings = {
-	bookPath: "",
-};
-
-export default class BookNotePlugin extends Plugin {
-	settings: BookNoteSettings;
+export default class BookMasterPlugin extends Plugin {
+	settings: BookMasterSettings;
 	
 
 	async onload() {
@@ -41,6 +24,10 @@ export default class BookNotePlugin extends Plugin {
 
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		if (!this.settings.deviceSetting[utils.appId]) {
+			this.settings.deviceSetting[utils.appId] = Object.assign({},DEFAULT_DEVICE_SETTINGS);
+			await this.saveSettings();
+		}
 	}
 
 	async saveSettings() {
