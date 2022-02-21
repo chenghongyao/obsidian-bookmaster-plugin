@@ -1,9 +1,7 @@
 node_modules
-release
 .vscode
 .idea
 deploy.bat
-dd.py
 data.json
 main.js
 main.js.LICENSE.txt
