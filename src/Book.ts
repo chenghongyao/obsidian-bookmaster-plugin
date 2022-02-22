@@ -12,6 +12,7 @@ export class BookMeta {
     // basic
     type: string;          // book type
     title: string;         // book title, default to filename
+    description: string;   //book description
     authors: Array<string>; // authors
     tags: Array<string>;   // tags
     rating: number;        // rating: 0-5

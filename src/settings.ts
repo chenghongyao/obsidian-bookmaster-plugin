@@ -16,7 +16,7 @@ export interface BookMasterSettings {
     deviceSetting: {[appId:string]:DeviceSettings};
     dataPath: string;
 
-    displayBookExt: Array<string>;
+    displayBookExts: Array<string>;
 
     currentBookVault: string;
     bookVaultNames: {[vid:string]:string};
@@ -26,7 +26,7 @@ export const DEFAULT_SETTINGS: BookMasterSettings = {
     deviceSetting: {},
     dataPath: "bookmaster",
 
-	displayBookExt: ["pdf","epub"],
+	displayBookExts: ["pdf","epub"],
 
     currentBookVault: MAIN_BOOKVAULT_ID,
     bookVaultNames: {MAIN_BOOKVAULT_ID:"我的书库"},
