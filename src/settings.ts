@@ -3,12 +3,12 @@ import { MAIN_BOOKVAULT_ID } from "./constants";
 
 export interface DeviceSettings {
 	deviceName: string;
-	bookVaultPaths: Array<string>;
+	bookVaultPaths: {[vid:string]:string};
 }
 
 export const DEFAULT_DEVICE_SETTINGS: DeviceSettings = {
 	deviceName: "",
-	bookVaultPaths: [""],
+	bookVaultPaths: {MAIN_BOOKVAULT_ID:""},
 };
 
 
@@ -19,7 +19,7 @@ export interface BookMasterSettings {
     displayBookExt: Array<string>;
 
     currentBookVault: string;
-    bookVaultNames: Array<{id:string,name:string}>;
+    bookVaultNames: {[vid:string]:string};
 }
 
 export const DEFAULT_SETTINGS: BookMasterSettings = {
@@ -29,6 +29,6 @@ export const DEFAULT_SETTINGS: BookMasterSettings = {
 	displayBookExt: ["pdf","epub"],
 
     currentBookVault: MAIN_BOOKVAULT_ID,
-    bookVaultNames: [{id:MAIN_BOOKVAULT_ID,name:"我的书库"}],
+    bookVaultNames: {MAIN_BOOKVAULT_ID:"我的书库"},
 
 };
