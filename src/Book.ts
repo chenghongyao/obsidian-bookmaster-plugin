@@ -12,7 +12,7 @@ export class BookMeta {
     // basic
     type: string;          // book type
     title: string;         // book title, default to filename
-    description: string;   //book description
+    desc: string;          // book description
     authors: Array<string>; // authors
     tags: Array<string>;   // tags
     rating: number;        // rating: 0-5
@@ -29,7 +29,7 @@ export class BookMeta {
 export class AbstractBook {
     vid: string;
     path?: string;
-    name: string;
+    name: string;   // book name or folder name
     children? : Array<AbstractBook>;
 
     constructor(vid: string, name: string,path: string) {
@@ -89,9 +89,14 @@ export class Book extends AbstractBook {
         this.bid = utils.generateBid();
     }
 
-    loadBookMetaFromFile(file: TFile) {
+    loadBookMeta(file: TFile) {
         const cache = utils.app.metadataCache.getFileCache(file).frontmatter;
         // TODO: loadBookMetaFromFile
+    }
+
+
+    saveBookMeta(file: TFile) {
+        // TODO: saveBookMeta
 
     }
 
