@@ -10,6 +10,8 @@ import { AbstractBook, Book, BookFolder } from "./Book";
 export default class BookMasterPlugin extends Plugin {
 	settings: BookMasterSettings;
 	root: {[vid:string]:BookFolder} = {};
+	bookMap: {[path:string]:AbstractBook} = {};
+	bookIdMap: {[bid:string]:AbstractBook} = {};
 	
 	async onload() {
 		await this.loadSettings();
@@ -30,38 +32,46 @@ export default class BookMasterPlugin extends Plugin {
 	}
 
 	// TODO: async
-	private async walkBookVault(vid:string, vaultPath: string, root: string, tree: Array<AbstractBook>,validBookExts: Array<string>) {
+	private async walkBookVault(vid:string, vaultPath: string, root: string, tree: BookFolder,map: {[path:string]:AbstractBook}, validBookExts: Array<string>) {
 		const files = utils.fs.readdirSync(utils.normalizePath(vaultPath,root));
 		files.forEach((name: string) => {
 			const path = root+"/"+name;
 			const stat = utils.fs.statSync(utils.normalizePath(vaultPath,path));
+
 			if (stat.isDirectory()) {
 				if (name.startsWith(".")) return;
 				const folder = new BookFolder(vid,name,path);
 				tree.push(folder);
-				this.walkBookVault(vid,vaultPath,path,folder.children,validBookExts);
+				map[`${vid}:${path}`] = folder;
+				this.walkBookVault(vid,vaultPath,path,folder,map,validBookExts);
 			} else {
 				const ext = utils.getExtName(path);
 				if (!utils.isValidBook(name,ext,validBookExts)) return;
 				const bookname = name.substring(0,ext.length? name.length - ext.length-1:name.length);
 				const book = new Book(vid,  path, bookname , ext);
 				tree.push(book);
+				map[`${vid}:${path}`] = book;
 			}
 		});
 	}
 
 	// run only once!
 	private async loadBookVaults() {
+
+		this.root = {}; // FIXME: clear all??
+		this.bookMap = {} //
 		for(const vid in this.settings.bookVaultNames) {
 			const vaultPath = this.settings.deviceSetting[utils.appId].bookVaultPaths[vid];
 			const vaultName = this.settings.bookVaultNames[vid];
 			if (!utils.isFolderExists(vaultPath)) { // TODO: virtual vault
 				new Notice(`书库“${vaultName}(${vid})”不存在`); 
 				continue;
-			}
+			}		
 			this.root[vid] = new BookFolder(vid,vaultName,null);	
-			await this.walkBookVault(vid,vaultPath,"",this.root[vid].children,this.settings.validBookExts);
+			await this.walkBookVault(vid,vaultPath,"",this.root[vid],this.bookMap,this.settings.validBookExts);
 		}
+
+
 	}
 
 	async loadSettings() {
