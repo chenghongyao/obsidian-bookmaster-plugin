@@ -32,12 +32,14 @@ export class AbstractBook {
     name: string;   // book name or folder name
     children? : Array<AbstractBook>;
     parent: AbstractBook;
+    lost: boolean;
 
-    constructor(parent: AbstractBook, vid: string, name: string,path: string) {
+    constructor(parent: AbstractBook, vid: string, name: string,path: string, lost: boolean) {
         this.parent = parent;
         this.vid = vid;
         this.name = name;
         this.path = path;
+        this.lost = lost;
     }
 
     isFolder() {
@@ -48,8 +50,8 @@ export class AbstractBook {
 
 export class BookFolder extends AbstractBook {
     children: Array<AbstractBook>;    
-    constructor(parent: AbstractBook, vid: string, name: string,path: string,children?: Array<AbstractBook>) {
-        super(parent,vid,name,path);
+    constructor(parent: AbstractBook, vid: string, name: string,path: string, lost: boolean = false, children?: Array<AbstractBook>) {
+        super(parent,vid,name,path,lost);
         this.children = children;
         if (!children) {
             this.children = new Array<AbstractBook>();
@@ -71,16 +73,14 @@ export class Book extends AbstractBook {
 
     ext: string;
     visual: boolean;
-    lost: boolean;
     
     meta: BookMeta;
 
     constructor(parent: AbstractBook, vid: string,  path: string, name: string,ext: string, bid?: string, visual: boolean = false, losted: boolean = false) {
-        super(parent,vid,name,path);
+        super(parent,vid,name,path,visual ? false : losted);
         this.bid = bid;
         this.ext = ext;
         this.visual = visual;
-        this.lost = visual ? false : losted;        
     }
 
     // createId() {
@@ -95,13 +95,13 @@ export class Book extends AbstractBook {
         return this.bid;
     }
 
-    loadBookMeta(file: TFile) {
-        const cache = utils.app.metadataCache.getFileCache(file).frontmatter;
+    loadBookData(file: string|Object) {
+        const meta = typeof file === "string" ? utils.app.metadataCache.getCache(file).frontmatter : file
         // TODO: loadBookMetaFromFile
     }
 
 
-    saveBookMeta(file: TFile) {
+    saveBookData(filepath: string) {
         // TODO: saveBookMeta
 
     }
