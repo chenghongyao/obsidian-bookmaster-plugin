@@ -31,8 +31,10 @@ export class AbstractBook {
     path?: string;
     name: string;   // book name or folder name
     children? : Array<AbstractBook>;
+    parent: AbstractBook;
 
-    constructor(vid: string, name: string,path: string) {
+    constructor(parent: AbstractBook, vid: string, name: string,path: string) {
+        this.parent = parent;
         this.vid = vid;
         this.name = name;
         this.path = path;
@@ -46,8 +48,8 @@ export class AbstractBook {
 
 export class BookFolder extends AbstractBook {
     children: Array<AbstractBook>;    
-    constructor(vid: string, name: string,path: string,children?: Array<AbstractBook>) {
-        super(vid, name,path);
+    constructor(parent: AbstractBook, vid: string, name: string,path: string,children?: Array<AbstractBook>) {
+        super(parent,vid,name,path);
         this.children = children;
         if (!children) {
             this.children = new Array<AbstractBook>();
@@ -73,20 +75,24 @@ export class Book extends AbstractBook {
     
     meta: BookMeta;
 
-    constructor(vid: string, path: string, name: string,ext: string, visual: boolean = false, losted: boolean = false) {
-        super(vid,name,path);
+    constructor(parent: AbstractBook, vid: string,  path: string, name: string,ext: string, bid?: string, visual: boolean = false, losted: boolean = false) {
+        super(parent,vid,name,path);
+        this.bid = bid;
         this.ext = ext;
         this.visual = visual;
-        if (visual) {
-            this.lost = false;      
-        }  else {
-            this.lost = losted;  
-        }
-        
+        this.lost = visual ? false : losted;        
     }
 
-    createId() {
-        this.bid = utils.generateBid();
+    // createId() {
+    //     this.bid = utils.generateBid();
+    // }
+    
+    //TODO: id property??
+    getId() {
+        if (!this.bid) {
+            this.bid = utils.generateBid();
+        }
+        return this.bid;
     }
 
     loadBookMeta(file: TFile) {
