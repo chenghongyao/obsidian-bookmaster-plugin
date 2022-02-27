@@ -95,21 +95,26 @@ export class Book extends AbstractBook {
         return this.bid;
     }
 
-    loadBookData(file: string|Object) {
-        const meta = typeof file === "string" ? utils.app.metadataCache.getCache(file).frontmatter : file
-        // TODO: loadBookMetaFromFile
+    loadBookData(file: string|any) {
+        const meta = typeof file === "string" ? utils.app.metadataCache.getCache(file).frontmatter : file as any
+
+        // TODO: load from map
+        for(const key in this.meta) {
+            this.meta[key] = meta[key];
+        }
     }
 
 
     saveBookData(filepath: string) {
-        // TODO: saveBookMeta
+        const rawMeta = (utils.app.metadataCache.getCache(filepath).frontmatter as any) || {};
+        // TODO: load from map
+        delete rawMeta['position'];
 
+        for(const key in this.meta) {
+            rawMeta[key] = this.meta[key];
+        }
+
+        const content = utils.genBookMetaString(rawMeta);
+        utils.safeWriteFile(filepath,content);
     }
-
-    genBookMetaString() {
-        // TODO: genBookMetaString
-        // return content;
-    }
-
-
 }
