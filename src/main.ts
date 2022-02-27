@@ -36,20 +36,21 @@ export default class BookMasterPlugin extends Plugin {
 			const name = files[i];
 			const path = rootPath+"/"+name;
 			const stat = utils.fs.statSync(utils.normalizePath(vaultPath,path));
-
+			const entry = `${vid}:${path}`;
 			if (stat.isDirectory()) {
-				if (name.startsWith(".")) return;
+				if (name.startsWith(".")) continue;
 				const folder = new BookFolder(root,vid,name,path);
 				root.push(folder);
-				map[`${vid}:${path}`] = folder;
+				map[entry] = folder;
 				await this.walkBookVault(vid,vaultPath,path,folder,map,validBookExts);
 			} else {
 				const ext = utils.getExtName(path);
-				if (!utils.isValidBook(name,ext,validBookExts)) return;
+				if (!utils.isValidBook(name,ext,validBookExts)) continue;
 				const bookname = name.substring(0,ext.length? name.length - ext.length-1:name.length);
 				const book = new Book(root,vid, path,bookname,ext);
+				// TODO: init book data??
 				root.push(book);
-				map[`${vid}:${path}`] = book;
+				map[entry] = book;
 			}
 		}
 	}
@@ -93,8 +94,10 @@ export default class BookMasterPlugin extends Plugin {
 			if (!(file instanceof TFile)) continue;
 			const meta = await this.app.metadataCache.getFileCache(file as TFile).frontmatter;
 			if (!meta["book-meta"]) continue;
+
 			const {vid,bid,path,name,ext,visual} = meta;
 			if (!this.root[vid] || !vid || !bid)continue;
+
 			const entry = `${vid}:${path}`;
 			var book = this.bookMap[entry];
 
@@ -141,11 +144,12 @@ export default class BookMasterPlugin extends Plugin {
 	}
 
 	private async getBookByPath(vid: string, path: string) {
+		const entry = `${vid}:${path}`;
 		if (this.bookMap) {
-			return this.bookMap[`${vid}:${path}`];
+			return this.bookMap[entry];
 		} else {
 			return this.loadAllBookVaults().then(() => {
-				return this.bookMap[`${vid}:${path}`];
+				return this.bookMap[entry];
 			})
 		}
 	}
