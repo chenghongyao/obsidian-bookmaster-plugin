@@ -1,6 +1,7 @@
 
 import * as utils from "./utils";
 import { TFile } from "obsidian";
+import { BookMetaMap, ext2type } from "./constants";
 
 export enum BookStatus {
     UNREAD = "unread",
@@ -81,6 +82,7 @@ export class Book extends AbstractBook {
         this.bid = bid;
         this.ext = ext;
         this.visual = visual;
+        this.meta = new BookMeta();
     }
 
     // createId() {
@@ -95,12 +97,37 @@ export class Book extends AbstractBook {
         return this.bid;
     }
 
-    loadBookData(file: string|any) {
-        const meta = typeof file === "string" ? utils.app.metadataCache.getCache(file).frontmatter : file as any
 
-        // TODO: load from map
-        for(const key in this.meta) {
-            this.meta[key] = meta[key];
+    loadBookData(file: string|any) {
+        const basicMeta = BookMetaMap['basic'];
+
+        // TODO: correct meta type
+        if (file) { // load from file
+
+            const inputMeta: any = typeof file === "string" ? utils.app.metadataCache.getCache(file).frontmatter : file;
+            const typeMeta = BookMetaMap[inputMeta['type']];
+
+            for(const key in basicMeta) {
+                this.meta[key] = inputMeta[key];
+            }
+
+            for(const key in typeMeta) {
+                this.meta[key] = inputMeta[key];
+            }
+
+        } else { // init book meta
+            for(const key in basicMeta) {
+                this.meta[key] = basicMeta[key].default;
+            }
+
+            const type = ext2type[this.ext];
+            if (type && BookMetaMap[type]) {
+                this.meta.type = type;
+                const typeMeta = BookMetaMap[type];
+                for(const key in typeMeta) {
+                    this.meta[key] = typeMeta[key].default;
+                }  
+            }
         }
     }
 
@@ -110,8 +137,21 @@ export class Book extends AbstractBook {
         // TODO: load from map
         delete rawMeta['position'];
 
-        for(const key in this.meta) {
-            rawMeta[key] = this.meta[key];
+        const basicMeta = BookMetaMap['basic'];
+        const typeMeta = this.meta.type && BookMetaMap[this.meta.type];
+
+        for(const key in basicMeta) {
+            if (this.meta[key] !== undefined) {
+                rawMeta[key] = this.meta[key];
+            }
+        }
+
+        if (typeMeta) {
+            for(const key in typeMeta) {
+                if (this.meta[key] !== undefined) {
+                    rawMeta[key] = this.meta[key];
+                }
+            }    
         }
 
         const content = utils.genBookMetaString(rawMeta);

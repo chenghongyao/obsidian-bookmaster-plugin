@@ -48,7 +48,7 @@ export default class BookMasterPlugin extends Plugin {
 				if (!utils.isValidBook(name,ext,validBookExts)) continue;
 				const bookname = name.substring(0,ext.length? name.length - ext.length-1:name.length);
 				const book = new Book(root,vid, path,bookname,ext);
-				// TODO: init book data??
+				book.loadBookData(null); // init book data
 				root.push(book);
 				map[entry] = book;
 			}
