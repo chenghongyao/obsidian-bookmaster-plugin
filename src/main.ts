@@ -10,8 +10,8 @@ import { AbstractBook, Book, BookFolder } from "./Book";
 export default class BookMasterPlugin extends Plugin {
 	settings: BookMasterSettings;
 	root: {[vid:string]:BookFolder} = {};
-	bookMap: {[path:string]:AbstractBook};
-	bookIdMap: {[bid:string]:Book};
+	bookMap: {[path:string]:AbstractBook} = {};
+	bookIdMap: {[bid:string]:Book} = {};
 	
 	async onload() {
 		await this.loadSettings();
@@ -61,22 +61,22 @@ export default class BookMasterPlugin extends Plugin {
 
 	private async getBookByPath(vid: string, path: string) {
 		const entry = `${vid}:${path}`;
-		if (this.bookMap) {
+		if (this.root.length) {	// FIXME: check book vault load status
 			return this.bookMap[entry];
 		} else {
 			return this.loadAllBookVaults().then(() => {
 				return this.bookMap[entry];
-			})
+			});
 		}
 	}
 
 	private async getBookById(bid: string) {
-		if (this.bookIdMap) {
+		if (this.root.length) {	 // FIXME: check book vault load status
 			return this.bookIdMap[bid];
 		} else {
 			return this.loadAllBookVaults().then(() => {
 				return this.bookIdMap[bid];
-			})
+			});
 		}
 	}
 
@@ -84,8 +84,29 @@ export default class BookMasterPlugin extends Plugin {
 		return this.settings.deviceSetting[utils.appId];
 	}
 
+
+	private cleanFolderInMap(folder: BookFolder,map: {[path:string]:AbstractBook}) {
+		
+		for (var i = 0; i < folder.children.length; i++) {  // if test flag is still false, then it is deleted
+			const abs = folder.children[i];
+			const entry = `${abs.vid}:${abs.path}`;
+			delete map[entry];
+
+			if (abs.isFolder()) {
+				this.cleanFolderInMap(abs as BookFolder,map);
+			} 
+		}
+
+		folder.children.splice(0,folder.children.length);
+	}
+
 	// TODO: async,too slow
 	private async walkBookVault(vid:string, vaultPath: string, rootPath: string, root: BookFolder,map: {[path:string]:AbstractBook}, validBookExts: Array<string>) {
+
+		for (var i = 0; i < root.children.length; i++) {  // set all test flag of children to false
+			const abs = root.children[i];
+			abs._existsFlag = false;
+		}
 
 		const dirpath = utils.normalizePath(vaultPath,rootPath);
 		const files = Platform.isMobile ? await utils.fs.readdir(dirpath) : utils.fs.readdirSync(dirpath);
@@ -97,23 +118,48 @@ export default class BookMasterPlugin extends Plugin {
 
 			if (await utils.isFolder(utils.normalizePath(vaultPath,path))) {
 				if (name.startsWith(".")) continue;
-				const folder = new BookFolder(root,vid,name,path);
-				root.push(folder);
-				map[entry] = folder;
-				await this.walkBookVault(vid,vaultPath,path,folder,map,validBookExts);
+
+				var folder = map[entry];
+				if (!folder || !folder.isFolder()) {		// new folder
+					folder = new BookFolder(root,vid,name,path);
+					root.push(folder);
+					map[entry] = folder;	
+				}
+
+				folder._existsFlag = true;
+				await this.walkBookVault(vid,vaultPath,path,folder as BookFolder,map,validBookExts);
 			} else {
 				const ext = utils.getExtName(path);
 				if (!utils.isValidBook(name,ext,validBookExts)) continue;
-				const bookname = name.substring(0,ext.length? name.length - ext.length-1:name.length);
-				const book = new Book(root,vid, path,bookname,ext);
-				book.loadBookData(null); // init book data
-				root.push(book);
-				map[entry] = book;
+
+				var book = map[entry] as Book;
+				if (!book || book.isFolder()) {	// new file
+					const bookname = name.substring(0,ext.length? name.length - ext.length-1:name.length);
+					book = new Book(root,vid, path,bookname,ext);
+					book.loadBookData(null); // init book data
+					root.push(book);
+					map[entry] = book;
+				}
+
+				book._existsFlag = true;
 			}
+		}
+
+		// if the test flag is still false, then it has been deleted
+		for (var i = 0; i < root.children.length; i++) {  
+			const abs = root.children[i];
+			if (abs._existsFlag) continue;
+
+			const entry = `${abs.vid}:${abs.path}`;
+			delete map[entry];
+			root.children.splice(i,1);
+
+			if (abs.isFolder()) {
+				this.cleanFolderInMap(abs as BookFolder,map);
+			} 
 		}
 	}
 
-	// TODO: need some tests
 	private getBookFolder(vid:string, path: string, rootFolder: BookFolder) {
 		
 		const nodes = path.substring(1).split("/"); // path start with '/'
@@ -158,30 +204,36 @@ export default class BookMasterPlugin extends Plugin {
 			if (!this.root[vid] || !vid || !bid)continue;
 
 			const entry = `${vid}:${path}`;
-			var book = this.bookMap[entry];
-
-			if (!book || book.isFolder()) {
-				const folder = this.getBookFolder(vid,path,this.root[vid]);
-				book = new Book(folder,vid,path,name,ext,bid,visual,true);
-				this.bookMap[entry] = book;
+			var book = this.bookIdMap[bid];
+			if (book) {
+				book.lost = !Boolean(this.bookMap[entry])	// update book lost flag
+				// FIXME: reload book data??
+			} else {
+				book = this.bookMap[entry] as Book;
+				if (!book || book.isFolder()) {   // this book is lost
+					const folder = this.getBookFolder(vid,path,this.root[vid]);
+					book = new Book(folder,vid,path,name,ext,bid,visual,true);
+					this.bookMap[entry] = book;
+				}
+				
+				book.loadBookData(meta);
+				this.bookIdMap[bid] = book;
 			}
-			(book as Book).loadBookData(meta);
-			this.bookIdMap[bid] = book as Book;
+
+			// FIXME: what if some of bid are deleted??
 		}
 	}
 
 	private async loadBookVault(vid: string) {
 		const vaultPath = this.getBookVaultPath(vid);
-		const vaultName = this.getBookVaultName(vid);
+		const vaultName = this.getBookVaultName(vid) || utils.getDirName(vaultPath);
 		if (!await utils.isFolderExists(vaultPath)) { // TODO: virtual vault
 			new Notice(`书库“${vaultName}(${vid}):${vaultPath}”不存在`); 
 			return;
 		}		
 
-		if (this.root[vid]) {
-			// this.root[vid].name = vaultName;
-			this.root[vid].children = []; // clear
-		} else {
+
+		if (!this.root[vid]) {
 			this.root[vid] = new BookFolder(null,vid,vaultName,null);	
 		}
 		await this.walkBookVault(vid,vaultPath,"",this.root[vid],this.bookMap,this.settings.validBookExts);
@@ -189,9 +241,6 @@ export default class BookMasterPlugin extends Plugin {
 
 	private async loadAllBookVaults() {
 
-		// clear
-		this.bookMap = {} 
-		this.bookIdMap = {}
 
 		new Notice("书库加载中...");
 

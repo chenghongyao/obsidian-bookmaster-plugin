@@ -34,6 +34,8 @@ export class AbstractBook {
     children? : Array<AbstractBook>;
     parent: AbstractBook;
     lost: boolean;
+    
+    _existsFlag: boolean;
 
     constructor(parent: AbstractBook, vid: string, name: string,path: string, lost: boolean) {
         this.parent = parent;
