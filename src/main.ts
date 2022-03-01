@@ -1,7 +1,7 @@
-import {Notice,Plugin, TAbstractFile, TFile, TFolder} from "obsidian";
+import {Notice,Platform,Plugin, TAbstractFile, TFile, TFolder} from "obsidian";
 import { around } from "monkey-around";
 
-import { BookMasterSettings,DEFAULT_SETTINGS,DeviceSettings,DEFAULT_DEVICE_SETTINGS } from "./settings";
+import { BookMasterSettings,DEFAULT_SETTINGS,DeviceSetting,DEFAULT_DEVICE_SETTINGS } from "./settings";
 import * as utils from './utils'
 import { OB_BOOKVAULT_ID } from "./constants";
 import { AbstractBook, Book, BookFolder } from "./Book";
@@ -21,7 +21,8 @@ export default class BookMasterPlugin extends Plugin {
 				console.log(this.root);
 				console.log(this.bookMap);
 				console.log(this.bookIdMap);
-				new Notice("hello world");
+				new Notice(`有${this.root["00"].children.length}个文件`);
+				// new Notice("hello world");
 
 				// for(var key in this.bookMap) {
 				// 	const book = this.bookMap[key];
@@ -39,15 +40,62 @@ export default class BookMasterPlugin extends Plugin {
 	onunload() {
 	}
 
+	private getBookVaultPath(vid: string) {
+		if (vid === OB_BOOKVAULT_ID) {
+			return (this.app.vault.adapter as any).basePath;
+		} else {
+			const vaultPath = this.getDeviceSetting().bookVaultPaths[vid];
+			if (vaultPath.startsWith("@")) {
+				return (this.app.vault.adapter as any).basePath + vaultPath.substring(1);
+			} else {
+				return vaultPath;
+			}
+		}
+	}
+	private getBookVaultName(vid: string) {
+		return vid === OB_BOOKVAULT_ID ? this.app.vault.getName() : this.settings.bookVaultNames[vid];
+	}
+	private getBookDataPath() {
+		return this.settings.dataPath;
+	}
+
+	private async getBookByPath(vid: string, path: string) {
+		const entry = `${vid}:${path}`;
+		if (this.bookMap) {
+			return this.bookMap[entry];
+		} else {
+			return this.loadAllBookVaults().then(() => {
+				return this.bookMap[entry];
+			})
+		}
+	}
+
+	private async getBookById(bid: string) {
+		if (this.bookIdMap) {
+			return this.bookIdMap[bid];
+		} else {
+			return this.loadAllBookVaults().then(() => {
+				return this.bookIdMap[bid];
+			})
+		}
+	}
+
+	private getDeviceSetting() {
+		return this.settings.deviceSetting[utils.appId];
+	}
+
 	// TODO: async,too slow
 	private async walkBookVault(vid:string, vaultPath: string, rootPath: string, root: BookFolder,map: {[path:string]:AbstractBook}, validBookExts: Array<string>) {
-		const files = utils.fs.readdirSync(utils.normalizePath(vaultPath,rootPath));
+
+		const dirpath = utils.normalizePath(vaultPath,rootPath);
+		const files = Platform.isMobile ? await utils.fs.readdir(dirpath) : utils.fs.readdirSync(dirpath);
+
 		for(var i = 0; i < files.length; i++) {
 			const name = files[i];
 			const path = rootPath+"/"+name;
-			const stat = utils.fs.statSync(utils.normalizePath(vaultPath,path));
 			const entry = `${vid}:${path}`;
-			if (stat.isDirectory()) {
+
+			if (await utils.isFolder(utils.normalizePath(vaultPath,path))) {
 				if (name.startsWith(".")) continue;
 				const folder = new BookFolder(root,vid,name,path);
 				root.push(folder);
@@ -65,20 +113,22 @@ export default class BookMasterPlugin extends Plugin {
 		}
 	}
 
+	// TODO: need some tests
 	private getBookFolder(vid:string, path: string, rootFolder: BookFolder) {
-		const nodes = path.split("/");
+		
+		const nodes = path.substring(1).split("/"); // path start with '/'
 		var p = "";
 		var folder = rootFolder;
 
 		for(let i = 0; i < nodes.length-1; i++) {
 			p += "/" + nodes[i];
-			const id = `${vid}:${p}`;
+			const entry = `${vid}:${p}`;
 			
-			var f = this.bookMap[id];
+			var f = this.bookMap[entry];
 			if (!f || !f.isFolder()) {
 				f = new BookFolder(folder,vid,nodes[i],path,true);
 				folder.push(f);
-				this.bookMap[id] = f;
+				this.bookMap[entry] = f;
 			}
 			folder = f as BookFolder;
 		}
@@ -95,18 +145,7 @@ export default class BookMasterPlugin extends Plugin {
 		return book.saveBookData(this.getBookDataPath());
 	}
 
-	private getBookVaultPath(vid: string) {
-		return vid === OB_BOOKVAULT_ID ? (this.app.vault.adapter as any).basePath : this.settings.deviceSetting[utils.appId].bookVaultPaths[vid];
-	}
-	private getBookVaultName(vid: string) {
-		return vid === OB_BOOKVAULT_ID ? this.app.vault.getName() : this.settings.bookVaultNames[vid];
-	}
-	private getBookDataPath() {
-		return this.settings.dataPath;
-	}
-
-
-	private async loadBookData() {
+	private async loadAllBookData() {
 		const dataFolder = this.app.vault.getAbstractFileByPath(this.getBookDataPath()) as TFolder;
 		if (!dataFolder || !(dataFolder instanceof TFolder)) return;
 		for(var i = 0 ;i < dataFolder.children.length; i++) {
@@ -130,10 +169,11 @@ export default class BookMasterPlugin extends Plugin {
 			this.bookIdMap[bid] = book as Book;
 		}
 	}
+
 	private async loadBookVault(vid: string) {
 		const vaultPath = this.getBookVaultPath(vid);
-		const vaultName = this.getBookVaultName(vid) || utils.getDirName(vaultPath);
-		if (!utils.isFolderExists(vaultPath)) { // TODO: virtual vault
+		const vaultName = this.getBookVaultName(vid);
+		if (!await utils.isFolderExists(vaultPath)) { // TODO: virtual vault
 			new Notice(`书库“${vaultName}(${vid}):${vaultPath}”不存在`); 
 			return;
 		}		
@@ -153,36 +193,22 @@ export default class BookMasterPlugin extends Plugin {
 		this.bookMap = {} 
 		this.bookIdMap = {}
 
+		new Notice("书库加载中...");
+
 		// load book file
-		for(const vid in this.settings.bookVaultNames) {
-			await this.loadBookVault(vid);
+		for(const vid in this.getDeviceSetting().bookVaultPaths) {
+			await this.loadBookVault(vid); //FIXME: continue if path is empty??
 		}
+
 		await this.loadBookVault(OB_BOOKVAULT_ID);
 
 		// load book data
-		await this.loadBookData();
+		await this.loadAllBookData();
+
+		new Notice("书库加载完成");
 	}
 
-	private async getBookByPath(vid: string, path: string) {
-		const entry = `${vid}:${path}`;
-		if (this.bookMap) {
-			return this.bookMap[entry];
-		} else {
-			return this.loadAllBookVaults().then(() => {
-				return this.bookMap[entry];
-			})
-		}
-	}
 
-	private async getBookById(bid: string) {
-		if (this.bookIdMap) {
-			return this.bookIdMap[bid];
-		} else {
-			return this.loadAllBookVaults().then(() => {
-				return this.bookIdMap[bid];
-			})
-		}
-	}
 
 	private async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());

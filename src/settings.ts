@@ -1,19 +1,19 @@
 
 import { MAIN_BOOKVAULT_ID } from "./constants";
 
-export interface DeviceSettings {
+export interface DeviceSetting {
 	deviceName: string;
 	bookVaultPaths: {[vid:string]:string};
 }
 
-export const DEFAULT_DEVICE_SETTINGS: DeviceSettings = {
+export const DEFAULT_DEVICE_SETTINGS: DeviceSetting = {
 	deviceName: "",
 	bookVaultPaths: {[MAIN_BOOKVAULT_ID]:"D:\\paper"},
 };
 
 
 export interface BookMasterSettings {
-    deviceSetting: {[appId:string]:DeviceSettings};
+    deviceSetting: {[appId:string]:DeviceSetting};
     dataPath: string;
 
     validBookExts: Array<string>;

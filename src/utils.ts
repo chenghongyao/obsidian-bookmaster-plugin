@@ -1,4 +1,4 @@
-import { App, TFile, TFolder } from "obsidian";
+import { App, Platform, TFile, TFolder } from "obsidian";
 
 export const app: App = (window as any).app as App;
 export const appId: string = (app as any).appId as string;
@@ -12,16 +12,29 @@ export function generateBid() {
     return S4()+S4()+S4()+S4();
 }
 
-
-export function isFolderExists(path: string) {
-    return (app.vault.adapter as any).fs.existsSync(path) &&
-            (app.vault.adapter as any).fs.statSync(path).isDirectory();
+export async function isFolder(path:string) {
+    if (Platform.isMobile) {
+        return (await fs.stat(path)).type === "directory";
+    } else {
+        return fs.statSync(path).isDirectory();
+    }
+}
+export async function isFolderExists(path: string) {
+    if (Platform.isMobile) {
+        return await fs.exists(path) && (await fs.stat(path)).type === "directory";
+    } else {
+        return fs.existsSync(path) && fs.statSync(path).isDirectory();
+    }
 }
 
-export function isFileExists(path: string) {
-    return (app.vault.adapter as any).fs.existsSync(path) &&
-    !(app.vault.adapter as any).fs.statSync(path).isDirectory();
+export async function isFileExists(path: string) {
+    if (Platform.isMobile) {
+        return await fs.exists(path) && !((await fs.stat(path)).type === "directory");
+    } else {
+        return fs.existsSync(path) && !fs.statSync(path).isDirectory();
+    }
 }
+
 export function getExtName(path: string) {
     if (path.lastIndexOf(".") === -1) return "";
     return path.substring(path.lastIndexOf(".")+1)

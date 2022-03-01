@@ -85,12 +85,6 @@ export class Book extends AbstractBook {
         this.meta = new BookMeta();
     }
 
-    // createId() {
-    //     this.bid = utils.generateBid();
-    // }
-    
-    //TODO: id property??
-
     hasId() {
         return Boolean(this.bid);
     }
@@ -189,8 +183,13 @@ export class Book extends AbstractBook {
 
         for(const key in this.meta) {
             const val = this.meta[key]; // TODO: correct type string
+            
             if (typeof val === "string") {
+                if (!val) continue;
                 content += `${key}: "${val}"\n`;
+            } else if (typeof val === "object") {
+                if (val.length === 0) continue;
+                content += `${key}: ${val}\n`;
             } else {
                 content += `${key}: ${val}\n`;
             }
