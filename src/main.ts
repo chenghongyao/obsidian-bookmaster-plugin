@@ -22,6 +22,16 @@ export default class BookMasterPlugin extends Plugin {
 				console.log(this.bookMap);
 				console.log(this.bookIdMap);
 				new Notice("hello world");
+
+				// for(var key in this.bookMap) {
+				// 	const book = this.bookMap[key];
+				// 	if (!book.isFolder()) {
+				// 		this.saveBookData(book as Book).then(()=>{
+				// 		})
+				// 		break;
+				// 	}
+				// }
+
 			})
 		});
 	}
@@ -73,6 +83,16 @@ export default class BookMasterPlugin extends Plugin {
 			folder = f as BookFolder;
 		}
 		return folder;
+	}
+
+
+	// save book data safely
+	async saveBookData(book: Book) {
+		if (!book.hasId()) {
+			const bid = book.getId();
+			this.bookIdMap[bid] = book;
+		}
+		return book.saveBookData(this.getBookDataPath());
 	}
 
 	private getBookVaultPath(vid: string) {

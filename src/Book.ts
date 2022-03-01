@@ -1,6 +1,6 @@
 
 import * as utils from "./utils";
-import { TFile } from "obsidian";
+import { normalizePath, TFile } from "obsidian";
 import { BookMetaMap, ext2type } from "./constants";
 
 export enum BookStatus {
@@ -90,6 +90,11 @@ export class Book extends AbstractBook {
     // }
     
     //TODO: id property??
+
+    hasId() {
+        return Boolean(this.bid);
+    }
+
     getId() {
         if (!this.bid) {
             this.bid = utils.generateBid();
@@ -140,9 +145,11 @@ export class Book extends AbstractBook {
         }
     }
 
+    // make sure this book has bid
+    async saveBookData(datapath: string) {
+        const filepath = normalizePath(datapath+"/"+this.bid+".md");
 
-    saveBookData(filepath: string) {
-        const rawMeta = (utils.app.metadataCache.getCache(filepath).frontmatter as any) || {};
+        const rawMeta = (utils.app.metadataCache.getCache(filepath)?.frontmatter as any) || {};
         // TODO: load from map
         delete rawMeta['position'];
 
@@ -164,14 +171,15 @@ export class Book extends AbstractBook {
         }
 
         const content = this.getBookMetaString();
-        utils.safeWriteFile(filepath,content);
+        return utils.safeWriteFile(filepath,content);
     }
 
     private getBookMetaString() {
         var content = "";
         content += "---\n";
-        content += `bid: ${this.bid}\n`;
-        content += `vid: ${this.vid}\n`;
+        content += "book-meta: true\n";
+        content += `bid: "${this.bid}"\n`;
+        content += `vid: "${this.vid}"\n`;
         content += `path: "${this.path}"\n`;
         content += `name: "${this.name}"\n`;
         content += `ext: ${this.ext}\n`;
