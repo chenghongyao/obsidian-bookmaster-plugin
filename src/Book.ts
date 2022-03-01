@@ -98,7 +98,7 @@ export class Book extends AbstractBook {
     }
 
 
-    loadBookData(file: string|any) {
+    loadBookData(file: any) {
         const basicMeta = BookMetaMap['basic'];
 
         // TODO: correct meta type
@@ -106,6 +106,15 @@ export class Book extends AbstractBook {
 
             const inputMeta: any = typeof file === "string" ? utils.app.metadataCache.getCache(file).frontmatter : file;
             const typeMeta = BookMetaMap[inputMeta['type']];
+
+            this.bid = inputMeta["bid"];
+            this.vid = inputMeta["vid"];
+            this.path = inputMeta["path"];
+            this.name = inputMeta["name"];
+            this.ext = inputMeta["ext"];
+            this.visual = inputMeta["visual"];
+            this.hash = inputMeta["hash"];
+            this.citekey = inputMeta["citekey"];
 
             for(const key in basicMeta) {
                 this.meta[key] = inputMeta[key];
@@ -154,7 +163,31 @@ export class Book extends AbstractBook {
             }    
         }
 
-        const content = utils.genBookMetaString(rawMeta);
+        const content = this.getBookMetaString();
         utils.safeWriteFile(filepath,content);
+    }
+
+    private getBookMetaString() {
+        var content = "";
+        content += "---\n";
+        content += `bid: ${this.bid}\n`;
+        content += `vid: ${this.vid}\n`;
+        content += `path: "${this.path}"\n`;
+        content += `name: "${this.name}"\n`;
+        content += `ext: ${this.ext}\n`;
+        content += `visual: ${this.visual}\n`;
+        if (this.hash) content += `hash: ${this.hash}\n`;
+        if (this.citekey) content += `citekey: ${this.citekey}\n`;
+
+        for(const key in this.meta) {
+            const val = this.meta[key]; // TODO: correct type string
+            if (typeof val === "string") {
+                content += `${key}: "${val}"\n`;
+            } else {
+                content += `${key}: ${val}\n`;
+            }
+        }
+        content += "---\n"
+        return content;
     }
 }

@@ -76,8 +76,3 @@ export async function safeWriteFile(path: string, data: Buffer|string, overwrite
     }
 
 }
-
-export function genBookMetaString(meta: any) {
-    // TODO: genBookMetaString
-    return "";
-}

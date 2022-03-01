@@ -112,7 +112,7 @@ export default class BookMasterPlugin extends Plugin {
 	}
 	private async loadBookVault(vid: string) {
 		const vaultPath = this.getBookVaultPath(vid);
-		const vaultName = this.getBookVaultName(vid);
+		const vaultName = this.getBookVaultName(vid) || utils.getDirName(vaultPath);
 		if (!utils.isFolderExists(vaultPath)) { // TODO: virtual vault
 			new Notice(`书库“${vaultName}(${vid}):${vaultPath}”不存在`); 
 			return;
