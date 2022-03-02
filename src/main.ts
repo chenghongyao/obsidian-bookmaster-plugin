@@ -56,7 +56,7 @@ export default class BookMasterPlugin extends Plugin {
 		return vid === OB_BOOKVAULT_ID ? this.app.vault.getName() : this.settings.bookVaultNames[vid];
 	}
 	private getBookDataPath() {
-		return this.settings.dataPath;
+		return this.settings.dataPath + "/book-data";
 	}
 
 	private async getBookByPath(vid: string, path: string) {
