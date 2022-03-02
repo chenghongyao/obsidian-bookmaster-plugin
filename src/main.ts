@@ -44,7 +44,7 @@ export default class BookMasterPlugin extends Plugin {
 		if (vid === OB_BOOKVAULT_ID) {
 			return (this.app.vault.adapter as any).basePath;
 		} else {
-			const vaultPath = this.getDeviceSetting().bookVaultPaths[vid];
+			const vaultPath = this.getCurrentDeviceSetting().bookVaultPaths[vid];
 			if (vaultPath.startsWith("@")) {
 				return (this.app.vault.adapter as any).basePath + vaultPath.substring(1);
 			} else {
@@ -80,25 +80,10 @@ export default class BookMasterPlugin extends Plugin {
 		}
 	}
 
-	private getDeviceSetting() {
+	private getCurrentDeviceSetting() {
 		return this.settings.deviceSetting[utils.appId];
 	}
 
-
-	private cleanFolderInMap(folder: BookFolder,map: {[path:string]:AbstractBook}) {
-		
-		for (var i = 0; i < folder.children.length; i++) {  // if test flag is still false, then it is deleted
-			const abs = folder.children[i];
-			const entry = `${abs.vid}:${abs.path}`;
-			delete map[entry];
-
-			if (abs.isFolder()) {
-				this.cleanFolderInMap(abs as BookFolder,map);
-			} 
-		}
-
-		folder.children.splice(0,folder.children.length);
-	}
 
 	// TODO: async,too slow
 	private async walkBookVault(vid:string, vaultPath: string, rootPath: string, root: BookFolder,map: {[path:string]:AbstractBook}, validBookExts: Array<string>) {
@@ -155,7 +140,7 @@ export default class BookMasterPlugin extends Plugin {
 			root.children.splice(i,1);
 
 			if (abs.isFolder()) {
-				this.cleanFolderInMap(abs as BookFolder,map);
+				utils.cleanFolderInMap(abs as BookFolder,map);
 			} 
 		}
 	}
@@ -236,7 +221,8 @@ export default class BookMasterPlugin extends Plugin {
 		if (!this.root[vid]) {
 			this.root[vid] = new BookFolder(null,vid,vaultName,null);	
 		}
-		await this.walkBookVault(vid,vaultPath,"",this.root[vid],this.bookMap,this.settings.validBookExts);
+		
+		return this.walkBookVault(vid,vaultPath,"",this.root[vid],this.bookMap,this.settings.validBookExts);
 	}
 
 	private async loadAllBookVaults() {
@@ -245,7 +231,7 @@ export default class BookMasterPlugin extends Plugin {
 		new Notice("书库加载中...");
 
 		// load book file
-		for(const vid in this.getDeviceSetting().bookVaultPaths) {
+		for(const vid in this.getCurrentDeviceSetting().bookVaultPaths) {
 			await this.loadBookVault(vid); //FIXME: continue if path is empty??
 		}
 

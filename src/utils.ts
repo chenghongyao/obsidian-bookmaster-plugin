@@ -1,4 +1,5 @@
 import { App, Platform, TFile, TFolder } from "obsidian";
+import { AbstractBook, BookFolder } from "./Book";
 
 export const app: App = (window as any).app as App;
 export const appId: string = (app as any).appId as string;
@@ -88,4 +89,19 @@ export async function safeWriteFile(path: string, data: Buffer|string, overwrite
         
     }
 
+}
+
+export function cleanFolderInMap(folder: BookFolder,map: {[path:string]:AbstractBook}) {
+		
+    for (var i = 0; i < folder.children.length; i++) {  // if test flag is still false, then it is deleted
+        const abs = folder.children[i];
+        const entry = `${abs.vid}:${abs.path}`;
+        delete map[entry];
+
+        if (abs.isFolder()) {
+            this.cleanFolderInMap(abs as BookFolder,map);
+        } 
+    }
+
+    folder.children.splice(0,folder.children.length);
 }
