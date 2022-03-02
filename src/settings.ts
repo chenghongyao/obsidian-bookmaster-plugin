@@ -1,5 +1,6 @@
 
-import { MAIN_BOOKVAULT_ID } from "./constants";
+import { MAIN_BOOKVAULT_ID } from "./constants"; // FIXME: cant find BookStatus if move down 
+import { BookTreeSortType } from "./Book";
 
 export interface DeviceSetting {
 	deviceName: string;
@@ -20,6 +21,9 @@ export interface BookMasterSettings {
 
     currentBookVault: string;
     bookVaultNames: {[vid:string]:string};
+
+    bookTreeSortType: BookTreeSortType;
+    bookTreeSortAsc: boolean;
 }
 
 export const DEFAULT_SETTINGS: BookMasterSettings = {
@@ -31,4 +35,6 @@ export const DEFAULT_SETTINGS: BookMasterSettings = {
     currentBookVault: MAIN_BOOKVAULT_ID,
     bookVaultNames: {[MAIN_BOOKVAULT_ID]:"我的书库"},
 
+    bookTreeSortType: BookTreeSortType.TAG,
+    bookTreeSortAsc: true,
 };

@@ -1,4 +1,5 @@
 const path = require('path');
+const { VueLoaderPlugin } = require('vue-loader')
 
 module.exports = {
     entry: './src/main.ts',
@@ -14,12 +15,25 @@ module.exports = {
                 use: 'ts-loader',
                 exclude: /node_modules/,
             },
+            {
+                test: /\.vue$/,
+                use: 'vue-loader',
+                exclude: /node_modules/,
+            },
+            {
+                test: /\.svg$/,
+                use: 'vue-svg-loader',
+                exclude: /node_modules/,
+            }
         ],
     },
     resolve: {
-        extensions: ['.tsx', '.ts', '.js'],
+        extensions: ['.tsx', '.ts', '.js','.vue'],
     },
     externals: {
         obsidian: 'obsidian',
     },
+    plugins: [
+        new VueLoaderPlugin(),
+    ]
 };

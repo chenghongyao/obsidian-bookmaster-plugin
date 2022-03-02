@@ -5,6 +5,19 @@ export const MAIN_BOOKVAULT_ID = "00";
 export const OB_BOOKVAULT_ID = "99";
 
 
+
+export interface BookMetaOptions {
+	label: string,
+	type: "text"|"number"|"textarray"|"textchoice",
+
+	choices?: Array<string>;
+	default?: string|number;
+	multiline?: boolean;
+}
+export interface BookMetaOptionMap {
+	[name:string]:BookMetaOptions;
+}
+
 export const BookMetaMap : {[type:string]:any}= {
     "basic": {
         "type": {

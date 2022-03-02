@@ -1,0 +1,70 @@
+<template>
+	<div class="nav-files-container node-insert-event" style="position: relative" >
+		<div class="nav-folder mod-root">
+			<div class="nav-folder-title" v-show="title">
+				<div class="nav-folder-collapse-indicator collapse-icon"/>
+				<div ref="titleEl" class="nav-folder-title-content">{{title}}</div>
+			</div>	
+			<div class="nav-folder-children">
+				<v-obtree-item v-for="child in treeData" 
+				:key="child.path" :item="child" 
+				v-on:select-file="onSelectFile"
+				v-on:open-file="(item)=>$emit('open-file',item,false)"
+				v-on:context-menu="onContextMenu"
+				:showNoteIcon="showNoteIcon"
+				/>
+			</div>
+		</div>
+	</div>
+</template>
+
+<script>
+//event: select-file, open-file, 'context-menu
+import vObtreeItem from "./v-obtree-item.vue"
+
+export default {
+	name: 'v-obtree',
+	data() {
+		return {
+			activatedNode:null,
+			treeData: this.data, // TODO:可以保证data更新时，视图同步更新\
+		}
+	},
+	props: {
+		title: String,
+		data: Array,
+		showNoteIcon: Boolean
+	},
+	
+	methods: {
+		onSelectFile(node, ctrlKey){
+			if (this.activatedNode) {
+				this.activatedNode.isActivate = false;
+			}
+			this.activatedNode = node;
+			this.activatedNode.isActivate = true;
+
+			if (ctrlKey) {
+				this.$emit('open-file',node.item, true);
+			} else {
+				this.$emit('select-file',node.item);
+			}
+		},
+		onContextMenu(e,node) {
+			if (this.activatedNode) {
+				this.activatedNode.isActivate = false;
+			}
+			this.activatedNode = node;
+			this.activatedNode.isActivate = true;
+
+			this.$emit('context-menu',e, node.item)
+		},
+		setTitle(title) {
+			this.$refs.titleEl.setText(title);
+		}
+	},
+	components: {
+		vObtreeItem,
+	},
+}
+</script>

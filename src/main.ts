@@ -1,45 +1,88 @@
-import {Notice,Platform,Plugin, TAbstractFile, TFile, TFolder} from "obsidian";
+import {Notice,Platform,Plugin, TAbstractFile, TFile, TFolder, ViewCreator} from "obsidian";
 import { around } from "monkey-around";
 
 import { BookMasterSettings,DEFAULT_SETTINGS,DeviceSetting,DEFAULT_DEVICE_SETTINGS } from "./settings";
 import * as utils from './utils'
 import { OB_BOOKVAULT_ID } from "./constants";
-import { AbstractBook, Book, BookFolder } from "./Book";
+import { AbstractBook, Book, BookFolder, BookTreeSortType } from "./Book";
+import { BookExplorer, VIEW_TYPE_BOOK_EXPLORER } from "./view/BookExplorer";
 
 
 export default class BookMasterPlugin extends Plugin {
 	settings: BookMasterSettings;
-	root: {[vid:string]:BookFolder} = {};
+	root: {[vid:string]:BookFolder};
+	dispTree: BookFolder; // FIXME:parent of book item in dispTree is wrong
+
 	bookMap: {[path:string]:AbstractBook} = {};
 	bookIdMap: {[bid:string]:Book} = {};
 	
 	async onload() {
 		await this.loadSettings();
 
-		this.addRibbonIcon("dice","BookExplorer",(evt) => {
-			this.loadAllBookVaults().then(()=>{
-				console.log(this.root);
-				console.log(this.bookMap);
-				console.log(this.bookIdMap);
-				new Notice(`有${this.root["00"].children.length}个文件`);
-				// new Notice("hello world");
+	
+		this.loadAllBookVaults().then(()=>{
+			this.updateDispTree();
 
-				// for(var key in this.bookMap) {
-				// 	const book = this.bookMap[key];
-				// 	if (!book.isFolder()) {
-				// 		this.saveBookData(book as Book).then(()=>{
-				// 		})
-				// 		break;
-				// 	}
-				// }
+			console.log(this.root);
+			console.log(this.bookMap);
+			console.log(this.bookIdMap);
+			console.log(this.dispTree);
+			new Notice(`有${this.root["00"].children.length}个文件`);
+			// new Notice("hello world");
 
-			})
+			// for(var key in this.bookMap) {
+			// 	const book = this.bookMap[key];
+			// 	if (!book.isFolder()) {
+			// 		(book as Book).meta.tags = ["aa","aa/bb","cc/bb"];
+			// 		this.saveBookData(book as Book).then(()=>{
+			// 		})
+			// 		break;
+			// 	}
+			// }
+
+
 		});
+	
+		this.addRibbonIcon("dice","BookExplorer",(evt) => {
+			this.activateView(VIEW_TYPE_BOOK_EXPLORER,"left");
+			
+		});
+
+		this.safeRegisterView(VIEW_TYPE_BOOK_EXPLORER,leaf => new BookExplorer(leaf,this));
 	}
 
 	onunload() {
 	}
 
+	// register view safely
+	private safeRegisterView(type: string, viewCreator: ViewCreator) {
+		this.registerView(type, viewCreator);
+		this.register(() => {
+			this.app.workspace.detachLeavesOfType(type);
+		});
+	}
+
+	async activateView(type: string, dir?: string, split?: boolean) {
+
+		if (this.app.workspace.getLeavesOfType(type).length == 0) { // if dont exists, create new one,
+			var leaf;
+			if (dir === "left") {
+				leaf = this.app.workspace.getLeftLeaf(split);
+			} else if (dir === "right") {
+				leaf = this.app.workspace.getRightLeaf(split);
+			} else {
+				leaf = this.app.workspace.getLeaf(split && !(this.app.workspace.activeLeaf.view.getViewType() === "empty"));
+			}
+			await leaf.setViewState({
+				type: type,
+				active: true,
+			});
+		}
+
+		this.app.workspace.revealLeaf(this.app.workspace.getLeavesOfType(type)[0]);
+	}
+
+	
 	private getBookVaultPath(vid: string) {
 		if (vid === OB_BOOKVAULT_ID) {
 			return (this.app.vault.adapter as any).basePath;
@@ -53,7 +96,11 @@ export default class BookMasterPlugin extends Plugin {
 		}
 	}
 	private getBookVaultName(vid: string) {
-		return vid === OB_BOOKVAULT_ID ? this.app.vault.getName() : this.settings.bookVaultNames[vid];
+		if (vid === OB_BOOKVAULT_ID) {
+			return this.app.vault.getName();
+		} else {
+			return this.settings.bookVaultNames[vid] || utils.getDirName(this.getBookVaultPath(vid));
+		}
 	}
 	private getBookDataPath() {
 		return this.settings.dataPath + "/book-data";
@@ -193,17 +240,19 @@ export default class BookMasterPlugin extends Plugin {
 			if (book) {
 				book.lost = !Boolean(this.bookMap[entry])	// update book lost flag
 				// FIXME: reload book data??
+
 			} else {
 				book = this.bookMap[entry] as Book;
 				if (!book || book.isFolder()) {   // this book is lost
 					const folder = this.getBookFolder(vid,path,this.root[vid]);
 					book = new Book(folder,vid,path,name,ext,bid,visual,true);
 					this.bookMap[entry] = book;
-				}
-				
-				book.loadBookData(meta);
+				}				
 				this.bookIdMap[bid] = book;
 			}
+
+			book.loadBookData(meta);
+
 
 			// FIXME: what if some of bid are deleted??
 		}
@@ -230,6 +279,10 @@ export default class BookMasterPlugin extends Plugin {
 
 		new Notice("书库加载中...");
 
+		if (!this.root) {
+			this.root = {};
+		}
+
 		// load book file
 		for(const vid in this.getCurrentDeviceSetting().bookVaultPaths) {
 			await this.loadBookVault(vid); //FIXME: continue if path is empty??
@@ -242,6 +295,49 @@ export default class BookMasterPlugin extends Plugin {
 
 		new Notice("书库加载完成");
 	}
+
+	private _updateDispTree() {
+		const vid = this.settings.currentBookVault;
+		const rawTree = this.root[vid];
+		if (!this.dispTree) {
+			this.dispTree = new BookFolder(null,vid,this.getBookVaultName(vid),null);
+		}
+
+		// clear
+		this.dispTree.children.length = 0;
+
+		// built
+		if (this.settings.bookTreeSortType === BookTreeSortType.PATH) {
+			utils.walkTreeByFolder(this.root[vid],this.dispTree); // TODO: check setup
+		} else {
+			const map: Map<string,BookFolder> = new Map();
+			const unknownFolder = new BookFolder(this.dispTree,vid,"unknown","unknown");
+			map.set("unknown", unknownFolder);
+			this.dispTree.push(unknownFolder);
+		
+			if (this.settings.bookTreeSortType === BookTreeSortType.TAG) {
+				utils.walkTreeByTag(map,rawTree,this.dispTree);
+			} else if (this.settings.bookTreeSortType === BookTreeSortType.AUTHOR) {
+				utils.walkTreeByAuthor(map,rawTree,this.dispTree);
+			} else if (this.settings.bookTreeSortType === BookTreeSortType.PUBLISH_YEAR) {
+				utils.walkTreeByPublishYear(map,rawTree,this.dispTree);
+			}
+		}
+		utils.sortBookTree(this.dispTree,this.settings.bookTreeSortAsc);
+	}
+	async updateDispTree() {
+		if (!this.root) {
+			return this.loadAllBookData().then(() => {
+				this._updateDispTree();
+			})
+		} else {
+			this._updateDispTree();
+		}
+
+	
+		
+	}
+
 
 
 

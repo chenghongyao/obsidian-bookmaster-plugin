@@ -3,6 +3,14 @@ import * as utils from "./utils";
 import { normalizePath, TFile } from "obsidian";
 import { BookMetaMap, ext2type } from "./constants";
 
+
+export enum BookTreeSortType {
+	PATH = 0,
+	TAG = 1,
+	AUTHOR = 2,
+	PUBLISH_YEAR = 3,
+}
+
 export enum BookStatus {
     UNREAD = "unread",
     READING = "reading",
@@ -106,6 +114,7 @@ export class Book extends AbstractBook {
         if (file) { // load from file
 
             const inputMeta: any = typeof file === "string" ? utils.app.metadataCache.getCache(file).frontmatter : file;
+            console.log(inputMeta);
             const typeMeta = BookMetaMap[inputMeta['type']];
 
             this.bid = inputMeta["bid"];
@@ -185,13 +194,18 @@ export class Book extends AbstractBook {
 
         for(const key in this.meta) {
             const val = this.meta[key]; // TODO: correct type string
+
+            if (val === undefined) continue;
             
             if (typeof val === "string") {
                 if (!val) continue;
                 content += `${key}: "${val}"\n`;
-            } else if (typeof val === "object") {
+            } else if (typeof val === "object") { // array
                 if (val.length === 0) continue;
-                content += `${key}: ${val}\n`;
+                content += `${key}:\n`;
+                val.forEach((v: string) => {
+                    content += ` - ${v}\n`
+                })
             } else {
                 content += `${key}: ${val}\n`;
             }
