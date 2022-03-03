@@ -1,5 +1,5 @@
 <template>
-	<div class="nav-files-container node-insert-event" style="position: relative" >
+	<div class="nav-files-container node-insert-event" style="position: relative;height: 100%" >
 		<div class="nav-folder mod-root">
 			<div class="nav-folder-title" v-show="showTitle">
 				<div class="nav-folder-collapse-indicator collapse-icon"/>
