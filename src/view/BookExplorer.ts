@@ -154,6 +154,7 @@ export class BookExplorer extends ItemView {
         console.log("Book Explorer Open");
         this.contentEl.empty();
         this.contentEl.style.padding = "0";
+        this.contentEl.style.overflow = "hidden";
 
 
         this.plugin.updateDispTree().then(() => {
