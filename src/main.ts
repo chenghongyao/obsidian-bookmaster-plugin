@@ -22,9 +22,8 @@ export default class BookMasterPlugin extends Plugin {
 	
 		this.loadAllBookVaults().then(()=>{
 
-			console.log(this.root);
-			console.log(this.bookMap);
-			console.log(this.bookIdMap);
+		
+
 			new Notice(`有${this.root["00"].children.length}个文件`);
 			// new Notice("hello world");
 
@@ -178,7 +177,7 @@ export default class BookMasterPlugin extends Plugin {
 		// if the test flag is still false, then it has been deleted
 		for (var i = 0; i < root.children.length; i++) {  
 			const abs = root.children[i];
-			if (abs._existsFlag) continue;
+			if (abs._existsFlag || abs.lost) continue;
 
 			const entry = `${abs.vid}:${abs.path}`;
 			delete map[entry];
@@ -214,11 +213,16 @@ export default class BookMasterPlugin extends Plugin {
 
 	// save book data safely
 	async saveBookData(book: Book) {
+		this.getBookId(book);
+		return book.saveBookData(this.getBookDataPath());
+	}
+
+	getBookId(book: Book) {
 		if (!book.hasId()) {
 			const bid = book.getId();
 			this.bookIdMap[bid] = book;
 		}
-		return book.saveBookData(this.getBookDataPath());
+		return book.getId();
 	}
 
 	private async loadAllBookData() {
@@ -238,20 +242,18 @@ export default class BookMasterPlugin extends Plugin {
 			if (book) {
 				book.lost = !Boolean(this.bookMap[entry])	// update book lost flag
 				// FIXME: reload book data??
-
 			} else {
 				book = this.bookMap[entry] as Book;
 				if (!book || book.isFolder()) {   // this book is lost
 					const folder = this.getBookFolder(vid,path,this.root[vid]);
 					book = new Book(folder,vid,path,name,ext,bid,visual,true);
-					this.bookMap[entry] = book;
+					folder.push(book);
+					// this.bookMap[entry] = book;  // dont record lost book
 				}				
 				this.bookIdMap[bid] = book;
 			}
 
 			book.loadBookData(meta);
-
-
 			// FIXME: what if some of bid are deleted??
 		}
 	}
@@ -292,6 +294,10 @@ export default class BookMasterPlugin extends Plugin {
 
 
 		await this.updateDispTree();
+
+		console.log(this.root);
+		console.log(this.bookMap);
+		console.log(this.bookIdMap);
 
 		new Notice("书库加载完成");
 	}

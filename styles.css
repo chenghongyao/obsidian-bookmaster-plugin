@@ -1,0 +1,17 @@
+
+div.nav-file-title.bm-unread {
+    border-right: 6px solid rgba(255, 0, 0, 0.3);;
+}
+div.nav-file-title.bm-reading {
+    border-right: 6px solid rgba(255, 255, 0, 0.3);;
+}
+div.nav-file-title.bm-finished {
+    border-right: 6px solid rgba(0, 255, 0, 0.3);
+}
+
+div.nav-file-title.bm-lost > div.nav-file-title-content{
+    color: red;
+}
+div.nav-file-title.bm-lost:hover > div.nav-file-title-content {
+    color: red;
+}

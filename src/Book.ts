@@ -99,6 +99,7 @@ export class Book extends AbstractBook {
         return Boolean(this.bid);
     }
 
+    // do NOT use this directly, use plugin.getBookId() instead
     getId() {
         if (!this.bid) {
             this.bid = utils.generateBid();
@@ -114,7 +115,6 @@ export class Book extends AbstractBook {
         if (file) { // load from file
 
             const inputMeta: any = typeof file === "string" ? utils.app.metadataCache.getCache(file).frontmatter : file;
-            console.log(inputMeta);
             const typeMeta = BookMetaMap[inputMeta['type']];
 
             this.bid = inputMeta["bid"];
@@ -163,6 +163,7 @@ export class Book extends AbstractBook {
     }
 
     // make sure this book has bid
+    // do NOT use this directly, use plugin.saveBookData() instead
     async saveBookData(datapath: string) {
         const filepath = normalizePath(datapath+"/"+this.bid+".md");
 

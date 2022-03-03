@@ -138,15 +138,15 @@ export class BookExplorer extends ItemView {
 				new Notice("书库加载失败,重新检查书库路径\n"+err);
 				this.leaf.detach();
 			})
-		})
+		});
 
 		this.header.addAction("stacked-levels","排序",(evt) => {
 			this.openSortContextMenu(evt);
-		})
+		});
         
 		this.header.addAction("search","搜索",(evt) => {
 			// new SearchBookModal(this.app, this.plugin).open();
-		})
+		});
     }
 
 
