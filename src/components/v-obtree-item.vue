@@ -20,10 +20,10 @@
 <div v-else class="nav-file" :class="`book-${item.ext}`">
 	<div class="nav-file-title" 
 		:class="{'is-active':isActivate,
-				'losted': item.meta && item.losted,
-				'bm-unread': item.meta && item.meta['read-status'] === '未读', 
-				'bm-reading': item.meta && item.meta['read-status'] === '在读',
-				'bm-finish': item.meta && item.meta['read-status'] === '已读'}"
+				'bm-lost': item.meta && item.lost,
+				'bm-unread': item.meta && item.meta['status'] === 'unread', 
+				'bm-reading': item.meta && item.meta['status'] === 'reading',
+				'bm-finished': item.meta && item.meta['status'] === 'finished'}"
 		:data-path="item.path"
 		@click.exact="onSelectFile(false)"
 		@click.ctrl="onSelectFile(true)"
@@ -71,7 +71,7 @@ export default {
 	},
 	computed: {
 		isFolder() {
-			return this.item.children; 
+			return this.item.isFolder(); 
 		},
 	}
 }

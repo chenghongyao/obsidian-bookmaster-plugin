@@ -1,12 +1,12 @@
 <template>
 	<div class="nav-files-container node-insert-event" style="position: relative" >
 		<div class="nav-folder mod-root">
-			<div class="nav-folder-title" v-show="title">
+			<div class="nav-folder-title" v-show="showTitle">
 				<div class="nav-folder-collapse-indicator collapse-icon"/>
-				<div ref="titleEl" class="nav-folder-title-content">{{title}}</div>
+				<div ref="titleEl" class="nav-folder-title-content">{{root.name}}</div>
 			</div>	
 			<div class="nav-folder-children">
-				<v-obtree-item v-for="child in treeData" 
+				<v-obtree-item v-for="child in root.children" 
 				:key="child.path" :item="child" 
 				v-on:select-file="onSelectFile"
 				v-on:open-file="(item)=>$emit('open-file',item,false)"
@@ -27,12 +27,15 @@ export default {
 	data() {
 		return {
 			activatedNode:null,
-			treeData: this.data, // TODO:可以保证data更新时，视图同步更新\
+			root: this.data,
 		}
 	},
 	props: {
-		title: String,
-		data: Array,
+		showTitle: {
+			type: Boolean,
+			default: true,
+		},
+		data: Object,
 		showNoteIcon: Boolean
 	},
 	

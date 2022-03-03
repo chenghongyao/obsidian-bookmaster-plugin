@@ -7,71 +7,87 @@ export const OB_BOOKVAULT_ID = "99";
 
 
 export interface BookMetaOptions {
-	label: string,
-	type: "text"|"number"|"textarray"|"textchoice",
-
+	type: "text"|"number"|"text-array"|"text-choice",
+	label?: string,
 	choices?: Array<string>;
-	default?: string|number;
-	multiline?: boolean;
+	default?: any;
+	// multiline?: boolean;
 }
 export interface BookMetaOptionMap {
 	[name:string]:BookMetaOptions;
 }
 
-export const BookMetaMap : {[type:string]:any}= {
+export const BookMetaMap : {[type:string]:BookMetaOptionMap}= {
     "basic": {
         "type": {
+            type: "text",
         },
         "title": {
-            default: ""
+            type: "text",
+            // default: ""
         },
         "desc": {
-            default: ""
+            type: "text",
+            // default: ""
         },
         "authors": {
-            default: []
+            type: "text-array",
+            default: [],
         },
         "tags": {
-            default: []
+            type: "text-array",
+            default: [],
         },
         "rating": {
+            type: "number",
             default: 0
         },
         "status": {
+            type: "text",
             default: BookStatus.UNREAD,
         },
         "progress": {
+            type: "number",
             default: 0,
         },
         "total": {
-            default: 0,
+            type: "number",
+            // default: 0,
         },
         "cover": {
-            default: "",
+            type: "text",
+            // default: "",
         },
         "note": {
-            default: "",
+            type: "text",
+            // default: "",
         }
     },
     "book": {
         "publish-date": {
+            type: "text",
             default: "",
         },
         "publisher": {
+            type: "text",
             default: "",
         },
         "doi": {
+            type: "text",
             default: "",
         }
     },
     "paper": {
         "publish-date": {
+            type: "text",
             default: "",
         },
         "publisher": {
+            type: "text",
             default: "",
         },
         "isbn": {
+            type: "text",
             default: "",
         }
     },

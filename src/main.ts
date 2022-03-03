@@ -21,12 +21,10 @@ export default class BookMasterPlugin extends Plugin {
 
 	
 		this.loadAllBookVaults().then(()=>{
-			this.updateDispTree();
 
 			console.log(this.root);
 			console.log(this.bookMap);
 			console.log(this.bookIdMap);
-			console.log(this.dispTree);
 			new Notice(`有${this.root["00"].children.length}个文件`);
 			// new Notice("hello world");
 
@@ -82,7 +80,6 @@ export default class BookMasterPlugin extends Plugin {
 		this.app.workspace.revealLeaf(this.app.workspace.getLeavesOfType(type)[0]);
 	}
 
-	
 	private getBookVaultPath(vid: string) {
 		if (vid === OB_BOOKVAULT_ID) {
 			return (this.app.vault.adapter as any).basePath;
@@ -95,6 +92,7 @@ export default class BookMasterPlugin extends Plugin {
 			}
 		}
 	}
+	
 	private getBookVaultName(vid: string) {
 		if (vid === OB_BOOKVAULT_ID) {
 			return this.app.vault.getName();
@@ -108,7 +106,7 @@ export default class BookMasterPlugin extends Plugin {
 
 	private async getBookByPath(vid: string, path: string) {
 		const entry = `${vid}:${path}`;
-		if (this.root.length) {	// FIXME: check book vault load status
+		if (this.root) {	// FIXME: check book vault load status
 			return this.bookMap[entry];
 		} else {
 			return this.loadAllBookVaults().then(() => {
@@ -118,7 +116,7 @@ export default class BookMasterPlugin extends Plugin {
 	}
 
 	private async getBookById(bid: string) {
-		if (this.root.length) {	 // FIXME: check book vault load status
+		if (this.root) {	 // FIXME: check book vault load status
 			return this.bookIdMap[bid];
 		} else {
 			return this.loadAllBookVaults().then(() => {
@@ -274,8 +272,7 @@ export default class BookMasterPlugin extends Plugin {
 		return this.walkBookVault(vid,vaultPath,"",this.root[vid],this.bookMap,this.settings.validBookExts);
 	}
 
-	private async loadAllBookVaults() {
-
+	async loadAllBookVaults() {
 
 		new Notice("书库加载中...");
 
@@ -293,11 +290,23 @@ export default class BookMasterPlugin extends Plugin {
 		// load book data
 		await this.loadAllBookData();
 
+
+		await this.updateDispTree();
+
 		new Notice("书库加载完成");
 	}
 
-	private _updateDispTree() {
+
+	async updateDispTree() {
+		if (!this.root) {
+			return this.loadAllBookData();
+		}
+
 		const vid = this.settings.currentBookVault;
+		if (!this.root[vid]) {
+			throw "当前书库不存在"; // TODO
+		}
+
 		const rawTree = this.root[vid];
 		if (!this.dispTree) {
 			this.dispTree = new BookFolder(null,vid,this.getBookVaultName(vid),null);
@@ -324,18 +333,7 @@ export default class BookMasterPlugin extends Plugin {
 			}
 		}
 		utils.sortBookTree(this.dispTree,this.settings.bookTreeSortAsc);
-	}
-	async updateDispTree() {
-		if (!this.root) {
-			return this.loadAllBookData().then(() => {
-				this._updateDispTree();
-			})
-		} else {
-			this._updateDispTree();
-		}
 
-	
-		
 	}
 
 

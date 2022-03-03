@@ -35,6 +35,6 @@ export const DEFAULT_SETTINGS: BookMasterSettings = {
     currentBookVault: MAIN_BOOKVAULT_ID,
     bookVaultNames: {[MAIN_BOOKVAULT_ID]:"我的书库"},
 
-    bookTreeSortType: BookTreeSortType.TAG,
+    bookTreeSortType: BookTreeSortType.PATH,
     bookTreeSortAsc: true,
 };

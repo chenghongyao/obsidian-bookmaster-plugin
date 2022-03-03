@@ -5,10 +5,10 @@ import { BookMetaMap, ext2type } from "./constants";
 
 
 export enum BookTreeSortType {
-	PATH = 0,
-	TAG = 1,
-	AUTHOR = 2,
-	PUBLISH_YEAR = 3,
+	PATH = "PATH",
+	TAG = "TAG",
+	AUTHOR = "AUTHOR",
+	PUBLISH_YEAR = "PUBLISH_YEAR",
 }
 
 export enum BookStatus {
@@ -127,7 +127,12 @@ export class Book extends AbstractBook {
             this.citekey = inputMeta["citekey"];
 
             for(const key in basicMeta) {
-                this.meta[key] = inputMeta[key];
+                const val = inputMeta[key];
+                if (basicMeta[key].type === "text-array") {
+                    this.meta[key] = val === undefined ? [] : (typeof val === "string" ? [val] : val);
+                } else if(val !== undefined){
+                    this.meta[key] = inputMeta[key];
+                }
             }
 
             for(const key in typeMeta) {
@@ -135,16 +140,23 @@ export class Book extends AbstractBook {
             }
 
         } else { // init book meta
+
             for(const key in basicMeta) {
-                this.meta[key] = basicMeta[key].default;
+                if (basicMeta[key].default !== undefined) {
+                    this.meta[key] = basicMeta[key].default;
+                }
             }
 
-            const type = ext2type[this.ext];
-            if (type && BookMetaMap[type]) {
-                this.meta.type = type;
-                const typeMeta = BookMetaMap[type];
+            if (this.meta.type === undefined) {
+                this.meta.type = ext2type[this.ext] || "unknown";
+            }
+
+            if ( BookMetaMap[this.meta.type]) {
+                const typeMeta = BookMetaMap[this.meta.type];
                 for(const key in typeMeta) {
-                    this.meta[key] = typeMeta[key].default;
+                    if (typeMeta[key].default !== undefined) {
+                        this.meta[key] = typeMeta[key].default;
+                    }
                 }  
             }
         }
