@@ -19,13 +19,8 @@ export default class BookMasterPlugin extends Plugin {
 	async onload() {
 		await this.loadSettings();
 
-	
 		this.loadAllBookVaults().then(()=>{
-
-		
-
 			new Notice(`有${this.root["00"].children.length}个文件`);
-			// new Notice("hello world");
 
 			// for(var key in this.bookMap) {
 			// 	const book = this.bookMap[key];
@@ -342,6 +337,11 @@ export default class BookMasterPlugin extends Plugin {
 
 	}
 
+	getBookFullPath(book: Book) {
+		// FIXME: url path
+		return utils.normalizePath(this.getBookVaultPath(book.vid),book.path);
+	}
+
 
 
 
@@ -355,6 +355,49 @@ export default class BookMasterPlugin extends Plugin {
 
 	async saveSettings() {
 		await this.saveData(this.settings);
+	}
+
+
+	private getMobileRelativePath(fullpath: string) {
+		const basePath = this.getBookVaultPath(OB_BOOKVAULT_ID);
+		const b = basePath.split("/");
+		const f = fullpath.split("/");
+		for (var i = 0; i < b.length; i++) {
+			if (b[i] !== f[i]) {
+				const rel = "../".repeat(b.length-i) + f.slice(i).join("/");
+				return rel;
+			}
+		}
+		
+		if (f.length > b.length) {
+			return f.slice(b.length).join("/");
+		} else {
+			return null;
+		}
+	}
+	async openBookBySystem(book: Book) {
+		const fullpath = this.getBookFullPath(book);
+		console.log("open book:",fullpath);
+
+		if (Platform.isMobile) {
+			// TODO: http?
+			new Notice(this.getBookVaultPath(OB_BOOKVAULT_ID))
+			new Notice(fullpath)
+			const relPath = this.getMobileRelativePath(fullpath);
+			new Notice(relPath);
+			(this.app as any).openWithDefaultApp(relPath);
+		} else {
+			window.open(fullpath);
+		}
+	}
+	async openBook(book: Book, newPanel: boolean = false) {
+		if (book.lost) {
+			// TODO: fix lost book
+			new Notice("文件丢失");
+			return;
+		}
+
+		this.openBookBySystem(book);
 	}
 
 

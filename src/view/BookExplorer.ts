@@ -173,7 +173,7 @@ export class BookExplorer extends ItemView {
                             // console.log("select file:",book);
 						},
 						'open-file': function (book: Book, ctrlKey: boolean) {
-							// self.plugin.openBook(book,ctrlKey);
+							self.plugin.openBook(book,ctrlKey);
 							
 						},
 						'context-menu': function(evt: MouseEvent, book: Book) {

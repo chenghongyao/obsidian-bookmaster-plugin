@@ -53,7 +53,7 @@ export function isValidBook(bookname: string,ext: string,validBookExts: Array<st
 }
 export function normalizePath(root: string,rpath:string) {
     // TODO: more robust
-    return root + "/" + rpath;
+    return root + (rpath.startsWith("/") ? rpath :"/" + rpath);
     // return (app.vault.adapter as any).path.join(root,rpath);
 }
 
