@@ -264,7 +264,7 @@ export default class BookMasterPlugin extends Plugin {
 	private async loadBookVault(vid: string) {
 		const vaultPath = this.getBookVaultPath(vid);
 		if (!vaultPath) return; // FIXME: ignore this vault
-		const vaultName = this.getBookVaultName(vid) || utils.getDirName(vaultPath);
+		const vaultName = this.getBookVaultName(vid);
 		if (!await utils.isFolderExists(vaultPath)) { // TODO: virtual vault
 			new Notice(`书库“${vaultName}(${vid}):${vaultPath}”不存在`); 
 			return;
@@ -364,7 +364,7 @@ export default class BookMasterPlugin extends Plugin {
 
 	private async getBookOpenLink(book: Book) {
 		return this.getBookId(book).then((bid) => {
-			return `obsidian://bookmaster?type=open-book&${bid}`;
+			return `obsidian://bookmaster?type=open-book&bid=${bid}`;
 		});
 	}
 
@@ -402,14 +402,6 @@ export default class BookMasterPlugin extends Plugin {
 				})
 			);
 
-			menu.addItem((item: any) =>
-			item
-				.setTitle("打开设置文件")
-				.setIcon("popup-open")
-				.onClick(()=>{
-					this.openBookDataFile(book);
-				})
-			);
 
 			menu.addItem((item) =>
 			item
@@ -449,22 +441,22 @@ export default class BookMasterPlugin extends Plugin {
 			menu.addSeparator();
 			menu.addItem((item) =>
 			item
-				.setTitle("复制路径(ID)")
+				.setTitle("复制路径(ID:Title)")
 				.setIcon("link")
 				.onClick(()=>{
 					this.getBookId(book).then((id: string) => {
-						navigator.clipboard.writeText(id);
+						navigator.clipboard.writeText(`${id}:${book.meta.title || book.name}`);
 					})
 				})
 			);
 	
 			menu.addItem((item) =>
 			item
-				.setTitle("复制Obsidian链接(todo)")
+				.setTitle("复制Obsidian链接")
 				.setIcon("link")
 				.onClick(()=>{
 					this.getBookOpenLink(book).then((link) => {
-						navigator.clipboard.writeText(`[${book.meta.title || book.meta.name}](${link})`);
+						navigator.clipboard.writeText(`[${book.meta.title || book.name}](${link})`);
 					})
 				})
 			);
@@ -482,7 +474,16 @@ export default class BookMasterPlugin extends Plugin {
 				})
 			);
 			menu.addSeparator();
-			if (book.bid) {
+			menu.addItem((item: any) =>
+			item
+				.setTitle("打开设置文件")
+				.setIcon("popup-open")
+				.onClick(()=>{
+					this.openBookDataFile(book);
+				})
+			);
+
+			if (book.hasId()) {
 				menu.addItem((item: any) =>
 				item
 					.setTitle("删除记录(todo)")
@@ -497,8 +498,9 @@ export default class BookMasterPlugin extends Plugin {
 						// }
 					})
 				);	
+			}
 
-				menu.addItem((item: any) =>
+			menu.addItem((item: any) =>
 				item
 					.setTitle("删除文件(todo)")
 					.setIcon("trash")
@@ -511,7 +513,6 @@ export default class BookMasterPlugin extends Plugin {
 						// this.updateBookMeta(book);
 					})
 				);
-			}
 			
 		}
 
@@ -525,14 +526,16 @@ export default class BookMasterPlugin extends Plugin {
 					this.openBookBySystem(book);
 				})
 			);
-	
-			if (book.vid && !book.visual) {
+				
+
+			if (book.vid && !book.visual && !Platform.isMobile) {
 				menu.addItem((item: any) =>
 				item
-					.setTitle("在系统资源管理器中显示(todo)")
+					.setTitle("在系统资源管理器中显示")
 					.setIcon("popup-open")
 					.onClick(()=>{
-						// this.showBookLocationInSystem(book);
+						// FIXME: http?
+						utils.showBookLocationInSystem(this.getBookFullPath(book));
 						
 					})
 				)
@@ -576,7 +579,6 @@ export default class BookMasterPlugin extends Plugin {
 			new Notice("文件丢失");
 			return;
 		}
-
 		this.openBookBySystem(book);
 	}
 

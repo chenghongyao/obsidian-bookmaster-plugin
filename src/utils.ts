@@ -41,9 +41,16 @@ export function getExtName(path: string) {
     return path.substring(path.lastIndexOf(".")+1)
 }
 
-export function  getDirName(path: string) {
+export function  getDirName(dirpath: string) {
     // TODO: more robust
-    const g = /(.*)\/(?:.*)/.exec(path);
+    const g = /(.*)\/(?:.*)/.exec(dirpath);
+    if (g && g[1] === "")return "/";
+    else return g?.[1];
+}
+
+export function  getDirPath(filepath: string) {
+    // TODO: more robust
+    const g = /(.*)\/(?:.*)/.exec(filepath);
     if (g && g[1] === "")return "/";
     else return g?.[1];
 }
@@ -68,7 +75,7 @@ export async function safeWriteFile(path: string, data: Buffer|string, overwrite
             return vault.modifyBinary(file, data as Buffer);
         }
     } else {
-        const folderPath = getDirName(path);
+        const folderPath = getDirPath(path);
         if (folderPath !== ".") {
             const folder = vault.getAbstractFileByPath(folderPath) as TFolder;
             if (!folder) {
@@ -277,4 +284,8 @@ export async function openMdFileInObsidian(path: string) {
             file: path,
         }
     });
+}
+
+export function showBookLocationInSystem(path: string) {
+    window.open("file://"+getDirPath(path));
 }

@@ -98,7 +98,7 @@ div.modal-title.book-setting-title {
 }
 div.book-setting-item {
     /* display: flex; */
-    padding: 0.5em 0;
+    padding: 0.3em 0;
     width: 100%;
 }
 
@@ -112,7 +112,7 @@ div.book-setting-label {
 }
 
 div.book-setting-item:not(.oneline) > div.book-setting-label {
-    padding-bottom: 5px;
+    padding-bottom: 0.3em;
 }
 div.book-setting-value-container {
     margin-left: auto;
