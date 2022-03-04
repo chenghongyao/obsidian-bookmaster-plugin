@@ -208,14 +208,20 @@ export default class BookMasterPlugin extends Plugin {
 
 	// save book data safely
 	async saveBookData(book: Book) {
-		this.getBookId(book);
-		return book.saveBookData(this.getBookDataPath());
-	}
-
-	getBookId(book: Book) {
 		if (!book.hasId()) {
 			const bid = book.getId();
 			this.bookIdMap[bid] = book;
+		}
+		return book.saveBookData(this.getBookDataPath());
+	}
+
+	async getBookId(book: Book) {
+		if (!book.hasId()) {
+			const bid = book.getId();
+			this.bookIdMap[bid] = book;
+			return this.saveBookData(book).then(() => {
+				return bid;
+			});
 		}
 		return book.getId();
 	}
@@ -333,6 +339,8 @@ export default class BookMasterPlugin extends Plugin {
 				utils.walkTreeByPublishYear(map,rawTree,this.dispTree);
 			}
 		}
+
+		utils.accumulateTreeCount(this.dispTree);
 		utils.sortBookTree(this.dispTree,this.settings.bookTreeSortAsc);
 
 	}

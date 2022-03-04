@@ -216,6 +216,20 @@ export function walkTreeByPublishYear(map: Map<string,BookFolder>, tree: BookFol
 }
 
 
+export function accumulateTreeCount(tree: BookFolder) {
+    var count = 0;
+    for(var i = 0; i < tree.children.length; i++) {
+        const book = tree.children[i];
+        if (book.isFolder()) {
+            count += accumulateTreeCount(book as BookFolder);
+        } else {
+            count += 1;
+        }
+    }
+    tree.count = count;
+    return count;
+}
+
 export function sortBookTree(tree: BookFolder,asc: boolean,) {
 
     tree.children.sort((a:AbstractBook,b:AbstractBook)=> {

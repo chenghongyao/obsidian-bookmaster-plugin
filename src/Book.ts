@@ -60,13 +60,12 @@ export class AbstractBook {
 
 
 export class BookFolder extends AbstractBook {
-    children: Array<AbstractBook>;    
+    children: Array<AbstractBook>;   
+    count: number;
     constructor(parent: AbstractBook, vid: string, name: string,path: string, lost: boolean = false, children?: Array<AbstractBook>) {
         super(parent,vid,name,path,lost);
-        this.children = children;
-        if (!children) {
-            this.children = new Array<AbstractBook>();
-        }
+        this.count = 0;
+        this.children = children ? children :  new Array<AbstractBook>();
     }
 
     push(absbook: AbstractBook) {
