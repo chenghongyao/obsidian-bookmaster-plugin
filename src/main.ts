@@ -1,10 +1,10 @@
-import {Notice,Platform,Plugin, TAbstractFile, TFile, TFolder, ViewCreator} from "obsidian";
+import {Menu, normalizePath, Notice,Platform,Plugin, TAbstractFile, TFile, TFolder, ViewCreator} from "obsidian";
 import { around } from "monkey-around";
 
 import { BookMasterSettings,DEFAULT_SETTINGS,DeviceSetting,DEFAULT_DEVICE_SETTINGS } from "./settings";
 import * as utils from './utils'
 import { OB_BOOKVAULT_ID } from "./constants";
-import { AbstractBook, Book, BookFolder, BookTreeSortType } from "./Book";
+import { AbstractBook, Book, BookFolder, BookStatus, BookTreeSortType } from "./Book";
 import { BookExplorer, VIEW_TYPE_BOOK_EXPLORER } from "./view/BookExplorer";
 
 
@@ -357,12 +357,208 @@ export default class BookMasterPlugin extends Plugin {
 
 	}
 
-	getBookFullPath(book: Book) {
+	private getBookFullPath(book: Book) {
 		// FIXME: url path
 		return utils.normalizePath(this.getBookVaultPath(book.vid),book.path);
 	}
 
+	private getBookOpenLink(book: Book) {
+		return this.getBookId(book).then((bid) => {
+			return `obsidian://bookmaster?type=open-book&${bid}`;
+		})
+	}
 
+
+	private async openMdFileInObsidian(path: string) {
+		const leaf = this.app.workspace.getLeaf();
+		await leaf.setViewState({
+			type: 'markdown',
+			state: {
+				file: path,
+			}
+		});
+	}
+
+	private getBookDataFilePath(book: Book) {
+		return this.getBookDataPath() + `/${book.bid}.md`;
+	}
+
+	private async openBookDataFile(book: Book) {
+		if (!book.vid) {
+			Promise.reject("empty vid");
+			return;
+		}
+		return this.getBookId(book).then((bid) => {
+			return this.openMdFileInObsidian(this.getBookDataFilePath(book));
+		})
+
+	}
+
+	createBookContextMenu(menu: Menu, book: Book) {
+		if (book.vid) {
+
+			if (book.lost) {
+				menu.addItem((item: any) =>
+				item
+					.setTitle("重定位文件(todo)")
+					.setIcon("popup-open")
+					.onClick(()=>{
+						// TODO: relocate book
+					})
+				);
+				menu.addSeparator();
+			}
+
+			menu.addItem((item: any) =>
+			item
+				.setTitle("基本设置(todo)")
+				.setIcon("gear")
+				.onClick(()=>{
+					// new BasicBookSettingModal(this.app,this,book).open();
+				})
+			);
+
+			menu.addItem((item: any) =>
+			item
+				.setTitle("打开设置文件")
+				.setIcon("popup-open")
+				.onClick(()=>{
+					this.openBookDataFile(book);
+				})
+			);
+
+			menu.addItem((item) =>
+			item
+				.setTitle((book.meta.note ? "打开笔记" : "创建笔记") + "(todo)")
+				.setIcon("pencil")
+				.onClick(()=>{
+					// this.createBookNote(book);
+				})
+			);
+			menu.addSeparator();
+
+			// TODO: icon
+			const allStatus = [BookStatus.UNREAD,BookStatus.READING,BookStatus.FINISHED];
+			const statusIcon = ["cross","clock","checkmark"]
+			const statusName = ["未读","在读","已读"];
+			const bookStatus = allStatus.includes(book.meta["status"]) ? book.meta["status"] : BookStatus.UNREAD;
+			for (let ind in allStatus) {
+				const status = allStatus[ind];
+				if (bookStatus !== status) {
+					menu.addItem((item) =>
+					item
+						.setTitle("设为"+statusName[ind])
+						.setIcon(statusIcon[ind])
+						.onClick(()=>{
+							book.meta["status"] = status;
+							console.log(book.meta);
+							this.saveBookData(book).then(() => {
+								new Notice("设置成功");
+							}).catch((reason)=>{
+								new Notice("设置失败:\n"+reason);
+							});
+						})
+					);
+				}
+			}
+
+			menu.addSeparator();
+			menu.addItem((item) =>
+			item
+				.setTitle("复制路径(ID)")
+				.setIcon("link")
+				.onClick(()=>{
+					this.getBookId(book).then((id: string) => {
+						navigator.clipboard.writeText(id);
+					})
+				})
+			);
+	
+			menu.addItem((item) =>
+			item
+				.setTitle("复制Obsidian链接(todo)")
+				.setIcon("link")
+				.onClick(()=>{
+					this.getBookOpenLink(book).then((link) => {
+						navigator.clipboard.writeText(`[${book.meta.title || book.meta.name}](${link})`);
+					})
+				})
+			);
+
+			menu.addItem((item) =>
+			item
+				.setTitle("引用(todo)")
+				.setIcon("link")
+				.onClick(()=>{
+					// if (book.meta.citekey) {
+					// 	navigator.clipboard.writeText(`[@${book.meta.citekey}]`);
+					// } else {
+					// 	new Notice("请先设置citekey");
+					// }
+				})
+			);
+			menu.addSeparator();
+			if (book.bid) {
+				menu.addItem((item: any) =>
+				item
+					.setTitle("删除记录(todo)")
+					.setIcon("trash")
+					.onClick(()=>{
+						// TODO: double check
+						// const file = this.app.vault.getAbstractFileByPath(this.getBookManifestPath(book)) as TFile;
+						// if (file) {
+						// 	this.app.vault.delete(file.parent,true).then(() => {
+						// 		// this.updateBookMeta(book); read from file cache work, need to wait for some second?
+						// 	})
+						// }
+					})
+				);	
+
+				menu.addItem((item: any) =>
+				item
+					.setTitle("删除文件(todo)")
+					.setIcon("trash")
+					.onClick(()=>{
+						// TODO: double check
+						// const file = this.app.vault.getAbstractFileByPath(this.getBookManifestPath(book)) as TFile;
+						// if (file) {
+						// 	this.app.vault.delete(file.parent,true);
+						// }
+						// this.updateBookMeta(book);
+					})
+				);
+			}
+			
+		}
+
+		if (!book.lost) {
+			menu.addSeparator();
+			menu.addItem((item: any) =>
+			item
+				.setTitle("使用默认应用打开")
+				.setIcon("popup-open")
+				.onClick(()=>{
+					this.openBookBySystem(book);
+				})
+			);
+	
+			if (book.vid && !book.visual) {
+				menu.addItem((item: any) =>
+				item
+					.setTitle("在系统资源管理器中显示(todo)")
+					.setIcon("popup-open")
+					.onClick(()=>{
+						// this.showBookLocationInSystem(book);
+						
+					})
+				)
+			};
+	
+		}
+
+
+
+	}
 
 
 	private async loadSettings() {

@@ -128,6 +128,12 @@ export class BookExplorer extends ItemView {
 		menu.showAtMouseEvent(evt);
 	}
 
+	private openBookContextMenu(evt: MouseEvent, book: Book) {
+        const menu = new Menu(this.app);
+		this.plugin.createBookContextMenu(menu,book);
+		menu.showAtMouseEvent(evt);
+    }
+
 	private createHeader() {
         this.header = new NavHeader(this,this.contentEl);
 
@@ -205,7 +211,8 @@ export class BookExplorer extends ItemView {
 							
 						},
 						'context-menu': function(evt: MouseEvent, book: Book) {
-							// self.openBookContextMenu(evt,book);
+							self.openBookContextMenu(evt,book);
+							
 						}
 	
 					},
