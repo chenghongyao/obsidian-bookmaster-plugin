@@ -241,6 +241,18 @@ export default class BookMasterPlugin extends Plugin {
 			const entry = `${vid}:${path}`;
 			var book = this.bookIdMap[bid];
 			if (book) {
+				// move book when change vid or path manually, which should not happen
+				if (book.vid !== vid || book.path !== path) { 
+					book.parent.children.remove(book);
+					book.vid = vid;
+					book.path = path;
+					if (this.root[vid]) {
+						const folder = this.getBookFolder(vid,book.path,this.root[vid]) // exist root[vid]?
+						book.parent = folder;
+						folder.push(book);
+					}
+				}
+
 				book.lost = !Boolean(this.bookMap[entry])	// update book lost flag
 				// FIXME: reload book data??
 			} else {
@@ -385,14 +397,10 @@ export default class BookMasterPlugin extends Plugin {
 	}
 	async openBookBySystem(book: Book) {
 		const fullpath = this.getBookFullPath(book);
-		console.log("open book:",fullpath);
 
 		if (Platform.isMobile) {
 			// TODO: http?
-			new Notice(this.getBookVaultPath(OB_BOOKVAULT_ID))
-			new Notice(fullpath)
 			const relPath = this.getMobileRelativePath(fullpath);
-			new Notice(relPath);
 			(this.app as any).openWithDefaultApp(relPath);
 		} else {
 			window.open(fullpath);

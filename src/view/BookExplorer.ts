@@ -143,12 +143,40 @@ export class BookExplorer extends ItemView {
 		this.header.addAction("stacked-levels","排序",(evt) => {
 			this.openSortContextMenu(evt);
 		});
-        
 		this.header.addAction("search","搜索",(evt) => {
 			// new SearchBookModal(this.app, this.plugin).open();
 		});
     }
 
+	private createOptionsMenu(menu: Menu) {
+
+		for(const key in this.plugin.settings.bookVaultNames) {
+			menu.addItem((item) => {
+				item
+				.setTitle(this.plugin.settings.bookVaultNames[key])
+				.onClick((e) => {
+					this.plugin.settings.currentBookVault = key;
+					this.plugin.saveSettings();
+					this.plugin.updateDispTree();
+				});
+
+				if (key === this.plugin.settings.currentBookVault) {
+					item.setIcon("checkmark");
+				}
+			})
+		}
+		
+	}
+	onMoreOptionsMenu(menu: Menu): void {
+		this.createOptionsMenu(menu);
+
+	}
+
+	onHeaderMenu(menu: Menu): void {
+		this.createOptionsMenu(menu);
+		menu.addSeparator();
+		super.onHeaderMenu(menu);
+	}
 
     async onOpen() {
         console.log("Book Explorer Open");
