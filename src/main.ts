@@ -6,6 +6,7 @@ import * as utils from './utils'
 import { OB_BOOKVAULT_ID } from "./constants";
 import { AbstractBook, Book, BookFolder, BookStatus, BookTreeSortType } from "./Book";
 import { BookExplorer, VIEW_TYPE_BOOK_EXPLORER } from "./view/BookExplorer";
+import BasicBookSettingModal from "./view/BasicBookSettingModal";
 
 
 export default class BookMasterPlugin extends Plugin {
@@ -303,6 +304,18 @@ export default class BookMasterPlugin extends Plugin {
 		new Notice("书库加载完成");
 	}
 
+	// async updateCurrentBookVault() {
+	// 	if (!this.root) {	// first load
+	// 		this.root = {};
+	// 	}
+
+	// 	return this.loadBookVault(this.settings.currentBookVault).then(() => {
+	// 		return this.loadAllBookData().then(() => { // TODO: only load book of current vault??
+	// 			return this.updateDispTree();
+	// 		})
+	// 	})
+	// }
+
 
 	async updateDispTree() {
 		if (!this.root) { // FIXME: can this happen??
@@ -382,10 +395,10 @@ export default class BookMasterPlugin extends Plugin {
 
 			menu.addItem((item: any) =>
 			item
-				.setTitle("基本设置(todo)")
+				.setTitle("基本设置")
 				.setIcon("gear")
 				.onClick(()=>{
-					// new BasicBookSettingModal(this.app,this,book).open();
+					new BasicBookSettingModal(this.app,this,book).open();
 				})
 			);
 

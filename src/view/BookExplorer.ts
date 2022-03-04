@@ -152,6 +152,10 @@ export class BookExplorer extends ItemView {
 		this.header.addAction("search","搜索",(evt) => {
 			// new SearchBookModal(this.app, this.plugin).open();
 		});
+
+		this.header.addAction("gear","设置",(evt) => {
+
+		});
     }
 
 	private createOptionsMenu(menu: Menu) {
