@@ -20,19 +20,6 @@ export default class BookMasterPlugin extends Plugin {
 		await this.loadSettings();
 
 		this.loadAllBookVaults().then(()=>{
-			new Notice(`有${this.root["00"].children.length}个文件`);
-
-			// for(var key in this.bookMap) {
-			// 	const book = this.bookMap[key];
-			// 	if (!book.isFolder()) {
-			// 		(book as Book).meta.tags = ["aa","aa/bb","cc/bb"];
-			// 		this.saveBookData(book as Book).then(()=>{
-			// 		})
-			// 		break;
-			// 	}
-			// }
-
-
 		});
 	
 		this.addRibbonIcon("dice","BookExplorer",(evt) => {
@@ -100,7 +87,7 @@ export default class BookMasterPlugin extends Plugin {
 
 	private async getBookByPath(vid: string, path: string) {
 		const entry = `${vid}:${path}`;
-		if (this.root) {	// FIXME: check book vault load status
+		if (this.root) {	
 			return this.bookMap[entry];
 		} else {
 			return this.loadAllBookVaults().then(() => {
@@ -110,7 +97,7 @@ export default class BookMasterPlugin extends Plugin {
 	}
 
 	private async getBookById(bid: string) {
-		if (this.root) {	 // FIXME: check book vault load status
+		if (this.root) {	 
 			return this.bookIdMap[bid];
 		} else {
 			return this.loadAllBookVaults().then(() => {
@@ -236,11 +223,11 @@ export default class BookMasterPlugin extends Plugin {
 			if (!meta["book-meta"]) continue;
 
 			const {vid,bid,path,name,ext,visual} = meta;
-			if (!this.root[vid] || !vid || !bid)continue;
+			if (!vid || !bid)continue; // FIXME: check path?
 
 			const entry = `${vid}:${path}`;
 			var book = this.bookIdMap[bid];
-			if (book) {
+			if (book) { // old data file
 				// move book when change vid or path manually, which should not happen
 				if (book.vid !== vid || book.path !== path) { 
 					book.parent.children.remove(book);
@@ -254,25 +241,28 @@ export default class BookMasterPlugin extends Plugin {
 				}
 
 				book.lost = !Boolean(this.bookMap[entry])	// update book lost flag
-				// FIXME: reload book data??
-			} else {
+				// FIXME: need reload book data??
+			} else if (this.root[vid]) { // new book data file
 				book = this.bookMap[entry] as Book;
 				if (!book || book.isFolder()) {   // this book is lost
 					const folder = this.getBookFolder(vid,path,this.root[vid]);
 					book = new Book(folder,vid,path,name,ext,bid,visual,true);
 					folder.push(book);
-					// this.bookMap[entry] = book;  // dont record lost book
 				}				
 				this.bookIdMap[bid] = book;
+			} else { 
+				console.warn("unvalid data file(vid):",meta);
+				continue;
 			}
 
-			book.loadBookData(meta);
-			// FIXME: what if some of bid are deleted??
+			book.loadBookData(meta); // FIXME: always load book
+			// FIXME: data file is deleted manualy??
 		}
 	}
 
 	private async loadBookVault(vid: string) {
 		const vaultPath = this.getBookVaultPath(vid);
+		if (!vaultPath) return; // FIXME: ignore this vault
 		const vaultName = this.getBookVaultName(vid) || utils.getDirName(vaultPath);
 		if (!await utils.isFolderExists(vaultPath)) { // TODO: virtual vault
 			new Notice(`书库“${vaultName}(${vid}):${vaultPath}”不存在`); 
@@ -291,25 +281,23 @@ export default class BookMasterPlugin extends Plugin {
 
 		new Notice("书库加载中...");
 
-		if (!this.root) {
+		if (!this.root) {	// first load
 			this.root = {};
 		}
 
 		// load book file
 		for(const vid in this.getCurrentDeviceSetting().bookVaultPaths) {
-			await this.loadBookVault(vid); //FIXME: continue if path is empty??
+			await this.loadBookVault(vid);
 		}
 
-		await this.loadBookVault(OB_BOOKVAULT_ID);
+		await this.loadBookVault(OB_BOOKVAULT_ID); // TODO: don't load this vault
 
 		// load book data
 		await this.loadAllBookData();
 
 
 		await this.updateDispTree();
-
 		console.log(this.root);
-		console.log(this.bookMap);
 		console.log(this.bookIdMap);
 
 		new Notice("书库加载完成");
@@ -317,8 +305,8 @@ export default class BookMasterPlugin extends Plugin {
 
 
 	async updateDispTree() {
-		if (!this.root) {
-			return this.loadAllBookData();
+		if (!this.root) { // FIXME: can this happen??
+			return this.loadAllBookVaults();
 		}
 
 		const vid = this.settings.currentBookVault;
@@ -354,7 +342,6 @@ export default class BookMasterPlugin extends Plugin {
 
 		utils.accumulateTreeCount(this.dispTree);
 		utils.sortBookTree(this.dispTree,this.settings.bookTreeSortAsc);
-
 	}
 
 	private getBookFullPath(book: Book) {
@@ -362,20 +349,9 @@ export default class BookMasterPlugin extends Plugin {
 		return utils.normalizePath(this.getBookVaultPath(book.vid),book.path);
 	}
 
-	private getBookOpenLink(book: Book) {
+	private async getBookOpenLink(book: Book) {
 		return this.getBookId(book).then((bid) => {
 			return `obsidian://bookmaster?type=open-book&${bid}`;
-		})
-	}
-
-
-	private async openMdFileInObsidian(path: string) {
-		const leaf = this.app.workspace.getLeaf();
-		await leaf.setViewState({
-			type: 'markdown',
-			state: {
-				file: path,
-			}
 		});
 	}
 
@@ -384,14 +360,9 @@ export default class BookMasterPlugin extends Plugin {
 	}
 
 	private async openBookDataFile(book: Book) {
-		if (!book.vid) {
-			Promise.reject("empty vid");
-			return;
-		}
 		return this.getBookId(book).then((bid) => {
-			return this.openMdFileInObsidian(this.getBookDataFilePath(book));
+			return utils.openMdFileInObsidian(this.getBookDataFilePath(book));
 		})
-
 	}
 
 	createBookContextMenu(menu: Menu, book: Book) {
@@ -555,24 +526,7 @@ export default class BookMasterPlugin extends Plugin {
 			};
 	
 		}
-
-
-
 	}
-
-
-	private async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-		if (!this.settings.deviceSetting[utils.appId]) {
-			this.settings.deviceSetting[utils.appId] = Object.assign({},DEFAULT_DEVICE_SETTINGS);
-			await this.saveSettings();
-		}
-	}
-
-	async saveSettings() {
-		await this.saveData(this.settings);
-	}
-
 
 	private getMobileRelativePath(fullpath: string) {
 		const basePath = this.getBookVaultPath(OB_BOOKVAULT_ID);
@@ -602,6 +556,7 @@ export default class BookMasterPlugin extends Plugin {
 			window.open(fullpath);
 		}
 	}
+
 	async openBook(book: Book, newPanel: boolean = false) {
 		if (book.lost) {
 			// TODO: fix lost book
@@ -612,5 +567,15 @@ export default class BookMasterPlugin extends Plugin {
 		this.openBookBySystem(book);
 	}
 
+	private async loadSettings() {
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		if (!this.settings.deviceSetting[utils.appId]) {
+			this.settings.deviceSetting[utils.appId] = Object.assign({},DEFAULT_DEVICE_SETTINGS);
+			await this.saveSettings();
+		}
+	}
 
+	async saveSettings() {
+		await this.saveData(this.settings);
+	}
 }

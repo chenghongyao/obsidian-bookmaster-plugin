@@ -268,3 +268,13 @@ export function sortBookTree(tree: BookFolder,asc: boolean,) {
     }
 }
 
+
+export async function openMdFileInObsidian(path: string) {
+    const leaf = app.workspace.getLeaf();
+    return leaf.setViewState({
+        type: 'markdown',
+        state: {
+            file: path,
+        }
+    });
+}
