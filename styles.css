@@ -108,6 +108,7 @@ div.book-setting-item.oneline {
 }
 div.book-setting-label {
     font-weight: bold;
+    font-size: 11pt;
     margin-left: 0px;
 }
 
@@ -124,7 +125,7 @@ div.book-setting-value-container.full {
 }
 div.book-read-status-indicator {
     padding: 0px 6px;
-    font-size: 14px;
+    font-size: 11pt;
     color: white;
     background-color: rgb(102, 101, 101);
 }
