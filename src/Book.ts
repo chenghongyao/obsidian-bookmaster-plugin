@@ -128,7 +128,7 @@ export class Book extends AbstractBook {
             for(const key in basicMeta) {
                 const val = inputMeta[key];
                 if (basicMeta[key].type === "text-array") {
-                    this.meta[key] = val === undefined ? [] : (typeof val === "string" ? [val] : val);
+                    this.meta[key] = val === undefined ? new Array() : (typeof val === "string" ? [val] : val);
                 } else if(val !== undefined){
                     this.meta[key] = inputMeta[key];
                 }
@@ -142,7 +142,8 @@ export class Book extends AbstractBook {
 
             for(const key in basicMeta) {
                 if (basicMeta[key].default !== undefined) {
-                    this.meta[key] = basicMeta[key].default;
+                    this.meta[key] = basicMeta[key].default instanceof Array ?  Array.from(basicMeta[key].default) : basicMeta[key].default;
+
                 }
             }
 
@@ -154,7 +155,7 @@ export class Book extends AbstractBook {
                 const typeMeta = BookMetaMap[this.meta.type];
                 for(const key in typeMeta) {
                     if (typeMeta[key].default !== undefined) {
-                        this.meta[key] = typeMeta[key].default;
+                        this.meta[key] = typeMeta[key].default instanceof Array ?  Array.from(typeMeta[key].default) : typeMeta[key].default;
                     }
                 }  
             }

@@ -29,7 +29,7 @@ div.array-input-container {
     font-family: 'Inter', sans-serif;
     padding: 4px;
     font-size: 16px;
-    border-radius: 8px;
+    border-radius: 6px;
     outline: none;
     overflow: auto;
     display: flex;
@@ -38,7 +38,7 @@ div.array-input-container {
 div.array-item {
     background-color: var(--text-accent);
     padding: 0px 6px 0px 5px;
-    border-radius: 10%;
+    border-radius: 4%;
     margin: 0 1.5px;
     height: fit-content;
     white-space: nowrap;

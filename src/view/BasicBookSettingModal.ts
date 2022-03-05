@@ -1,5 +1,5 @@
 import { App, Modal } from "obsidian";
-import { Book } from "src/Book";
+import { Book, BookTreeSortType } from "../Book";
 import BookMasterPlugin from "src/main";
 import vQuickSetting from "../components/v-basic-setting.vue"
 
@@ -10,6 +10,7 @@ export default class BasicBookSettingModal extends Modal {
     plugin: BookMasterPlugin;
     book: Book;
     modified: boolean;
+    updateTree: boolean;
     viewRect? :any
 
 	constructor(app: App, plugin: BookMasterPlugin, book: Book, viewRect?: any) {
@@ -17,6 +18,7 @@ export default class BasicBookSettingModal extends Modal {
 		this.plugin = plugin;
         this.book = book;
         this.modified = false;
+        this.updateTree = false;
         this.viewRect = viewRect;
 
 	}
@@ -44,8 +46,10 @@ export default class BasicBookSettingModal extends Modal {
                     book: this.book
                 },
                 on: {
-                    change: function () {
+                    change: function (key?: string) {
                         self.modified = true;
+                        self.updateTree = (key === "tags" && self.plugin.settings.bookTreeSortType === BookTreeSortType.TAG) 
+                                            ||  (key === "authors" && self.plugin.settings.bookTreeSortType === BookTreeSortType.AUTHOR)
                     },
                     "open-note": function() {
                         // self.plugin.createBookNote(self.book);
@@ -56,12 +60,14 @@ export default class BasicBookSettingModal extends Modal {
                 vQuickSetting,
             }
         });
-
     }
 
     onClose(): void {
         if (this.modified) {
             this.plugin.saveBookData(this.book);
+            if (this.updateTree) {
+                this.plugin.updateDispTree();
+            }
         }
     }
 }

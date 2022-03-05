@@ -24,28 +24,28 @@
         <div class="book-setting-label">标题：</div>
         <div class="book-setting-value-container">
             <input style="width: 100%" type="text" v-model="book.meta.title" 
-            @keypress="$emit('change')" />
+            @keypress="$emit('change','title')" />
         </div>
     </div>
 
     <div class="book-setting-item">
         <div class="book-setting-label">作者：</div>
         <div class="book-setting-value-container">
-            <v-array-input :array="book.meta.authors" @change="$emit('change')"/>
+            <v-array-input :array="book.meta.authors" @change="$emit('change','authors')"/>
         </div>
     </div>
     
     <div class="book-setting-item">
         <div class="book-setting-label">标签：</div>
         <div class="book-setting-value-container">
-            <v-array-input :array="book.meta.tags" @change="$emit('change')"/>
+            <v-array-input :array="book.meta.tags" @change="$emit('change','tags')"/>
         </div>
     </div>
     <div class="book-setting-item">
         <div class="book-setting-label">笔记：<div v-if="book.meta.note" @click="openNote" class="book-setting-note-indicator"></div></div>
         <div class="book-setting-value-container">
             <input style="width: 100%" type="text" v-model="book.meta.note" 
-            @keypress="$emit('change')" />
+            @keypress="$emit('change','note')" />
         </div>
     </div>
 
@@ -85,14 +85,14 @@ export default {
                 return;
             }
             this.book.meta["status"] = newStatus;
-            this.$emit("change");
+            this.$emit("change","status");
         },
         onChangeScore(newScore) {
             if (newScore === this.book.meta.rating) {
                 return;
             }
             this.book.meta.rating = newScore;
-            this.$emit("change");
+            this.$emit("change","rating");
         },
         openNote() {
             this.$emit("open-note");

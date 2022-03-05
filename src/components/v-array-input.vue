@@ -4,10 +4,7 @@
             <div class="array-item-title">{{item}}</div>
             <div class="array-item-delete-indicator" @click="onDeleteItem($event,index)"/>
         </div>
-        
-        <div contenteditable="true" class="array-input" ref="input" 
-        @keypress.enter="onEnter"
-        />
+        <div contenteditable="true" class="array-input" ref="input" @keydown="onKeyPress"/>
     </div>  
 </template>
 <script>
@@ -32,6 +29,19 @@ export default {
         onDeleteItem(e,index) {
             this.array.splice(index,1);
             this.$emit("change");
+        },
+
+        onDelete(e) {
+            if (!this.$refs.input.textContent && this.array.length > 0) {
+                this.onDeleteItem(e,this.array.length-1);
+            }
+        },
+        onKeyPress(e) {
+            if (e.code === "Backspace") {
+                this.onDelete(e);
+            } else if (e.code === "Enter" || e.code === "Space") {
+                this.onEnter(e);
+            }   
         }
     }
 }
