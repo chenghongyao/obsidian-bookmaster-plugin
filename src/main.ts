@@ -7,6 +7,7 @@ import { OB_BOOKVAULT_ID } from "./constants";
 import { AbstractBook, Book, BookFolder, BookStatus, BookTreeSortType } from "./Book";
 import { BookExplorer, VIEW_TYPE_BOOK_EXPLORER } from "./view/BookExplorer";
 import BasicBookSettingModal from "./view/BasicBookSettingModal";
+import BookSuggestModal from "./view/BookSuggestModal";
 
 
 export default class BookMasterPlugin extends Plugin {
@@ -25,7 +26,13 @@ export default class BookMasterPlugin extends Plugin {
 	
 		this.addRibbonIcon("dice","BookExplorer",(evt) => {
 			this.activateView(VIEW_TYPE_BOOK_EXPLORER,"left");
-			
+			// const books: Book[] = [];
+			// utils.walkBookFolder(this.root["00"],(book: Book) => {
+			// 	if (!book.isFolder()) {
+			// 		books.push(book);
+			// 	}
+			// });
+			// new BookSuggestModal(this.app,this,books).open();
 		});
 
 		this.safeRegisterView(VIEW_TYPE_BOOK_EXPLORER,leaf => new BookExplorer(leaf,this));

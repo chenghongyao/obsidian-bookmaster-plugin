@@ -237,6 +237,17 @@ export function accumulateTreeCount(tree: BookFolder) {
     return count;
 }
 
+export function walkBookFolder(folder: BookFolder, callback: (book: AbstractBook)=>any) {
+    folder.children.forEach((item) => {
+        if (item.isFolder()) {
+            walkBookFolder(item as BookFolder,callback);
+            callback(item);
+        } else {
+            callback(item);
+        }
+    })
+}
+
 export function sortBookTree(tree: BookFolder,asc: boolean,) {
 
     tree.children.sort((a:AbstractBook,b:AbstractBook)=> {
