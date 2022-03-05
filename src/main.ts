@@ -330,6 +330,9 @@ export default class BookMasterPlugin extends Plugin {
 		const rawTree = this.root[vid];
 		if (!this.dispTree) {
 			this.dispTree = new BookFolder(null,vid,this.getBookVaultName(vid),null);
+		} else if (vid !== this.dispTree.vid) {
+			this.dispTree.vid = vid;
+			this.dispTree.name = this.getBookVaultName(vid);
 		}
 
 		// clear

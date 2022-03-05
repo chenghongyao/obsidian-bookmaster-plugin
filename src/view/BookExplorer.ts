@@ -124,7 +124,7 @@ export class BookExplorer extends ItemView {
 				item.setIcon("checkmark");
 
 		});
-	
+		
 		menu.showAtMouseEvent(evt);
 	}
 
@@ -154,9 +154,25 @@ export class BookExplorer extends ItemView {
 		});
 
 		this.header.addAction("gear","设置",(evt) => {
+			const menu = new Menu(this.app);
+			this.createSettingMenu(menu)
+			menu.showAtMouseEvent(evt);
 
 		});
     }
+
+	private createSettingMenu(menu:Menu) {
+		menu.addItem((item) => {
+			item
+			.setTitle("切换书库")
+			.onClick((e) => {
+				const m = new Menu(this.app);
+				this.createOptionsMenu(m);
+				m.showAtMouseEvent(e as MouseEvent);
+
+			})
+		}) 
+	}
 
 	private createOptionsMenu(menu: Menu) {
 
