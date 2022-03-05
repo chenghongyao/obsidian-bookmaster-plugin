@@ -18,6 +18,9 @@ div.nav-file-title.bm-lost:hover > div.nav-file-title-content {
     color: red;
 }
 
+.is-mobile .nav-folder.mod-root.bm-root > .nav-folder-title .nav-folder-title-content {
+    display: block;
+}
 
 /* array input */
 div.array-input-container {

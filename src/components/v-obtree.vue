@@ -1,6 +1,6 @@
 <template>
 	<div class="nav-files-container node-insert-event" style="position: relative;height: 100%" >
-		<div class="nav-folder mod-root">
+		<div class="nav-folder mod-root bm-root">
 			<div class="nav-folder-title" :data-count="root.count" v-show="showTitle">
 				<div class="nav-folder-collapse-indicator collapse-icon"/>
 				<div ref="titleEl" class="nav-folder-title-content">{{root.name}}</div>
