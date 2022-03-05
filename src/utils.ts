@@ -128,7 +128,7 @@ export function walkTreeByFolder(tree: BookFolder, result: BookFolder) {
     });
 }
 
-export function getBookFolder(vid:string, path: string, rootFolder: BookFolder, map: Map<string,BookFolder>) {
+function getBookFolder(vid:string, path: string, rootFolder: BookFolder, map: Map<string,BookFolder>) {
 		
     const nodes = path.split("/"); // path start with '/'
     var folder = rootFolder;
@@ -147,79 +147,76 @@ export function getBookFolder(vid:string, path: string, rootFolder: BookFolder, 
     }
     return folder;
 }
-export function walkTreeByTag(map: Map<string,BookFolder>, tree: BookFolder, result: BookFolder) {
-    tree.children.forEach((absbook) => {
-        if (absbook.isFolder()) {
-            walkTreeByTag(map,absbook as BookFolder,result);
-        } else {
-            const book = absbook as Book;
-            const tags = new Set(book.meta.tags.map((t:string) => t.trim()));
-            if (tags.size) {
-                tags.forEach((tag:string) => {
-                    if (!tag) return;
-                    const folder = map.get(tag) || getBookFolder(book.vid,tag,result,map);
-                    folder.push(book);
-                });
-            } else {
-                map.get("unknown").push(book);
+
+export function walkBookFolder(folder: BookFolder, callback: (book: AbstractBook)=>any, callOnFolder: boolean = false) {
+    folder.children.forEach((item) => {
+        if (item.isFolder()) {
+            walkBookFolder(item as BookFolder,callback);
+            if (callOnFolder) {
+                callback(item);
             }
+        } else {
+            callback(item);
+        }
+    })
+}
+
+export function walkTreeByTag(map: Map<string,BookFolder>, tree: BookFolder, result: BookFolder) {
+
+    walkBookFolder(tree,(book: Book) => {
+        const tags = new Set(book.meta.tags.map((t:string) => t.trim()));
+        if (tags.size) {
+            tags.forEach((tag:string) => {
+                if (!tag) return;
+                const folder = map.get(tag) || getBookFolder(book.vid,tag,result,map);
+                folder.push(book);
+            });
+        } else {
+            map.get("unknown").push(book);
         }
     });
-
 }
 
 export function walkTreeByAuthor(map: Map<string,BookFolder>, tree: BookFolder, result: BookFolder) {
 
-    tree.children.forEach((absbook) => {
-        if (absbook.isFolder()) {
-            walkTreeByAuthor(map,absbook as BookFolder,result);
+    walkBookFolder(tree,(book: Book) => {
+        const authors = new Set(book.meta.authors.map((t:string) => t.trim()));
+        if (authors.size) {
+            authors.forEach((author:string) => {
+                if (!author)return; 
+                let folder = map.get(author);
+                if (!folder) {
+                    folder = new BookFolder(result, book.vid,author,author);
+                    map.set(author,folder);
+                    result.push(folder);
+                }
+                folder.push(book);
+            });
         } else {
-            const book = absbook as Book;
-
-            const authors = new Set(book.meta.authors.map((t:string) => t.trim()));
-
-            if (authors.size) {
-                authors.forEach((author:string) => {
-                    if (!author)return; 
-                    let folder = map.get(author);
-                    if (!folder) {
-                        folder = new BookFolder(result, book.vid,author,author);
-                        map.set(author,folder);
-                        result.push(folder);
-                    }
-                    folder.push(book);
-                });
-            } else {
-                map.get("unknown").push(book);
-            }
+            map.get("unknown").push(book);
         }
     });
-
 }
 
 export function walkTreeByPublishYear(map: Map<string,BookFolder>, tree: BookFolder, result: BookFolder) {  
 
-    tree.children.forEach((absbook) => {
-        if (absbook.isFolder()) {
-            walkTreeByPublishYear(map,absbook as BookFolder,result);
-        } else {
-            const book = absbook as Book;
-            const date = String(book.meta.publish_date);
-            if (date && /^\d{4}/.test(date)) {
-                const year =  date.substring(0,4);
-                let folder = map.get(year) as BookFolder;
-                if (!folder) {
-                    folder = new BookFolder(result,book.vid,year,year);
-                    map.set(year,folder);
-                    result.push(folder);
-                }
-                folder.push(book);
-            }  else {
-                map.get("unknown").push(book);
-            }          
-        }
-    });
+    walkBookFolder(tree,(book: Book) => {
+        const date = String(book.meta.publish_date);
+        if (date && /^\d{4}/.test(date)) {
+            const year =  date.substring(0,4);
+            let folder = map.get(year) as BookFolder;
+            if (!folder) {
+                folder = new BookFolder(result,book.vid,year,year);
+                map.set(year,folder);
+                result.push(folder);
+            }
+            folder.push(book);
+        }  else {
+            map.get("unknown").push(book);
+        }          
 
+
+    });
 }
 
 
@@ -237,16 +234,6 @@ export function accumulateTreeCount(tree: BookFolder) {
     return count;
 }
 
-export function walkBookFolder(folder: BookFolder, callback: (book: AbstractBook)=>any) {
-    folder.children.forEach((item) => {
-        if (item.isFolder()) {
-            walkBookFolder(item as BookFolder,callback);
-            callback(item);
-        } else {
-            callback(item);
-        }
-    })
-}
 
 export function sortBookTree(tree: BookFolder,asc: boolean,) {
 
