@@ -2,13 +2,13 @@
 
 /* BookExplorer */
 div.nav-file-title.bm-unread {
-    border-right: 6px solid rgba(255, 0, 0, 0.3);;
+    border-right: 4px solid rgba(255, 0, 0, 0.3);;
 }
 div.nav-file-title.bm-reading {
-    border-right: 6px solid rgba(255, 255, 0, 0.3);;
+    border-right: 4px solid rgba(255, 255, 0, 0.3);;
 }
 div.nav-file-title.bm-finished {
-    border-right: 6px solid rgba(0, 255, 0, 0.3);
+    border-right: 4px solid rgba(0, 255, 0, 0.3);
 }
 
 div.nav-file-title.bm-lost > div.nav-file-title-content{
@@ -37,6 +37,10 @@ div.nav-file-title.bm-lost:hover > div.nav-file-title-content {
     /* background-color: var(--background-secondary-alt); */
     transition: opacity 100ms ease-in-out;
 }
+.bm-root .nav-folder-title[data-count='0']::after {
+    display: none;
+}
+
 
 .bm-root .nav-file-title-content {
 	flex-grow: 1;
@@ -54,9 +58,6 @@ div.nav-file-title.bm-lost:hover > div.nav-file-title-content {
     transition: opacity 100ms ease-in-out;
 }
 
-.bm-root .nav-folder-title[data-count='0']::after {
-    display: none;
-}
 
 
 /* array input */
