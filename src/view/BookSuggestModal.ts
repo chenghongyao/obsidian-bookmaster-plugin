@@ -9,17 +9,29 @@ export default class BookSuggestModal extends SuggestModal<Book> {
 	books: Book[]
 	query: string;
 	plugin: BookMasterPlugin;
-	constructor(app: App,plugin: BookMasterPlugin, folder: BookFolder) {
+	constructor(app: App,plugin: BookMasterPlugin, folder: BookFolder, limit: number = 20) {
 		super(app);
 		this.plugin = plugin;
 		this.books = []
-		utils.walkBookFolder(folder,(book) =>this.books.push(book as Book),false);
+		if (folder) {
+			utils.walkBookFolder(folder,(book) =>this.books.push(book as Book),false);
+		}
 		this.query = "";
+		this.limit = limit;
 		this.setPlaceholder("输入标题或文件名......");
 	}
 
 
 	getSuggestions(query: string): Book[] {
+		// TODO: search tags or something
+		// const ftag = ":tags "
+		// const checktag = false;
+		// if (query.startsWith(ftag)) {
+		// 	this.query = query.substring(ftag.length)
+		// } else {
+		// 	this.query = query;
+		// }
+
 		this.query = query;
 		if (!this.query) {
 			return this.books;
@@ -27,7 +39,7 @@ export default class BookSuggestModal extends SuggestModal<Book> {
 
 		const res: Book[] = [];
 		this.books.forEach((book) => {
-			if (book.meta.title.indexOf(query) >= 0 || book.name.indexOf(query) >= 0) {
+			if ( (book.meta.title && book.meta.title.indexOf(query) >= 0) || book.name.indexOf(query) >= 0) {
 				res.push(book);
 			}
 

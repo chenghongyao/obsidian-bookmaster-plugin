@@ -5,6 +5,7 @@ import Vue from "vue";
 
 import vObtree from "../components/v-obtree.vue"
 import NavHeader from "./NavHeader";
+import BookSuggestModal from "./BookSuggestModal";
 
 
 export const VIEW_TYPE_BOOK_EXPLORER = "bm-explorer-view"
@@ -150,7 +151,6 @@ export class BookExplorer extends ItemView {
 			this.openSortContextMenu(evt);
 		});
 		this.header.addAction("search","搜索",(evt) => {
-			// new SearchBookModal(this.app, this.plugin).open();
 		});
 
 		this.header.addAction("gear","设置",(evt) => {

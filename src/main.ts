@@ -26,14 +26,22 @@ export default class BookMasterPlugin extends Plugin {
 	
 		this.addRibbonIcon("dice","BookExplorer",(evt) => {
 			this.activateView(VIEW_TYPE_BOOK_EXPLORER,"left");
-			// const books: Book[] = [];
-			// utils.walkBookFolder(this.root["00"],(book: Book) => {
-			// 	if (!book.isFolder()) {
-			// 		books.push(book);
-			// 	}
-			// });
-			// new BookSuggestModal(this.app,this,books).open();
 		});
+
+		this.addCommand({
+			id: "bm-search-book",
+			name: "Search Book",
+			checkCallback: (checking) => {
+				const tree = this.root[this.settings.currentBookVault];
+				if (checking) {
+					return Boolean(tree);
+				} else {
+					new BookSuggestModal(this.app, this,tree).open();
+					return true;
+				}
+			}
+
+		})
 
 		this.safeRegisterView(VIEW_TYPE_BOOK_EXPLORER,leaf => new BookExplorer(leaf,this));
 	}
