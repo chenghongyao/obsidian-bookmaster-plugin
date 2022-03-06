@@ -25,6 +25,7 @@
 				'bm-reading': item.meta && item.meta['status'] === 'reading',
 				'bm-finished': item.meta && item.meta['status'] === 'finished'}"
 		:data-path="item.path"
+		:data-count="progress"
 		@click.exact="onSelectFile(false)"
 		@click.ctrl="onSelectFile(true)"
 		@dblclick="$emit('open-file',item)"
@@ -73,6 +74,14 @@ export default {
 		isFolder() {
 			return this.item.isFolder(); 
 		},
+		progress() {
+			const {progress,total} = this.item.meta;
+			if (progress && total) {
+				return progress > total ? "100%" : (progress*100/total).toFixed(0).toString()+"%";
+			} else {
+				return "0%";
+			}
+		}
 	}
 }
 

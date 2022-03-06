@@ -19,10 +19,13 @@ export default class BookSuggestModal extends SuggestModal<Book> {
 
 	getSuggestions(query: string): Book[] {
 		this.query = query;
+		if (!this.query) {
+			return this.books;
+		}
+
 		const res: Book[] = [];
 		this.books.forEach((book) => {
-			const text = book.meta.title || book.name || book.path;
-			if (text.indexOf(query) >= 0) {
+			if (book.meta.title.indexOf(query) >= 0 || book.name.indexOf(query) >= 0) {
 				res.push(book);
 			}
 
@@ -31,7 +34,7 @@ export default class BookSuggestModal extends SuggestModal<Book> {
 	}
 
 	renderSuggestion(book: Book, el: HTMLElement) {
-		const title = book.meta.title || book.name || book.path;
+		const title = book.meta.title || book.name;
         
         if (this.query) {
             el.innerHTML = title.replace(RegExp(`(${this.query})`,'g'),'<span class="suggestion-highlight">$1</span>');

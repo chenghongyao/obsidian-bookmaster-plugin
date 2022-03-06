@@ -22,6 +22,43 @@ div.nav-file-title.bm-lost:hover > div.nav-file-title-content {
     display: block;
 }
 
+/* for data-count */
+.bm-root .nav-folder-title-content {
+	flex-grow: 1;
+}
+.bm-root .nav-folder-title[data-count]::after {
+    content: attr(data-count);
+    display: inline-block;
+    position: relative;
+    font-size: calc(100% * 0.8);
+    margin-right: 2px;
+    /* border-radius: 3px; */
+    padding: 2px 0;
+    /* background-color: var(--background-secondary-alt); */
+    transition: opacity 100ms ease-in-out;
+}
+
+.bm-root .nav-file-title-content {
+	flex-grow: 1;
+}
+
+.bm-root .bm-reading.nav-file-title[data-count]::after {
+    content: attr(data-count);
+    display: inline-block;
+    position: relative;
+    font-size: calc(100% * 0.8);
+    margin-right: 1px;
+    /* border-radius: 3px; */
+    padding: 1px 0;
+    /* background-color: var(--background-secondary-alt); */
+    transition: opacity 100ms ease-in-out;
+}
+
+.bm-root .nav-folder-title[data-count='0']::after {
+    display: none;
+}
+
+
 /* array input */
 div.array-input-container {
     width: 20em;
