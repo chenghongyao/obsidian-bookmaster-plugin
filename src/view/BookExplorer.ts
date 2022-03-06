@@ -151,6 +151,7 @@ export class BookExplorer extends ItemView {
 			this.openSortContextMenu(evt);
 		});
 		this.header.addAction("search","搜索",(evt) => {
+			new BookSuggestModal(this.app, this.plugin,this.plugin.root[this.plugin.settings.currentBookVault]).open();
 		});
 
 		this.header.addAction("gear","设置",(evt) => {
