@@ -1,6 +1,7 @@
 import { App, Menu, SuggestModal } from "obsidian";
 import BookMasterPlugin from "../main";
-import { Book } from "../Book";
+import { Book, BookFolder } from "../Book";
+import * as utils from "../utils"
 
 
 
@@ -8,10 +9,11 @@ export default class BookSuggestModal extends SuggestModal<Book> {
 	books: Book[]
 	query: string;
 	plugin: BookMasterPlugin;
-	constructor(app: App,plugin: BookMasterPlugin, books: Book[]) {
+	constructor(app: App,plugin: BookMasterPlugin, folder: BookFolder) {
 		super(app);
 		this.plugin = plugin;
-		this.books = books;
+		this.books = []
+		utils.walkBookFolder(folder,(book) =>this.books.push(book as Book),false);
 		this.query = "";
 		this.setPlaceholder("输入标题或文件名......");
 	}
