@@ -51,10 +51,12 @@ export default class BookSuggestModal extends SuggestModal<Book> {
 		const title = book.meta.title || book.name;
         
         if (this.query) {
-            el.innerHTML = title.replace(RegExp(`(${this.query})`,'g'),'<span class="suggestion-highlight">$1</span>');
+
+            el.innerHTML = title.replace(RegExp(`(${this.query})`,'g'),`<span class="suggestion-highlight">$1</span>`);
             //+ `<div class=suggestion-note>${book.path.replace(RegExp(`(${this.query})`,'g'),'<span class="suggestion-highlight">$1</span>')}</div>`;
             el.createDiv({text:book.path,cls:"suggestion-note"});
         } else {
+			// el.createSpan({cls: "suggestion-flair bm-book-tag",text: book.ext});
             el.createSpan({text: title});
             el.createDiv({text:book.path,cls:"suggestion-note"});
         }

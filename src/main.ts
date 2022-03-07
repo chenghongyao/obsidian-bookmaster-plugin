@@ -1,4 +1,4 @@
-import {Menu, normalizePath, Notice,Platform,Plugin, TAbstractFile, TFile, TFolder, ViewCreator} from "obsidian";
+import {MarkdownView, Menu, normalizePath, Notice,Platform,Plugin, TAbstractFile, TFile, TFolder, ViewCreator} from "obsidian";
 import { around } from "monkey-around";
 
 import { BookMasterSettings,DEFAULT_SETTINGS,DeviceSetting,DEFAULT_DEVICE_SETTINGS } from "./settings";
@@ -8,6 +8,7 @@ import { AbstractBook, Book, BookFolder, BookStatus, BookTreeSortType } from "./
 import { BookExplorer, VIEW_TYPE_BOOK_EXPLORER } from "./view/BookExplorer";
 import BasicBookSettingModal from "./view/BasicBookSettingModal";
 import BookSuggestModal from "./view/BookSuggestModal";
+import { BookProject, VIEW_TYPE_BOOK_PROJECT } from "./view/BookProject";
 
 
 export default class BookMasterPlugin extends Plugin {
@@ -17,6 +18,9 @@ export default class BookMasterPlugin extends Plugin {
 
 	bookMap: {[path:string]:AbstractBook} = {};
 	bookIdMap: {[bid:string]:Book} = {};
+
+	currentBookProjectFile: TFile;
+	currentBookProjectBooks: BookFolder;
 	
 	async onload() {
 		await this.loadSettings();
@@ -41,9 +45,13 @@ export default class BookMasterPlugin extends Plugin {
 				}
 			}
 
-		})
+		});
+
+
+		this.registerBookProject();
 
 		this.safeRegisterView(VIEW_TYPE_BOOK_EXPLORER,leaf => new BookExplorer(leaf,this));
+		this.safeRegisterView(VIEW_TYPE_BOOK_PROJECT,leaf => new BookProject(leaf,this));
 	}
 
 	onunload() {
@@ -75,6 +83,229 @@ export default class BookMasterPlugin extends Plugin {
 		}
 
 		this.app.workspace.revealLeaf(this.app.workspace.getLeavesOfType(type)[0]);
+	}
+	private getPropertyValue(file: TFile, propertyName: string) {
+		if (!file) {
+			return null;
+		}
+		const cache = this.app.metadataCache.getFileCache(file);
+		return cache?.frontmatter?.[propertyName];
+	}
+
+	private isProjectFile(file: TFile) {
+		return file && (this.getPropertyValue(file, "bookmaster-plugin") || this.getPropertyValue(file,"bm-books"));
+	}
+
+	private searchProjectFile(f: TFile) {
+		if (this.isProjectFile(f)) {
+			return f;
+		}
+		if (!f.parent.name) {
+			return
+		}
+		const folderFilePath = normalizePath(f.parent.path + `/${f.parent.name}.md`);
+		const folderFile = this.app.vault.getAbstractFileByPath(folderFilePath) as TFile
+		if (folderFile && this.isProjectFile(folderFile)) {
+			return folderFile;
+		} else {
+			return;
+		}
+	}
+
+	async updateBookProject() {
+		// TODO: project file is deleted
+		if (!this.currentBookProjectFile) {
+			new Notice("没有设置工程文件");
+			return
+		}
+		const projectName = this.getPropertyValue(this.currentBookProjectFile, "bm-name")  || this.currentBookProjectFile.basename
+		if (!this.currentBookProjectBooks) {
+			this.currentBookProjectBooks = new BookFolder(null,null,projectName,null,);
+		} else {
+			this.currentBookProjectBooks.name = projectName;
+			this.currentBookProjectBooks.removeAll();
+		}
+		
+		let books = this.getPropertyValue(this.currentBookProjectFile, "bm-books");
+		if (!books) return;
+
+		if (typeof books === "string") books = [books];
+
+		for (let i = 0; i < books.length; i++) {
+			const regIdPath = /[a-zA-Z0-9]{16}/;
+			const IdPathGroup = regIdPath.exec(books[i]);
+			if (IdPathGroup) {
+				const book = await this.getBookById(IdPathGroup[0]);
+				if (book) {
+					this.currentBookProjectBooks.push(book);
+				}
+				continue;
+			} 
+
+			const regUrl = /^\[(.*)\]\((https?:\/\/[\w\-_]+(?:\.[\w\-_]+)+[\w\-\.,@?^=%&:/~\+#]*[\w\-\@?^=%&/~\+#])?\)$/
+			const urlGroup = regUrl.exec(books[i]);
+			if (urlGroup) {
+				const book = new Book(null,null,urlGroup[2],urlGroup[1],"url",null);
+				this.currentBookProjectBooks.push(book);
+				continue;
+			}
+			
+
+		}
+	}
+
+
+	private async openBookInProject() {
+		// FIXME: need update?
+		return this.updateBookProject().then(() => {
+			const count = this.currentBookProjectBooks.children.length;
+			if (count === 1) {
+				this.openBook(this.currentBookProjectBooks.children[0] as Book);
+			} else if (count > 0) {
+				new BookSuggestModal(this.app, this, this.currentBookProjectBooks).open();
+			} else {
+				new Notice("当前工程没有文件");
+			}
+		});
+	}
+
+	private registerBookProject() {
+		const self = this;
+		// add item in more options
+		this.register(
+			around(MarkdownView.prototype, {
+				onMoreOptionsMenu(next) {
+					return function (menu: Menu) {
+						// book meta file
+						if (self.getPropertyValue(this.file,"bm-meta")) { 
+							const meta = self.app.metadataCache.getFileCache(this.file)?.frontmatter;
+							const {vid,bid} = meta;
+							if (vid && bid) {
+								menu.addItem((item) => {
+									item.setTitle("Open This Book").setIcon("popup-open") .onClick(() => {	
+										self.getBookById(bid).then((book) => {
+											self.openBook(book);
+										}).catch((reason) => {
+											new Notice("cant get this book:\n"+reason);
+										});
+									});
+								});	
+								menu.addItem((item) => {
+									item.setTitle("基本设置").setIcon("gear").onClick((evt) => {	
+										self.getBookById(bid).then((book) => {
+											new BasicBookSettingModal(self.app,self,book,this.leaf.view.contentEl.getBoundingClientRect()).open();
+										});
+									});
+								});	
+							}
+
+							menu.addSeparator();
+						} else {
+
+
+							const projFile = self.searchProjectFile(this.file);
+							if (projFile) {
+								menu.addItem((item) => {
+									item.setTitle("Open Book Project").onClick(() => {
+										self.currentBookProjectFile = projFile;
+										self.updateBookProject().then(() => {
+											self.activateView(VIEW_TYPE_BOOK_PROJECT, "right");
+										});
+									});
+								});
+		
+								let books = self.getPropertyValue(projFile, "bm-books");
+								if (typeof books === "string") books = [books];
+
+								if (books && books.length > 0 && books[0]) {
+									menu.addItem((item) => {
+										item.setTitle("Open Book In Project").onClick(() => {	
+											self.currentBookProjectFile = projFile;
+											self.openBookInProject();
+											
+											
+										});
+									});
+								}
+								menu.addSeparator();
+							}
+						}
+						return next.call(this, menu);
+					};
+				},
+			})
+		);	
+
+
+		this.addCommand({
+			id: 'open-book-from-meta-file',
+			name: 'Open This Book',
+			checkCallback: (checking: boolean) => {
+				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
+				if (!markdownView || !markdownView.file || !self.getPropertyValue(markdownView.file,"bm-meta")) return  false;
+
+				const meta = self.app.metadataCache.getFileCache(markdownView.file)?.frontmatter;
+				const {vid,bid} = meta;
+				if (vid && bid) {
+					if (!checking) {
+						self.getBookById(bid).then((book) => {
+							self.openBook(book);
+						}).catch((reason) => {
+							new Notice("cant get this book:\n"+reason);
+						});
+					}
+	
+					return true;
+				} else {
+					return false;
+				}
+
+		
+			}
+		});
+
+		this.addCommand({
+			id: 'open-book-project',
+			name: 'Open Book Project',
+			checkCallback: (checking: boolean) => {
+				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
+				if (!markdownView || !markdownView.file) return  false;
+				const projFile = self.searchProjectFile(markdownView.file);
+
+				if (!projFile) return false;
+
+				if (!checking) {
+					self.currentBookProjectFile = projFile;
+					self.updateBookProject().then(() => {
+						self.activateView(VIEW_TYPE_BOOK_PROJECT, "right");
+					});
+				}
+
+				return true;
+			}
+		});
+
+		// quick command for opening first book
+		this.addCommand({
+			id: 'open-book-in-project',
+			name: 'Open Book In Project',
+			checkCallback: (checking: boolean) => {
+				// Conditions to check
+				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
+				if (!markdownView || !markdownView.file) return  false;
+
+
+				const projFile = self.searchProjectFile(markdownView.file);
+				if (!projFile) return false;
+
+				if (!checking) {
+					self.currentBookProjectFile = projFile;
+					self.openBookInProject();
+				}
+				return true;
+			} 
+			
+		});
 	}
 
 	private getBookVaultPath(vid: string) {
@@ -221,6 +452,7 @@ export default class BookMasterPlugin extends Plugin {
 	async getBookId(book: Book) {
 		if (!book.hasId()) {
 			const bid = book.getId();
+			// new Notice("创建id:"+bid);
 			this.bookIdMap[bid] = book;
 			return this.saveBookData(book).then(() => {
 				return bid;
@@ -236,7 +468,7 @@ export default class BookMasterPlugin extends Plugin {
 			const file = dataFolder.children[i];
 			if (!(file instanceof TFile)) continue;
 			const meta = await this.app.metadataCache.getFileCache(file as TFile).frontmatter;
-			if (!meta["book-meta"]) continue;
+			if (!meta["bm-meta"]) continue;
 
 			const {vid,bid,path,name,ext,visual} = meta;
 			if (!vid || !bid)continue; // FIXME: check path?
@@ -351,7 +583,7 @@ export default class BookMasterPlugin extends Plugin {
 		}
 
 		// clear
-		this.dispTree.children.length = 0;
+		this.dispTree.removeAll();
 
 		// built
 		if (this.settings.bookTreeSortType === BookTreeSortType.PATH) {
@@ -445,7 +677,6 @@ export default class BookMasterPlugin extends Plugin {
 						.setIcon(statusIcon[ind])
 						.onClick(()=>{
 							book.meta["status"] = status;
-							console.log(book.meta);
 							this.saveBookData(book).then(() => {
 								new Notice("设置成功");
 							}).catch((reason)=>{
@@ -455,7 +686,6 @@ export default class BookMasterPlugin extends Plugin {
 					);
 				}
 			}
-
 			menu.addSeparator();
 			menu.addItem((item) =>
 			item
@@ -463,7 +693,7 @@ export default class BookMasterPlugin extends Plugin {
 				.setIcon("link")
 				.onClick(()=>{
 					this.getBookId(book).then((id: string) => {
-						navigator.clipboard.writeText(`${id}:${book.meta.title || book.name}`);
+						navigator.clipboard.writeText(`"${id}:${book.meta.title || book.name}"`);
 					})
 				})
 			);
@@ -580,15 +810,24 @@ export default class BookMasterPlugin extends Plugin {
 		}
 	}
 	async openBookBySystem(book: Book) {
-		const fullpath = this.getBookFullPath(book);
-
-		if (Platform.isMobile) {
-			// TODO: http?
-			const relPath = this.getMobileRelativePath(fullpath);
-			(this.app as any).openWithDefaultApp(relPath);
+		if (book.ext === "url") {
+			if (Platform.isMobile) {
+				(this.app as any).openWithDefaultApp(book.path);
+			} else {
+				window.open(book.path);
+			}
 		} else {
-			window.open(fullpath);
+			const fullpath = this.getBookFullPath(book);
+			if (Platform.isMobile) {
+				// TODO: http?
+				const relPath = this.getMobileRelativePath(fullpath);
+				(this.app as any).openWithDefaultApp(relPath);
+			} else {
+				window.open(fullpath);
+			}
 		}
+
+		
 	}
 
 	async openBook(book: Book, newPanel: boolean = false) {

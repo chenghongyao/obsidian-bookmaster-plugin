@@ -26,8 +26,8 @@ export class BookMeta {
     tags: Array<string>;   // tags
     rating: number;        // rating: 0-5
     status: BookStatus;    // read status
-    "start-time": string    // start time
-    "finish-time": string;  // finish time
+    "start-time": string    // TODO: start time 
+    "finish-time": string;  // TODO: finish time
     progress: number;      // read progress,eg. reading page
     total?: number;         // eg. total pages
     cover?:　string;        // cover address，url or image path,
@@ -72,6 +72,9 @@ export class BookFolder extends AbstractBook {
 
     push(absbook: AbstractBook) {
         this.children.push(absbook);
+    }
+    removeAll() {
+        this.children.length = 0;
     }
 }
 
@@ -197,7 +200,7 @@ export class Book extends AbstractBook {
     private getBookMetaString() {
         var content = "";
         content += "---\n";
-        content += "book-meta: true\n";
+        content += "bm-meta: true\n";
         content += `bid: "${this.bid}"\n`;
         content += `vid: "${this.vid}"\n`;
         content += `path: "${this.path}"\n`;

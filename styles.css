@@ -224,3 +224,19 @@ div.book-score-icon:hover {
 div.book-score-icon.fill {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='20' height='20'%3E%3Cpath fill='none' d='M0 0h24v24H0z'/%3E%3Cpath d='M12 18.26l-7.053 3.948 1.575-7.928L.587 8.792l8.027-.952L12 .5l3.386 7.34 8.027.952-5.935 5.488 1.575 7.928z'/%3E%3C/svg%3E");
 }
+
+/* Book Suggest Modal */
+/* .suggestion-flair.bm-book-tag {
+    background-color: var(--background-secondary-alt);
+    border-radius: 3px;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    line-height: 14px;
+    padding: 1px 3px;
+    left: calc(34 - width);
+    top: 10px;
+    text-transform: uppercase;
+    align-self: center;
+    color: inherit
+} */
