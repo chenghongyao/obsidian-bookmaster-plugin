@@ -26,6 +26,8 @@ export class BookMeta {
     tags: Array<string>;   // tags
     rating: number;        // rating: 0-5
     status: BookStatus;    // read status
+    "start-time": string    // start time
+    "finish-time": string;  // finish time
     progress: number;      // read progress,eg. reading page
     total?: number;         // eg. total pages
     cover?:　string;        // cover address，url or image path,
