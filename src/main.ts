@@ -47,6 +47,8 @@ export default class BookMasterPlugin extends Plugin {
 
 		});
 
+		//
+		//
 
 		this.registerBookProject();
 
@@ -154,6 +156,57 @@ export default class BookMasterPlugin extends Plugin {
 		}
 	}
 
+	private async insertBookToCurrentProject(book: Book) {
+		
+		const file = this.app.workspace.getActiveFile();
+
+		return Promise.all([this.getBookIdPath(book),this.app.vault.read(file)]).then((value) => {
+			const idpath = value[0];
+			const content = value[1];
+
+			const rYaml = /^(---\r?\n[\s\S]*\r?\n)---\r?\n/;
+			const r = /(.*):(.*)\r?\n((?:- .*)\r?\n)*/g;
+			const regIdPath = /[a-zA-Z0-9]{16}/;
+			const gYaml = rYaml.exec(content)
+			const yaml = gYaml?.[0];
+			var result = null;
+			if (yaml) {
+				const gi = yaml.matchAll(r);
+				for (var val = gi.next().value; val; val = gi.next().value) {
+					var newYaml = null;
+					const idSet = new Set<string>();
+
+					if (val[1] === "bm-books") {
+						if (val[2]) {
+							newYaml = yaml.replace(val[0],`bm-books:\n- ${val[2]}\n- ${idpath}`)
+						} else {
+							newYaml = yaml.replace(val[0],val[0]+`- ${idpath}\n`);
+						}
+						result = content.replace(yaml,newYaml);
+						break;
+					}
+				}
+	
+				if (!result) {
+					result = content.replace(yaml,gYaml[1]+`bm-books:\n- ${idpath}\n---\n`)
+				}
+	
+			} else {
+				result = `---\nbm-books:\n- ${idpath}\n---\n` + content;
+	
+			}
+	
+			if (result) {
+				return this.app.vault.modify(file,result);
+			}
+
+		});
+
+
+		
+
+
+	}
 
 	private async openBookInProject() {
 		// FIXME: need update?
@@ -213,20 +266,13 @@ export default class BookMasterPlugin extends Plugin {
 										});
 									});
 								});
-		
-								let books = self.getPropertyValue(projFile, "bm-books");
-								if (typeof books === "string") books = [books];
 
-								if (books && books.length > 0 && books[0]) {
-									menu.addItem((item) => {
-										item.setTitle("Open Book In Project").onClick(() => {	
-											self.currentBookProjectFile = projFile;
-											self.openBookInProject();
-											
-											
-										});
+								menu.addItem((item) => {
+									item.setTitle("Open Book In Project").onClick(() => {
+										self.currentBookProjectFile = projFile;
+										self.openBookInProject();
 									});
-								}
+								});
 								menu.addSeparator();
 							}
 						}
@@ -270,12 +316,16 @@ export default class BookMasterPlugin extends Plugin {
 			checkCallback: (checking: boolean) => {
 				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
 				if (!markdownView || !markdownView.file) return  false;
+				
 				const projFile = self.searchProjectFile(markdownView.file);
 
-				if (!projFile) return false;
+				if (!this.currentBookProjectFile && !projFile ) // no project file
+					return false;
 
 				if (!checking) {
-					self.currentBookProjectFile = projFile;
+					if (projFile) {	// need update project
+						self.currentBookProjectFile = projFile;
+					}
 					self.updateBookProject().then(() => {
 						self.activateView(VIEW_TYPE_BOOK_PROJECT, "right");
 					});
@@ -293,15 +343,20 @@ export default class BookMasterPlugin extends Plugin {
 				// Conditions to check
 				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
 				if (!markdownView || !markdownView.file) return  false;
-
-
-				const projFile = self.searchProjectFile(markdownView.file);
-				if (!projFile) return false;
+				
+				var projFile = this.currentBookProjectFile; // use current project first
+				if (!projFile) {
+					projFile = self.searchProjectFile(markdownView.file);
+				}
+				if (!projFile) return false; // no project file
 
 				if (!checking) {
-					self.currentBookProjectFile = projFile;
+					if (!self.currentBookProjectFile) {
+						self.currentBookProjectFile = projFile;
+					}
 					self.openBookInProject();
 				}
+
 				return true;
 			} 
 			
@@ -628,6 +683,12 @@ export default class BookMasterPlugin extends Plugin {
 		})
 	}
 
+	private async getBookIdPath(book: Book) {
+		return this.getBookId(book).then((bid) => {
+			return `"${bid}:${book.meta.title || book.name}"`
+		})
+	}
+
 	createBookContextMenu(menu: Menu, book: Book) {
 		if (book.vid) {
 
@@ -651,6 +712,18 @@ export default class BookMasterPlugin extends Plugin {
 					new BasicBookSettingModal(this.app,this,book).open();
 				})
 			);
+
+			menu.addItem((item: any) =>
+			item
+				.setTitle("插入当前文件")
+				.setIcon("gear")
+				.onClick(()=>{
+					this.insertBookToCurrentProject(book);
+
+				})
+			);
+
+
 
 
 			menu.addItem((item) =>
@@ -692,9 +765,9 @@ export default class BookMasterPlugin extends Plugin {
 				.setTitle("复制路径(ID:Title)")
 				.setIcon("link")
 				.onClick(()=>{
-					this.getBookId(book).then((id: string) => {
-						navigator.clipboard.writeText(`"${id}:${book.meta.title || book.name}"`);
-					})
+					this.getBookIdPath(book).then((path) => {
+						navigator.clipboard.writeText(path);
+					});
 				})
 			);
 	
