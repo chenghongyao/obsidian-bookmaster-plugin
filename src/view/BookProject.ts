@@ -72,7 +72,6 @@ export class BookProject extends ItemView {
 					'select-file': function (book: Book) {
 					},
 					'open-file': function (book: Book,ctrlKey: boolean) {
-                        console.log(book);
 						self.plugin.openBook(book,ctrlKey);
 						
 					},

@@ -888,6 +888,7 @@ export default class BookMasterPlugin extends Plugin {
 			return null;
 		}
 	}
+
 	async openBookBySystem(book: Book) {
 		if (book.ext === "url") {
 			if (Platform.isMobile) {
@@ -902,11 +903,10 @@ export default class BookMasterPlugin extends Plugin {
 				const relPath = this.getMobileRelativePath(fullpath);
 				(this.app as any).openWithDefaultApp(relPath);
 			} else {
-				window.open(fullpath);
+				console.log(fullpath);
+				window.open("file:///"+fullpath);
 			}
 		}
-
-		
 	}
 
 	async openBook(book: Book, newPanel: boolean = false) {
