@@ -516,6 +516,7 @@ export default class BookMasterPlugin extends Plugin {
 		return book.getId();
 	}
 
+	// FIXME: not ready
 	private async loadAllBookData() {
 		const dataFolder = this.app.vault.getAbstractFileByPath(this.getBookDataPath()) as TFolder;
 		if (!dataFolder || !(dataFolder instanceof TFolder)) return;
@@ -523,6 +524,11 @@ export default class BookMasterPlugin extends Plugin {
 			const file = dataFolder.children[i];
 			if (!(file instanceof TFile)) continue;
 			const meta = await this.app.metadataCache.getFileCache(file as TFile).frontmatter;
+			if (!meta) {
+				new Notice("配置文件错误:"+file.name,0)
+				continue;
+			}
+			
 			if (!meta["bm-meta"]) continue;
 
 			const {vid,bid,path,name,ext,visual} = meta;
