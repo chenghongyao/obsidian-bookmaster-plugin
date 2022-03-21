@@ -1,4 +1,4 @@
-import {MarkdownView, Menu, normalizePath, Notice,Platform,Plugin, TAbstractFile, TFile, TFolder, ViewCreator} from "obsidian";
+import {loadMathJax, loadPrism, MarkdownView, Menu, normalizePath, Notice,Platform,Plugin, TAbstractFile, TFile, TFolder, ViewCreator} from "obsidian";
 import { around } from "monkey-around";
 
 import { BookMasterSettings,DEFAULT_SETTINGS,DeviceSetting,DEFAULT_DEVICE_SETTINGS } from "./settings";
@@ -903,7 +903,6 @@ export default class BookMasterPlugin extends Plugin {
 				const relPath = this.getMobileRelativePath(fullpath);
 				(this.app as any).openWithDefaultApp(relPath);
 			} else {
-				console.log(fullpath);
 				window.open("file:///"+fullpath);
 			}
 		}
