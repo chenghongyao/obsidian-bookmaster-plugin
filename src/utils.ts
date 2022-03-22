@@ -287,3 +287,12 @@ export async function openMdFileInObsidian(path: string) {
 export function showBookLocationInSystem(path: string) {
     window.open("file://"+getDirPath(path));
 }
+
+
+export function getPropertyValue(file: TFile, propertyName: string) {
+    if (!file) {
+        return null;
+    }
+    const cache = app.metadataCache.getFileCache(file);
+    return cache?.frontmatter?.[propertyName];
+}

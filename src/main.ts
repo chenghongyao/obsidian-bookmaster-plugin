@@ -69,7 +69,7 @@ export default class BookMasterPlugin extends Plugin {
 
 	async activateView(type: string, dir?: string, split?: boolean) {
 
-		if (this.app.workspace.getLeavesOfType(type).length == 0) { // if dont exists, create new one,
+		if (this.app.workspace.getLeavesOfType(type).length == 0) { // not exists, create new one,
 			var leaf;
 			if (dir === "left") {
 				leaf = this.app.workspace.getLeftLeaf(split);
@@ -86,16 +86,13 @@ export default class BookMasterPlugin extends Plugin {
 
 		this.app.workspace.revealLeaf(this.app.workspace.getLeavesOfType(type)[0]);
 	}
-	private getPropertyValue(file: TFile, propertyName: string) {
-		if (!file) {
-			return null;
-		}
-		const cache = this.app.metadataCache.getFileCache(file);
-		return cache?.frontmatter?.[propertyName];
+
+	private getCurrentDeviceSetting() {
+		return this.settings.deviceSetting[utils.appId];
 	}
 
 	private isProjectFile(file: TFile) {
-		return file && (this.getPropertyValue(file, "bookmaster-plugin") || this.getPropertyValue(file,"bm-books"));
+		return file && (utils.getPropertyValue(file, "bookmaster-plugin") || utils.getPropertyValue(file,"bm-books"));
 	}
 
 	private searchProjectFile(f: TFile) {
@@ -103,14 +100,14 @@ export default class BookMasterPlugin extends Plugin {
 			return f;
 		}
 		if (!f.parent.name) {
-			return
+			return null;
 		}
 		const folderFilePath = normalizePath(f.parent.path + `/${f.parent.name}.md`);
 		const folderFile = this.app.vault.getAbstractFileByPath(folderFilePath) as TFile
 		if (folderFile && this.isProjectFile(folderFile)) {
 			return folderFile;
 		} else {
-			return;
+			return null;
 		}
 	}
 
@@ -120,7 +117,7 @@ export default class BookMasterPlugin extends Plugin {
 			new Notice("没有设置工程文件");
 			return
 		}
-		const projectName = this.getPropertyValue(this.currentBookProjectFile, "bm-name")  || this.currentBookProjectFile.basename
+		const projectName = utils.getPropertyValue(this.currentBookProjectFile, "bm-name")  || this.currentBookProjectFile.basename
 		if (!this.currentBookProjectBooks) {
 			this.currentBookProjectBooks = new BookFolder(null,null,projectName,null,);
 		} else {
@@ -128,7 +125,7 @@ export default class BookMasterPlugin extends Plugin {
 			this.currentBookProjectBooks.removeAll();
 		}
 		
-		let books = this.getPropertyValue(this.currentBookProjectFile, "bm-books");
+		let books = utils.getPropertyValue(this.currentBookProjectFile, "bm-books");
 		if (!books) return;
 
 		if (typeof books === "string") books = [books];
@@ -230,7 +227,7 @@ export default class BookMasterPlugin extends Plugin {
 				onMoreOptionsMenu(next) {
 					return function (menu: Menu) {
 						// book meta file
-						if (self.getPropertyValue(this.file,"bm-meta")) { 
+						if (utils.getPropertyValue(this.file,"bm-meta")) { 
 							const meta = self.app.metadataCache.getFileCache(this.file)?.frontmatter;
 							const {vid,bid} = meta;
 							if (vid && bid) {
@@ -288,7 +285,7 @@ export default class BookMasterPlugin extends Plugin {
 			name: 'Open This Book',
 			checkCallback: (checking: boolean) => {
 				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
-				if (!markdownView || !markdownView.file || !self.getPropertyValue(markdownView.file,"bm-meta")) return  false;
+				if (!markdownView || !markdownView.file || !utils.getPropertyValue(markdownView.file,"bm-meta")) return  false;
 
 				const meta = self.app.metadataCache.getFileCache(markdownView.file)?.frontmatter;
 				const {vid,bid} = meta;
@@ -408,9 +405,7 @@ export default class BookMasterPlugin extends Plugin {
 		}
 	}
 
-	private getCurrentDeviceSetting() {
-		return this.settings.deviceSetting[utils.appId];
-	}
+
 
 
 	// TODO: async,too slow
