@@ -10,7 +10,7 @@ import BasicBookSettingModal from "./view/BasicBookSettingModal";
 import BookSuggestModal from "./view/BookSuggestModal";
 import { BookProject, VIEW_TYPE_BOOK_PROJECT } from "./view/BookProject";
 import { BookView, VIEW_TYPE_BOOK_VIEW } from "./view/BookView";
-
+import {BookMasterSettingTab} from "./view/BookMasterSettingTab"
 
 export default class BookMasterPlugin extends Plugin {
 	settings: BookMasterSettings;
@@ -30,8 +30,8 @@ export default class BookMasterPlugin extends Plugin {
 		});
 	
 		this.addRibbonIcon("dice","BookExplorer",(evt) => {
-			// this.activateView(VIEW_TYPE_BOOK_EXPLORER,"left");
-			this.activateView(VIEW_TYPE_BOOK_VIEW,"center");
+			this.activateView(VIEW_TYPE_BOOK_EXPLORER,"left");
+			// this.activateView(VIEW_TYPE_BOOK_VIEW,"center");
 		});
 
 		this.addCommand({
@@ -55,6 +55,8 @@ export default class BookMasterPlugin extends Plugin {
 		this.safeRegisterView(VIEW_TYPE_BOOK_EXPLORER,leaf => new BookExplorer(leaf,this));
 		this.safeRegisterView(VIEW_TYPE_BOOK_PROJECT,leaf => new BookProject(leaf,this));
 		this.safeRegisterView(VIEW_TYPE_BOOK_VIEW,leaf => new BookView(leaf,this));
+		this.addSettingTab(new BookMasterSettingTab(this.app, this));
+
 	}
 
 	onunload() {
@@ -70,8 +72,8 @@ export default class BookMasterPlugin extends Plugin {
 
 	async activateView(type: string, dir?: string, split?: boolean) {
 
+		var leaf;
 		if (this.app.workspace.getLeavesOfType(type).length == 0) { // not exists, create new one,
-			var leaf;
 			if (dir === "left") {
 				leaf = this.app.workspace.getLeftLeaf(split);
 			} else if (dir === "right") {
@@ -83,9 +85,13 @@ export default class BookMasterPlugin extends Plugin {
 				type: type,
 				active: true,
 			});
+		} else {
+			leaf = this.app.workspace.getLeavesOfType(type)[0];
 		}
 
-		this.app.workspace.revealLeaf(this.app.workspace.getLeavesOfType(type)[0]);
+		this.app.workspace.revealLeaf(leaf);
+
+		return leaf.view;
 	}
 
 	//#region BookProject
@@ -497,10 +503,11 @@ export default class BookMasterPlugin extends Plugin {
 	
 	private async loadBookVault(vid: string) {
 		const vaultPath = this.getBookVaultPath(vid);
+
 		if (!vaultPath) return; // FIXME: ignore this vault
 		const vaultName = this.getBookVaultName(vid);
 		if (!await utils.isFolderExists(vaultPath)) { // TODO: virtual vault
-			new Notice(`书库“${vaultName}(${vid}):${vaultPath}”不存在`); 
+			new Notice(`书库“${vaultName}(${vid}):${vaultPath}”不存在`,0); 
 			return;
 		}		
 
@@ -632,7 +639,7 @@ export default class BookMasterPlugin extends Plugin {
 	// }
 
 	// TODO: invalid bid?
-	private async getBookById(bid: string) {
+	async getBookById(bid: string) {
 		if (this.root) {	 
 			return this.bookIdMap[bid];
 		} else {
@@ -642,10 +649,16 @@ export default class BookMasterPlugin extends Plugin {
 		}
 	}
 
-	private getBookFullPath(book: Book) {
+	getBookFullPath(book: Book) {
 		// FIXME: url path
 		return utils.normalizePath(this.getBookVaultPath(book.vid),book.path);
 	}
+
+	async getBookData(book: Book) {
+		const path = this.getBookFullPath(book);
+		return utils.readFile(path);
+	}
+
 
 	private async getBookOpenLink(book: Book) {
 		return this.getBookId(book).then((bid) => {
@@ -877,7 +890,18 @@ export default class BookMasterPlugin extends Plugin {
 			new Notice("文件丢失");
 			return;
 		}
-		this.openBookBySystem(book);
+
+		// only pdf for now 
+		if (book.ext !== "pdf") {
+			this.openBookBySystem(book);
+			return;
+		} 
+
+		this.activateView(VIEW_TYPE_BOOK_VIEW,"center",newPanel).then((view: BookView) => {
+			return this.getBookId(book).then((bid) => {
+				view.openBook(bid);
+			});
+		});
 	}
 
 
@@ -906,10 +930,9 @@ export default class BookMasterPlugin extends Plugin {
 
 	//#endregion
 
-	
 
 	//#region settings
-	private getCurrentDeviceSetting() {
+	getCurrentDeviceSetting() {
 		return this.settings.deviceSetting[utils.appId];
 	}
 

@@ -36,6 +36,25 @@ export async function isFileExists(path: string) {
     }
 }
 
+
+export async function readFile(path: string) {
+    if (Platform.isMobile) {
+        return fs.readBinary(path);
+    } else {
+        return new Promise((resolve,reject) => {
+            fs.readFile(path,(err: any, data: any) => {
+                if (err) {
+                    // new Notice("无法读取文件:"+fullPath);
+                    reject(err);
+                } else {
+                    resolve(data);
+                }
+            });
+        });
+    
+    }
+}
+
 export function getExtName(path: string) {
     if (path.lastIndexOf(".") === -1) return "";
     return path.substring(path.lastIndexOf(".")+1)

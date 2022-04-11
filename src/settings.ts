@@ -5,11 +5,13 @@ import { BookTreeSortType } from "./Book";
 export interface DeviceSetting {
 	deviceName: string;
 	bookVaultPaths: {[vid:string]:string};
+    webviewerWorkerPath: string;
 }
 
 export const DEFAULT_DEVICE_SETTINGS: DeviceSetting = {
 	deviceName: "",
 	bookVaultPaths: {[MAIN_BOOKVAULT_ID]:"D:\\paper"},
+    webviewerWorkerPath: "http://127.0.0.1:8863/webviewer",
 };
 
 
