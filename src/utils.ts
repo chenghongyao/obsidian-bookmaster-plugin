@@ -296,3 +296,21 @@ export function getPropertyValue(file: TFile, propertyName: string) {
     const cache = app.metadataCache.getFileCache(file);
     return cache?.frontmatter?.[propertyName];
 }
+
+export function getMobileRelativePath(fullpath: string) {
+    const basePath = (app.vault.adapter as any).basePath
+    const b = basePath.split("/");
+    const f = fullpath.split("/");
+    for (var i = 0; i < b.length; i++) {
+        if (b[i] !== f[i]) {
+            const rel = "../".repeat(b.length-i) + f.slice(i).join("/");
+            return rel;
+        }
+    }
+    
+    if (f.length > b.length) {
+        return f.slice(b.length).join("/");
+    } else {
+        return null;
+    }
+}

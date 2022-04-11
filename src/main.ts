@@ -9,6 +9,7 @@ import { BookExplorer, VIEW_TYPE_BOOK_EXPLORER } from "./view/BookExplorer";
 import BasicBookSettingModal from "./view/BasicBookSettingModal";
 import BookSuggestModal from "./view/BookSuggestModal";
 import { BookProject, VIEW_TYPE_BOOK_PROJECT } from "./view/BookProject";
+import { BookView, VIEW_TYPE_BOOK_VIEW } from "./view/BookView";
 
 
 export default class BookMasterPlugin extends Plugin {
@@ -29,7 +30,8 @@ export default class BookMasterPlugin extends Plugin {
 		});
 	
 		this.addRibbonIcon("dice","BookExplorer",(evt) => {
-			this.activateView(VIEW_TYPE_BOOK_EXPLORER,"left");
+			// this.activateView(VIEW_TYPE_BOOK_EXPLORER,"left");
+			this.activateView(VIEW_TYPE_BOOK_VIEW,"center");
 		});
 
 		this.addCommand({
@@ -47,13 +49,12 @@ export default class BookMasterPlugin extends Plugin {
 
 		});
 
-		//
-		//
 
 		this.registerBookProject();
 
 		this.safeRegisterView(VIEW_TYPE_BOOK_EXPLORER,leaf => new BookExplorer(leaf,this));
 		this.safeRegisterView(VIEW_TYPE_BOOK_PROJECT,leaf => new BookProject(leaf,this));
+		this.safeRegisterView(VIEW_TYPE_BOOK_VIEW,leaf => new BookView(leaf,this));
 	}
 
 	onunload() {
@@ -87,10 +88,7 @@ export default class BookMasterPlugin extends Plugin {
 		this.app.workspace.revealLeaf(this.app.workspace.getLeavesOfType(type)[0]);
 	}
 
-	private getCurrentDeviceSetting() {
-		return this.settings.deviceSetting[utils.appId];
-	}
-
+	//#region BookProject
 	private isProjectFile(file: TFile) {
 		return file && (utils.getPropertyValue(file, "bookmaster-plugin") || utils.getPropertyValue(file,"bm-books"));
 	}
@@ -153,10 +151,8 @@ export default class BookMasterPlugin extends Plugin {
 		}
 	}
 
-	private async insertBookToCurrentProject(book: Book) {
-		
-		const file = this.app.workspace.getActiveFile();
-
+	private async insertBookToProjectFile(book: Book,file: TFile) {
+	
 		return Promise.all([this.getBookIdPath(book),this.app.vault.read(file)]).then((value) => {
 			const idpath = value[0];
 			const content = value[1];
@@ -279,7 +275,7 @@ export default class BookMasterPlugin extends Plugin {
 			})
 		);	
 
-
+		// open-book-from-meta-file
 		this.addCommand({
 			id: 'open-book-from-meta-file',
 			name: 'Open This Book',
@@ -307,9 +303,10 @@ export default class BookMasterPlugin extends Plugin {
 			}
 		});
 
+		// open-book-project-view
 		this.addCommand({
-			id: 'open-book-project',
-			name: 'Open Book Project',
+			id: 'open-book-project-view',
+			name: 'Open Book Project View',
 			checkCallback: (checking: boolean) => {
 				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
 				if (!markdownView || !markdownView.file) return  false;
@@ -332,7 +329,7 @@ export default class BookMasterPlugin extends Plugin {
 			}
 		});
 
-		// quick command for opening first book
+		// open-book-in-project
 		this.addCommand({
 			id: 'open-book-in-project',
 			name: 'Open Book In Project',
@@ -359,7 +356,10 @@ export default class BookMasterPlugin extends Plugin {
 			
 		});
 	}
+	//#endregion
 
+
+	//#region BookVault
 	private getBookVaultPath(vid: string) {
 		if (vid === OB_BOOKVAULT_ID) {
 			return (this.app.vault.adapter as any).basePath;
@@ -380,35 +380,61 @@ export default class BookMasterPlugin extends Plugin {
 			return this.settings.bookVaultNames[vid] || utils.getDirName(this.getBookVaultPath(vid));
 		}
 	}
-	private getBookDataPath() {
-		return this.settings.dataPath + "/book-data";
-	}
+	
+	// FIXME: data file not ready
+	private async loadAllBookData() {
+		const dataFolder = this.app.vault.getAbstractFileByPath(this.getBookDataPath()) as TFolder;
+		if (!dataFolder || !(dataFolder instanceof TFolder)) return;
+		for(var i = 0 ;i < dataFolder.children.length; i++) {
+			const file = dataFolder.children[i];
+			if (!(file instanceof TFile)) continue;
+			const meta = await this.app.metadataCache.getFileCache(file as TFile).frontmatter;
+			if (!meta) {
+				new Notice("配置文件错误:"+file.name,0)
+				continue;
+			}
+			
+			if (!meta["bm-meta"]) continue;
 
-	private async getBookByPath(vid: string, path: string) {
-		const entry = `${vid}:${path}`;
-		if (this.root) {	
-			return this.bookMap[entry];
-		} else {
-			return this.loadAllBookVaults().then(() => {
-				return this.bookMap[entry];
-			});
+			const {vid,bid,path,name,ext,visual} = meta;
+			if (!vid || !bid)continue; // FIXME: check path?
+
+			const entry = `${vid}:${path}`;
+			var book = this.bookIdMap[bid];
+			if (book) { // old data file
+				// move book when change vid or path manually, which should not happen
+				if (book.vid !== vid || book.path !== path) { 
+					book.parent.children.remove(book);
+					book.vid = vid;
+					book.path = path;
+					if (this.root[vid]) {
+						const folder = this.getBookFolder(vid,book.path,this.root[vid]) // exist root[vid]?
+						book.parent = folder;
+						folder.push(book);
+					}
+				}
+
+				book.lost = !Boolean(this.bookMap[entry])	// update book lost flag
+				// FIXME: need reload book data??
+			} else if (this.root[vid]) { // new book data file
+				book = this.bookMap[entry] as Book;
+				if (!book || book.isFolder()) {   // this book is lost
+					const folder = this.getBookFolder(vid,path,this.root[vid]);
+					book = new Book(folder,vid,path,name,ext,bid,visual,true);
+					folder.push(book);
+				}				
+				this.bookIdMap[bid] = book;
+			} else { 
+				console.warn("unvalid data file(vid):",meta);
+				continue;
+			}
+
+			book.loadBookData(meta); // FIXME: always load book
+			// FIXME: data file is deleted manualy??
 		}
 	}
 
-	private async getBookById(bid: string) {
-		if (this.root) {	 
-			return this.bookIdMap[bid];
-		} else {
-			return this.loadAllBookVaults().then(() => {
-				return this.bookIdMap[bid];
-			});
-		}
-	}
-
-
-
-
-	// TODO: async,too slow
+	// TODO: too slow
 	private async walkBookVault(vid:string, vaultPath: string, rootPath: string, root: BookFolder,map: {[path:string]:AbstractBook}, validBookExts: Array<string>) {
 
 		for (var i = 0; i < root.children.length; i++) {  // set all test flag of children to false
@@ -468,102 +494,7 @@ export default class BookMasterPlugin extends Plugin {
 		}
 	}
 
-	private getBookFolder(vid:string, path: string, rootFolder: BookFolder) {
-		
-		const nodes = path.substring(1).split("/"); // path start with '/'
-		var p = "";
-		var folder = rootFolder;
-
-		for(let i = 0; i < nodes.length-1; i++) {
-			p += "/" + nodes[i];
-			const entry = `${vid}:${p}`;
-			
-			var f = this.bookMap[entry];
-			if (!f || !f.isFolder()) {
-				f = new BookFolder(folder,vid,nodes[i],path,true);
-				folder.push(f);
-				this.bookMap[entry] = f;
-			}
-			folder = f as BookFolder;
-		}
-		return folder;
-	}
-
-
-	// save book data safely
-	async saveBookData(book: Book) {
-		if (!book.hasId()) {
-			const bid = book.getId();
-			this.bookIdMap[bid] = book;
-		}
-		return book.saveBookData(this.getBookDataPath());
-	}
-
-	async getBookId(book: Book) {
-		if (!book.hasId()) {
-			const bid = book.getId();
-			// new Notice("创建id:"+bid);
-			this.bookIdMap[bid] = book;
-			return this.saveBookData(book).then(() => {
-				return bid;
-			});
-		}
-		return book.getId();
-	}
-
-	// FIXME: not ready
-	private async loadAllBookData() {
-		const dataFolder = this.app.vault.getAbstractFileByPath(this.getBookDataPath()) as TFolder;
-		if (!dataFolder || !(dataFolder instanceof TFolder)) return;
-		for(var i = 0 ;i < dataFolder.children.length; i++) {
-			const file = dataFolder.children[i];
-			if (!(file instanceof TFile)) continue;
-			const meta = await this.app.metadataCache.getFileCache(file as TFile).frontmatter;
-			if (!meta) {
-				new Notice("配置文件错误:"+file.name,0)
-				continue;
-			}
-			
-			if (!meta["bm-meta"]) continue;
-
-			const {vid,bid,path,name,ext,visual} = meta;
-			if (!vid || !bid)continue; // FIXME: check path?
-
-			const entry = `${vid}:${path}`;
-			var book = this.bookIdMap[bid];
-			if (book) { // old data file
-				// move book when change vid or path manually, which should not happen
-				if (book.vid !== vid || book.path !== path) { 
-					book.parent.children.remove(book);
-					book.vid = vid;
-					book.path = path;
-					if (this.root[vid]) {
-						const folder = this.getBookFolder(vid,book.path,this.root[vid]) // exist root[vid]?
-						book.parent = folder;
-						folder.push(book);
-					}
-				}
-
-				book.lost = !Boolean(this.bookMap[entry])	// update book lost flag
-				// FIXME: need reload book data??
-			} else if (this.root[vid]) { // new book data file
-				book = this.bookMap[entry] as Book;
-				if (!book || book.isFolder()) {   // this book is lost
-					const folder = this.getBookFolder(vid,path,this.root[vid]);
-					book = new Book(folder,vid,path,name,ext,bid,visual,true);
-					folder.push(book);
-				}				
-				this.bookIdMap[bid] = book;
-			} else { 
-				console.warn("unvalid data file(vid):",meta);
-				continue;
-			}
-
-			book.loadBookData(meta); // FIXME: always load book
-			// FIXME: data file is deleted manualy??
-		}
-	}
-
+	
 	private async loadBookVault(vid: string) {
 		const vaultPath = this.getBookVaultPath(vid);
 		if (!vaultPath) return; // FIXME: ignore this vault
@@ -607,19 +538,27 @@ export default class BookMasterPlugin extends Plugin {
 		new Notice("书库加载完成");
 	}
 
-	// async updateCurrentBookVault() {
-	// 	if (!this.root) {	// first load
-	// 		this.root = {};
-	// 	}
+	private getBookFolder(vid:string, path: string, rootFolder: BookFolder) {
+		
+		const nodes = path.substring(1).split("/"); // path start with '/'
+		var p = "";
+		var folder = rootFolder;
 
-	// 	return this.loadBookVault(this.settings.currentBookVault).then(() => {
-	// 		return this.loadAllBookData().then(() => { // TODO: only load book of current vault??
-	// 			return this.updateDispTree();
-	// 		})
-	// 	})
-	// }
-
-
+		for(let i = 0; i < nodes.length-1; i++) {
+			p += "/" + nodes[i];
+			const entry = `${vid}:${p}`;
+			
+			var f = this.bookMap[entry];
+			if (!f || !f.isFolder()) {
+				f = new BookFolder(folder,vid,nodes[i],path,true);
+				folder.push(f);
+				this.bookMap[entry] = f;
+			}
+			folder = f as BookFolder;
+		}
+		return folder;
+	}
+	
 	async updateDispTree() {
 		if (!this.root) { // FIXME: can this happen??
 			return this.loadAllBookVaults();
@@ -661,6 +600,46 @@ export default class BookMasterPlugin extends Plugin {
 
 		utils.accumulateTreeCount(this.dispTree);
 		utils.sortBookTree(this.dispTree,this.settings.bookTreeSortAsc);
+	}
+
+	
+	// async updateCurrentBookVault() {
+	// 	if (!this.root) {	// first load
+	// 		this.root = {};
+	// 	}
+
+	// 	return this.loadBookVault(this.settings.currentBookVault).then(() => {
+	// 		return this.loadAllBookData().then(() => { // TODO: only load book of current vault??
+	// 			return this.updateDispTree();
+	// 		})
+	// 	})
+	// }
+
+	//#endregion
+
+
+	//#region Book
+
+	// private async getBookByPath(vid: string, path: string) {
+	// 	const entry = `${vid}:${path}`;
+	// 	if (this.root) {	
+	// 		return this.bookMap[entry];
+	// 	} else {
+	// 		return this.loadAllBookVaults().then(() => {
+	// 			return this.bookMap[entry];
+	// 		});
+	// 	}
+	// }
+
+	// TODO: invalid bid?
+	private async getBookById(bid: string) {
+		if (this.root) {	 
+			return this.bookIdMap[bid];
+		} else {
+			return this.loadAllBookVaults().then(() => {
+				return this.bookIdMap[bid];
+			});
+		}
 	}
 
 	private getBookFullPath(book: Book) {
@@ -719,7 +698,13 @@ export default class BookMasterPlugin extends Plugin {
 				.setTitle("插入当前文件")
 				.setIcon("gear")
 				.onClick(()=>{
-					this.insertBookToCurrentProject(book);
+					const file = this.app.workspace.getActiveFile();
+
+					if (file) {
+						this.insertBookToProjectFile(book,file);
+					} else {
+						new Notice("请先激活一个文件")
+					}
 
 				})
 			);
@@ -866,23 +851,6 @@ export default class BookMasterPlugin extends Plugin {
 		}
 	}
 
-	private getMobileRelativePath(fullpath: string) {
-		const basePath = this.getBookVaultPath(OB_BOOKVAULT_ID);
-		const b = basePath.split("/");
-		const f = fullpath.split("/");
-		for (var i = 0; i < b.length; i++) {
-			if (b[i] !== f[i]) {
-				const rel = "../".repeat(b.length-i) + f.slice(i).join("/");
-				return rel;
-			}
-		}
-		
-		if (f.length > b.length) {
-			return f.slice(b.length).join("/");
-		} else {
-			return null;
-		}
-	}
 
 	async openBookBySystem(book: Book) {
 		if (book.ext === "url") {
@@ -895,7 +863,7 @@ export default class BookMasterPlugin extends Plugin {
 			const fullpath = this.getBookFullPath(book);
 			if (Platform.isMobile) {
 				// TODO: http?
-				const relPath = this.getMobileRelativePath(fullpath);
+				const relPath = utils.getMobileRelativePath(fullpath);
 				(this.app as any).openWithDefaultApp(relPath);
 			} else {
 				window.open("file:///"+fullpath);
@@ -912,6 +880,43 @@ export default class BookMasterPlugin extends Plugin {
 		this.openBookBySystem(book);
 	}
 
+
+
+	// save book data safely
+	async saveBookData(book: Book) {
+		if (!book.hasId()) {
+			const bid = book.getId();
+			this.bookIdMap[bid] = book;
+		}
+		return book.saveBookData(this.getBookDataPath());
+	}
+
+	// get book id safely
+	async getBookId(book: Book) {
+		if (!book.hasId()) {
+			const bid = book.getId();
+			// new Notice("创建id:"+bid);
+			this.bookIdMap[bid] = book;
+			return this.saveBookData(book).then(() => {
+				return bid;
+			});
+		}
+		return book.getId();
+	}
+
+	//#endregion
+
+	
+
+	//#region settings
+	private getCurrentDeviceSetting() {
+		return this.settings.deviceSetting[utils.appId];
+	}
+
+	private getBookDataPath() {
+		return this.settings.dataPath + "/book-data";
+	}
+	
 	private async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
 		if (!this.settings.deviceSetting[utils.appId]) {
@@ -923,4 +928,6 @@ export default class BookMasterPlugin extends Plugin {
 	async saveSettings() {
 		await this.saveData(this.settings);
 	}
+
+	//#endregion
 }
