@@ -891,17 +891,18 @@ export default class BookMasterPlugin extends Plugin {
 			return;
 		}
 
-		// only pdf for now 
-		if (book.ext !== "pdf") {
+		if (this.settings.openAllBookWithDefaultApp || this.settings.openBookExtsWithDefaultApp.includes(book.ext)) {
 			this.openBookBySystem(book);
-			return;
-		} 
+		} else if (["pdf"].includes(book.ext)) { // TODO: support exts
+			this.activateView(VIEW_TYPE_BOOK_VIEW,"center",newPanel).then((view: BookView) => {
+				return this.getBookId(book).then((bid) => {
+					view.openBook(bid);
+				});
+			});	
+		} else {
+			this.openBookBySystem(book);
+		}
 
-		this.activateView(VIEW_TYPE_BOOK_VIEW,"center",newPanel).then((view: BookView) => {
-			return this.getBookId(book).then((bid) => {
-				view.openBook(bid);
-			});
-		});
 	}
 
 

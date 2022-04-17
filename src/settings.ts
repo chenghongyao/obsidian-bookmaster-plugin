@@ -26,6 +26,9 @@ export interface BookMasterSettings {
 
     bookTreeSortType: BookTreeSortType;
     bookTreeSortAsc: boolean;
+
+    openAllBookWithDefaultApp: boolean;
+    openBookExtsWithDefaultApp: Array<string>
 }
 
 export const DEFAULT_SETTINGS: BookMasterSettings = {
@@ -39,4 +42,7 @@ export const DEFAULT_SETTINGS: BookMasterSettings = {
 
     bookTreeSortType: BookTreeSortType.PATH,
     bookTreeSortAsc: true,
+
+    openAllBookWithDefaultApp: false,
+    openBookExtsWithDefaultApp: [],
 };

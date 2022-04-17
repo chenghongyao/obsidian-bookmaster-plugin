@@ -240,3 +240,53 @@ div.book-score-icon.fill {
     align-self: center;
     color: inherit
 } */
+
+
+
+/* BookView */
+.bm-bookview {
+    display: flex;
+    flex-direction: column;
+}
+
+.bm-bookview-tab-container {
+    width: 100%;
+    height: 1.5em;
+    display: none;
+}
+.bm-bookview-tab-container.visible {
+    display: flex;
+}
+
+.bm-bookview-tab-item-container {
+    display: inline;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0 0.5em;
+    margin: 0 2px;
+    flex: 1;
+}
+.bm-bookview-tab-item-container.active {
+    border-bottom: 2px solid white;
+}
+.bm-bookview-tab-item-container:hover {
+    border-bottom: 2px solid gray;
+}
+
+
+.bm-bookview-viewer-container {
+    width: 100%;
+    height: 100%;
+    flex: 1;
+}
+.bm-bookview-viewer-item-container {
+    width: 100%;
+    height: 100%;
+    display: none;
+}
+
+.bm-bookview-viewer-item-container.visible{
+    display: block;
+}
+
