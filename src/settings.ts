@@ -35,7 +35,7 @@ export const DEFAULT_SETTINGS: BookMasterSettings = {
     deviceSetting: {},
     dataPath: "bookmaster",
 
-	validBookExts: ["pdf","epub"],
+	validBookExts: ["pdf","epub","html"],
 
     currentBookVault: MAIN_BOOKVAULT_ID,
     bookVaultNames: {[MAIN_BOOKVAULT_ID]:"我的书库"},

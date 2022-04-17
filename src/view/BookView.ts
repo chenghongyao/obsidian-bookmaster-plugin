@@ -4,6 +4,7 @@ import { DocumentViewer } from "../documentViewer/documentViewer";
 import { PDFTronViewer } from "../documentViewer/PDFTronViewer";
 import BookMasterPlugin from "src/main";
 import { EpubJSViewer } from "../documentViewer/EPUBJSViewer";
+import { HTMLViewer } from "../documentViewer/HtmlViewer";
 
 
 
@@ -194,22 +195,34 @@ export class BookView extends ItemView {
 		// return ??
 		return this.plugin.getBookById(bid).then((book) => {
 			// TODO: book is undefine
-			this.plugin.getBookData(book).then((data: ArrayBuffer) => {
+
+			if (book.ext === "html") {
 				const tab = this.addBookTab(bid,book.meta.title || book.name,book.ext);
 				tab.book = book; // TODO: save book ref??
+				tab.viewer = new HTMLViewer(tab.container);
+				const url = "app://local/" + encodeURIComponent(this.plugin.getBookFullPath(book));
+				tab.viewer.show(url);
 
-				if (book.ext === "epub") {
-					tab.viewer = new EpubJSViewer(tab.container);
-				} else {
-					const workerPath = this.plugin.getCurrentDeviceSetting().webviewerWorkerPath;
-					tab.viewer = new PDFTronViewer(tab.container,workerPath);
-				}
-
-				tab.viewer.show(data,state,book.ext);
-
-			}).catch((err) => {
-				new Notice("读取文件错误:"+err,0);
-			})
+			} else {
+				this.plugin.getBookData(book).then((data: ArrayBuffer) => {
+					const tab = this.addBookTab(bid,book.meta.title || book.name,book.ext);
+					tab.book = book; // TODO: save book ref??
+	
+					
+					if (book.ext === "pdf") {
+						const workerPath = this.plugin.getCurrentDeviceSetting().webviewerWorkerPath;
+						tab.viewer = new PDFTronViewer(tab.container,workerPath);
+					} else if (book.ext === "epub") {
+						tab.viewer = new EpubJSViewer(tab.container);
+					} 
+					
+					tab.viewer.show(data,state,book.ext);
+	
+				}).catch((err) => {
+					new Notice("读取文件错误:"+err,0);
+				});
+			}
+			
 		});
 	}
 

@@ -11,7 +11,7 @@ export abstract class DocumentViewer {
         this.viewerId = (((1+Math.random())*0x10000)|0).toString(16).substring(1);
     }
 
-    abstract show(data: ArrayBuffer,state?: any, ext?: string): Promise<void>;
+    abstract show(data: ArrayBuffer | string,state?: any, ext?: string): Promise<void>;
     abstract closeDocument(): Promise<void>;
     abstract getState(): any;
 
