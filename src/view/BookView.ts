@@ -12,6 +12,7 @@ interface BookTab {
 	container: HTMLDivElement;
 	viewer: DocumentViewer;
 	title: string;
+	book: Book;
 }
 
 export const VIEW_TYPE_BOOK_VIEW = "bm-book-view"
@@ -79,7 +80,7 @@ export class BookView extends ItemView {
     }
 
 
-	private currentBook() {
+	private getCurrentBook() {
 		if (this.currentTab) {
 			return this.plugin.getBookById(this.currentTab.bid);
 		} else {
@@ -89,25 +90,16 @@ export class BookView extends ItemView {
 
 	private addBookTab(bid:string,title:string,ext:string) {
 
-		if (this.currentTab) {
-			this.currentTab.container.removeClass("visible");
-			this.currentTab.head.removeClass("active");
-		}
-
 		if (this.bookTabs.length === 1) {
 			this.tabContainer.addClass("visible");
 		}
 
-
 		const head = this.tabContainer.createDiv();
 		head.addClass("bm-bookview-tab-item-container")
-		head.addClass("active");
 		head.title = title;
 		head.textContent = title;
 		this.tabContainer.appendChild(head);
 		
-
-
 		const container = document.createElement("div");
 		container.addClass("bm-bookview-viewer-item-container");
 		container.addClass("bm-bookview-"+ext);
@@ -121,17 +113,14 @@ export class BookView extends ItemView {
 			viewer: null,
 			title: title,
 		})
-		const tab = this.bookTabs.last();
-		this.currentTab = tab;
-		this.currentTab.container.addClass("visible");
 
-		// const 
+		const tab = this.bookTabs.last();
+		this.showBookTab(tab);
+
 		head.onclick = () => {
 			this.showBookTab(tab);
 		};
-
 		head.oncontextmenu = (e) => {
-
 			const menu = new Menu(this.plugin.app);
 			menu.addItem((item) => {
 				item
@@ -143,7 +132,7 @@ export class BookView extends ItemView {
 			})
 			menu.showAtMouseEvent(e);
 		}
-		return this.currentTab;
+		return tab;
 	}
 
 	private showBookTab(tab: BookTab) {
@@ -159,6 +148,7 @@ export class BookView extends ItemView {
 
 		this.setTitle(this.currentTab.title);
 	}
+
 
 	private async closeBookTab(tab: BookTab) {
 		console.log("close:",tab)
@@ -206,17 +196,18 @@ export class BookView extends ItemView {
 				const tab = this.addBookTab(bid,book.meta.title || book.name,book.ext);
 				const workerPath = this.plugin.getCurrentDeviceSetting().webviewerWorkerPath;
 				tab.viewer = new PDFTronViewer(tab.container,workerPath);
-				tab.viewer.show(data,state,book.ext);
+				tab.book = book; // TODO: save book ref??
 				this.setTitle(book.meta.title || book.name);
-				// this.bid = bid;
+
+				tab.viewer.show(data,state,book.ext);
 			}).catch((err) => {
 				new Notice("读取文件错误:"+err,0);
 			})
 		});
 	}
 
-	onMoreOptionsMenu(menu: Menu) {
-		super.onMoreOptionsMenu(menu);
+	async onMoreOptionsMenu(menu: Menu) {
+		this.plugin.createBookContextMenu(menu,this.currentTab.book);
 	}
 
 
