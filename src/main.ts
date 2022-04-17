@@ -893,7 +893,7 @@ export default class BookMasterPlugin extends Plugin {
 
 		if (this.settings.openAllBookWithDefaultApp || this.settings.openBookExtsWithDefaultApp.includes(book.ext)) {
 			this.openBookBySystem(book);
-		} else if (["pdf"].includes(book.ext)) { // TODO: support exts
+		} else if (["pdf","epub"].includes(book.ext)) { // TODO: support exts
 			this.activateView(VIEW_TYPE_BOOK_VIEW,"center",newPanel).then((view: BookView) => {
 				return this.getBookId(book).then((bid) => {
 					view.openBook(bid);

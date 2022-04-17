@@ -3,6 +3,7 @@ import { Book } from "src/Book";
 import { DocumentViewer } from "../documentViewer/documentViewer";
 import { PDFTronViewer } from "../documentViewer/PDFTronViewer";
 import BookMasterPlugin from "src/main";
+import { EpubJSViewer } from "../documentViewer/EPUBJSViewer";
 
 
 
@@ -112,6 +113,7 @@ export class BookView extends ItemView {
 			container: container,
 			viewer: null,
 			title: title,
+			book: null,
 		})
 
 		const tab = this.bookTabs.last();
@@ -194,12 +196,17 @@ export class BookView extends ItemView {
 			// TODO: book is undefine
 			this.plugin.getBookData(book).then((data: ArrayBuffer) => {
 				const tab = this.addBookTab(bid,book.meta.title || book.name,book.ext);
-				const workerPath = this.plugin.getCurrentDeviceSetting().webviewerWorkerPath;
-				tab.viewer = new PDFTronViewer(tab.container,workerPath);
 				tab.book = book; // TODO: save book ref??
-				this.setTitle(book.meta.title || book.name);
+
+				if (book.ext === "epub") {
+					tab.viewer = new EpubJSViewer(tab.container);
+				} else {
+					const workerPath = this.plugin.getCurrentDeviceSetting().webviewerWorkerPath;
+					tab.viewer = new PDFTronViewer(tab.container,workerPath);
+				}
 
 				tab.viewer.show(data,state,book.ext);
+
 			}).catch((err) => {
 				new Notice("读取文件错误:"+err,0);
 			})
