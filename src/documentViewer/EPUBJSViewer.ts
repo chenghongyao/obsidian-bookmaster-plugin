@@ -1,11 +1,11 @@
 import { DocumentViewer } from "./documentViewer";
-import ePub,{Book as EPUBBook, Rendition}  from "epubjs" 
+import ePub,{Book , Rendition}  from "epubjs" 
 
 
 export class EpubJSViewer extends DocumentViewer {
     
-    epubBook: EPUBBook;
-    epubRedition: Rendition;
+    book: Book;
+    redition: Rendition;
     workerPath: string;
 
     constructor(container: HTMLElement,workerPath: string) {
@@ -13,6 +13,22 @@ export class EpubJSViewer extends DocumentViewer {
         this.workerPath = workerPath;
     }
 
+    private navigatePage(e: KeyboardEvent) {
+        if (!this.redition) return;
+
+
+        if (e.key === "ArrowRight") {
+            this.redition.next();
+            console.log("next");
+        } else if (e.key === "ArrowLeft") {
+            this.redition.prev();
+            console.log("prev");
+        }
+    }
+
+    private selectRange(e: MouseEvent) {
+
+    }
 
     async show(data: ArrayBuffer | string, state?: any, ext?: string) {
 
@@ -30,48 +46,50 @@ export class EpubJSViewer extends DocumentViewer {
                 },
                 
             });
+
+            // this.book = ePub(data);
+            // this.redition = this.book.renderTo(this.container,{
+            //     width: "100%",
+            //     height: "100%",
+            //     manager: "continuous",
+            //     // snap: true
+            //     flow: "scrolled",
+            // });
+
+            // this.redition.on("keydown",(e: KeyboardEvent) => {
+            //     this.navigatePage(e);
+            // });
+
+            
+            // this.redition.themes.register("light", {
+            //     "body": {"background": "white"}
+            // });
+            // this.redition.themes.register("gray",{
+            //     "body": {"background": "rgb(190,190,190)"}
+            // });
+            // this.redition.themes.register("dark",{
+            //     "body": {"filter": "invert(100%)"}
+            // });
+
+            // this.redition.themes.select("dark");
+            return this.redition.display();
+
+        } else {
+            throw "unvalid data type for epub viewer";
         }
-        
-        // this.epubBook = new EPUBBook();
-        // return this.epubBook.open(data).then(() => {
-        //     this.epubRedition = this.epubBook.renderTo(this.container,{
-        //         // 默认双页显示
-        //         width: '100%',
-        //         height: '100%',
 
-        //         // flow: "auto",
-        //         // 单页滚动显示epub，推荐加上下面两个属性
-        //         manager: "continuous",
-        //         flow: "scrolled"
-        //     });
-        //     this.epubRedition.display();
-
-        //     this.epubRedition.themes.register("light", {
-        //         "body": {"background": "white"}
-        //     });
-        //     this.epubRedition.themes.register("gray",{
-        //         "body": {"background": "rgb(190,190,190)"}
-        //     });
-        //     this.epubRedition.themes.register("dark",{
-        //         "body": {"filter": "invert(100%)"}
-        //     });
-
-        //     this.epubRedition.themes.select("dark");
-
-
-        // });
 
     }
 
     async closeDocument() {
-        if (this.epubRedition) {
-            this.epubRedition.destroy();
-            this.epubRedition = null;
+        if (this.redition) {
+            this.redition.destroy();
+            this.redition = null;
         }
 
-        if (this.epubBook) {
-            this.epubBook.destroy();
-            this.epubBook = null;
+        if (this.book) {
+            this.book.destroy();
+            this.book = null;
         }
     }
     getState() {

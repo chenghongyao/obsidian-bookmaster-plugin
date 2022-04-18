@@ -290,6 +290,12 @@ div.book-score-icon.fill {
     display: block;
 }
 
+
+/* epub viewer */
+.bm-bookview-viewer-item-container.bm-bookview-epub {
+    background: white;
+}
+
 /* txt viewer */
 .bm-bookview-viewer-item-container.bm-bookview-txt {
     padding: 10px 30px 10px;
@@ -299,3 +305,4 @@ div.book-score-icon.fill {
 .bm-bookview-viewer-item-container.bm-bookview-txt p{
     user-select: text;
 }
+

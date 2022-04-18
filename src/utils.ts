@@ -13,6 +13,16 @@ export function generateBid() {
     return S4()+S4()+S4()+S4();
 }
 
+// http://stackoverflow.com/questions/105034/how-to-create-a-guid-uuid-in-javascript
+// EPUBJS.core.uuid = function() {
+// 	var d = new Date().getTime();
+// 	var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+// 			var r = (d + Math.random()*16)%16 | 0;
+// 			d = Math.floor(d/16);
+// 			return (c=='x' ? r : (r&0x7|0x8)).toString(16);
+// 	});
+// 	return uuid;
+// };
 export async function isFolder(path:string) {
     if (Platform.isMobile) {
         return (await fs.stat(path)).type === "directory";
