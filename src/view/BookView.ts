@@ -203,7 +203,7 @@ export class BookView extends ItemView {
 
 	// TODO: define annotation interface
 	private onAddAnnotation(viewer: DocumentViewer, annot: any) {
-		// console.log("add annot:",annot);
+		console.log("add annot:",annot);
 	}
 
 	private onModifyAnnotation(viewer: DocumentViewer, annot: any) {

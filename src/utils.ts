@@ -79,7 +79,7 @@ export function  getDirName(dirpath: string) {
 
 export function  getDirPath(filepath: string) {
     // TODO: more robust
-    const g = /(.*)\/(?:.*)/.exec(filepath);
+    const g = /(.*)[\/\\](?:.*)/.exec(filepath);
     if (g && g[1] === "")return "/";
     else return g?.[1];
 }
@@ -132,7 +132,8 @@ export async function safeWriteObFile(path: string, data: Buffer|string, overwri
 
 export async function safeReadObFile(path:string) {
     const vault = app.vault;
-    return vault.read(vault.getAbstractFileByPath(path) as TFile);
+    const file = vault.getAbstractFileByPath(path) as TFile
+    return file ? vault.read(file) : "";
 }
 
 
@@ -322,6 +323,7 @@ export async function openMdFileInObsidian(path: string) {
 }
 
 export function showBookLocationInSystem(path: string) {
+    console.log(getDirPath(path),path);
     window.open("file:///"+getDirPath(path));
 }
 

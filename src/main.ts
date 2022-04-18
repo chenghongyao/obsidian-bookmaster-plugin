@@ -689,11 +689,7 @@ export default class BookMasterPlugin extends Plugin {
 
 	async loadBookAnnotations(bid: string) {
 		const path = this.getBookAnnotationsFilePath(bid);
-		if (utils.isFileExists(path)) {
-			return utils.safeReadObFile(path);
-		} else {
-			return "";
-		}
+		return utils.safeReadObFile(path);
 	}
 
 

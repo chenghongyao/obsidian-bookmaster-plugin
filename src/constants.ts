@@ -97,6 +97,8 @@ export const BookMetaMap : {[type:string]:BookMetaOptionMap}= {
 
 };
 
+export const ImageExts = ["jpg","jpeg","png","bmp",]
+
 export const supportBookExts = [
     "pdf",
     "xlsx","xls","doc","docx","ppt","pptx", // office

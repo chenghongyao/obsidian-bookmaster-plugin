@@ -1,6 +1,7 @@
 import { DocumentViewer } from "./documentViewer";
 import WebViewer, { WebViewerInstance } from "@pdftron/webviewer";
 import { loadPdfJs, Notice } from "obsidian";
+import { ImageExts } from "../constants";
 
 
 
@@ -31,7 +32,8 @@ export class PDFTronViewer extends DocumentViewer {
     workerPath: string;
 
 	ext: string;
-	pdfjsDoc: any; // pdfDocument
+	private pdfjsDoc: PDFDocumentProxy; // pdfDocument
+	private image: ImageBitmap;
 
     constructor(bid: string, container: HTMLElement, workerPath: string, callbacks?: any) {
         super(bid,container,callbacks);
@@ -205,9 +207,50 @@ export class PDFTronViewer extends DocumentViewer {
 
 	}
 
+
+	async getImageAnnotationImage(annot: any, clipBox: Array<number>, zoom: number) : Promise<Buffer>{
+
+		const clipWidth = Math.round((clipBox[2] - clipBox[0]));
+		const clipHeight = Math.round((clipBox[3] - clipBox[1]));
+
+		console.log(clipBox[0],clipBox[1],clipWidth,clipHeight)
+		return createImageBitmap(this.image,clipBox[0],clipBox[1],clipWidth,clipHeight).then((clipImage) => {
+				
+				//https://stackoverflow.com/questions/52959839/convert-imagebitmap-to-blob
+			return new Promise(res => {
+				// create a canvas
+				const canvas = document.createElement('canvas');
+				// resize it to the size of our ImageBitmap
+				canvas.width = clipImage.width;
+				canvas.height = clipImage.height;
+				// try to get a bitmaprenderer context
+				let ctx = canvas.getContext('bitmaprenderer');
+				if(ctx) {
+					// transfer the ImageBitmap to it
+					ctx.transferFromImageBitmap(clipImage);
+				}
+				else {
+					// in case someone supports createImageBitmap only
+					// twice in memory...
+					canvas.getContext('2d').drawImage(clipImage,0,0);
+				}
+
+				// get it back as a Blob
+				canvas.toBlob((blob) => {
+					blob.arrayBuffer().then(buf => {
+						res(Buffer.from(buf));
+					})
+				},"image/"+this.ext,1);
+
+			})
+		});
+
+	}
 	async getAnnotationImage(annot: any, clipBox: Array<number>, zoom: number) : Promise<Buffer>{
 		if (this.ext === "pdf" && this.pdfjsDoc) {
 			return this.getPDFAnnotationImage(annot,clipBox,zoom)
+		} else if (this.image) {
+			return this.getImageAnnotationImage(annot,clipBox,zoom);
 		}
 
 		return null;
@@ -335,6 +378,10 @@ export class PDFTronViewer extends DocumentViewer {
 		});
 	}
 
+	private async loadImageData(data:ArrayBuffer) {
+		this.image = await createImageBitmap(new Blob([data],{type:"image/png"}))
+	}
+
     async show(data: ArrayBuffer, state?: any, ext?: string, annotations?: string){
 
 		this.ext = ext || "pdf";
@@ -350,6 +397,8 @@ export class PDFTronViewer extends DocumentViewer {
 
 		if (this.ext === "pdf") {
 			this.loadPdfjsDoc(data);
+		} else if (ImageExts.includes(this.ext)) {
+			this.loadImageData(data);
 		}
 		
 
@@ -383,15 +432,16 @@ export class PDFTronViewer extends DocumentViewer {
 			await this.callbacks.onClose(this);
 		}
 
-		window.removeEventListener("message",this.listener);
-		this.viewerReady = false; 
-
-
 		this.pdfjsDoc = null;
+		this.image = null;
+
 		this.xfdfDoc = null;
 		this.annotsDoc = null;
 		this.documentReady = false;
 		this.currentPage = 0;
+
+		window.removeEventListener("message",this.listener);
+		this.viewerReady = false; 
     }
 
 
