@@ -43,8 +43,8 @@ export class BookMasterSettingTab extends PluginSettingTab {
             .setName("WebViewer库路径")
             .setDesc("如http(s)://<ip>:<port>/webviewer")
             .addText((text) =>
-                text.setValue(deviceSetting.webviewerWorkerPath).onChange(async (value) => {
-                    deviceSetting.webviewerWorkerPath = value;
+                text.setValue(deviceSetting.bookViewerWorkerPath).onChange(async (value) => {
+                    deviceSetting.bookViewerWorkerPath = value;
                     await this.plugin.saveSettings();
                 })
             );

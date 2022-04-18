@@ -4,7 +4,8 @@ import { DocumentViewer } from "../documentViewer/documentViewer";
 import { PDFTronViewer } from "../documentViewer/PDFTronViewer";
 import BookMasterPlugin from "src/main";
 import { EpubJSViewer } from "../documentViewer/EPUBJSViewer";
-import { HTMLViewer } from "../documentViewer/HtmlViewer";
+import { HtmlViewer } from "../documentViewer/HtmlViewer";
+import { TxtViewer } from "../documentViewer/TxtViewer";
 
 
 
@@ -196,33 +197,43 @@ export class BookView extends ItemView {
 		return this.plugin.getBookById(bid).then((book) => {
 			// TODO: book is undefine
 
-			if (book.ext === "html") {
-				const tab = this.addBookTab(bid,book.meta.title || book.name,book.ext);
-				tab.book = book; // TODO: save book ref??
-				tab.viewer = new HTMLViewer(tab.container);
-				const url = "app://local/" + encodeURIComponent(this.plugin.getBookFullPath(book));
-				tab.viewer.show(url);
-
-			} else {
-				this.plugin.getBookData(book).then((data: ArrayBuffer) => {
+			if (PDFTronViewer.isSupportExt(book.ext)) {
+				return this.plugin.getBookData(book).then((data: ArrayBuffer) => {
 					const tab = this.addBookTab(bid,book.meta.title || book.name,book.ext);
 					tab.book = book; // TODO: save book ref??
-	
-					
-					if (book.ext === "pdf") {
-						const workerPath = this.plugin.getCurrentDeviceSetting().webviewerWorkerPath;
-						tab.viewer = new PDFTronViewer(tab.container,workerPath);
-					} else if (book.ext === "epub") {
-						tab.viewer = new EpubJSViewer(tab.container);
-					} 
-					
+					const workerPath = this.plugin.getCurrentDeviceSetting().bookViewerWorkerPath + "//webviewer";
+					tab.viewer = new PDFTronViewer(tab.container,workerPath);
 					tab.viewer.show(data,state,book.ext);
-	
-				}).catch((err) => {
-					new Notice("读取文件错误:"+err,0);
 				});
-			}
 			
+			} else if (book.ext === "txt") {
+				return this.plugin.getBookData(book).then((data: ArrayBuffer) => {
+					const tab = this.addBookTab(bid,book.meta.title || book.name,book.ext);
+					tab.book = book;
+					
+					tab.viewer = new TxtViewer(tab.container);
+					tab.viewer.show(data,state,book.ext);
+				});
+			} 
+			else {
+				const tab = this.addBookTab(bid,book.meta.title || book.name,book.ext);
+				tab.book = book; // TODO: save book ref??
+				const url = "app://local/" + encodeURIComponent(this.plugin.getBookFullPath(book));
+
+				if (book.ext === "html") {
+					tab.viewer = new HtmlViewer(tab.container);
+				} else if (book.ext === "epub") {
+					const workerPath = this.plugin.getCurrentDeviceSetting().bookViewerWorkerPath + "/epubjs-reader/reader/index.html";
+					tab.viewer = new EpubJSViewer(tab.container,workerPath);
+				}
+
+				if (tab.viewer) {
+					return tab.viewer.show(url);
+				} else {
+					console.error("unvalid book:",book.ext,book);
+					throw "unvalid book:"+book.path;
+				}
+			}
 		});
 	}
 

@@ -5,13 +5,13 @@ import { BookTreeSortType } from "./Book";
 export interface DeviceSetting {
 	deviceName: string;
 	bookVaultPaths: {[vid:string]:string};
-    webviewerWorkerPath: string;
+    bookViewerWorkerPath: string;
 }
 
 export const DEFAULT_DEVICE_SETTINGS: DeviceSetting = {
 	deviceName: "",
 	bookVaultPaths: {[MAIN_BOOKVAULT_ID]:"D:\\paper"},
-    webviewerWorkerPath: "http://127.0.0.1:8863/webviewer",
+    bookViewerWorkerPath: "http://127.0.0.1:8863/bookviewer",
 };
 
 
@@ -35,7 +35,12 @@ export const DEFAULT_SETTINGS: BookMasterSettings = {
     deviceSetting: {},
     dataPath: "bookmaster",
 
-	validBookExts: ["pdf","epub","html"],
+	validBookExts: ["pdf",
+    "xlsx","xls","doc","docx","ppt","pptx", // office
+    "jpg","jpeg","png","bmp",               //image
+    "epub",
+    "txt",
+    "html"],
 
     currentBookVault: MAIN_BOOKVAULT_ID,
     bookVaultNames: {[MAIN_BOOKVAULT_ID]:"我的书库"},

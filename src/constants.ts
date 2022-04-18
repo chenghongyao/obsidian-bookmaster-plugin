@@ -97,6 +97,15 @@ export const BookMetaMap : {[type:string]:BookMetaOptionMap}= {
 
 };
 
+export const supportBookExts = [
+    "pdf",
+    "xlsx","xls","doc","docx","ppt","pptx", // office
+    "jpg","jpeg","png","bmp",               //image
+    "epub",
+    "txt",
+    "html"
+];
+
 export const ext2type : {[ext:string]:any}= {
     pdf: "paper",
     epub: "book",

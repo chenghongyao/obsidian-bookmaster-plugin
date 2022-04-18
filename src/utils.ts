@@ -79,8 +79,12 @@ export function isValidBook(bookname: string,ext: string,validBookExts: Array<st
 }
 export function normalizePath(root: string,rpath:string) {
     // TODO: more robust
-    return root + (rpath.startsWith("/") ? rpath :"/" + rpath);
-    // return (app.vault.adapter as any).path.join(root,rpath);
+    if (Platform.isDesktop) {
+        return (app.vault.adapter as any).path.join(root,rpath);
+    } else {
+        return root + (rpath.startsWith("/") ? rpath :"/" + rpath);
+    }
+    // 
 }
 
 export async function safeWriteFile(path: string, data: Buffer|string, overwrite: boolean = false) {

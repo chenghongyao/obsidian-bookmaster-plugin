@@ -1,7 +1,7 @@
 import { DocumentViewer } from "./documentViewer";
 
 
-export class HTMLViewer extends DocumentViewer {
+export class HtmlViewer extends DocumentViewer {
 
     iframe: HTMLIFrameElement;
 

@@ -67,6 +67,11 @@ export class PDFTronViewer extends DocumentViewer {
 
     }
 
+	static isSupportExt(ext: string) {
+		return [  "pdf",
+		"xlsx","xls","doc","docx","ppt","pptx", // office
+		"jpg","jpeg","png","bmp"].includes(ext);
+	}
 
     private getViewerWindow() {
 		const self = this;

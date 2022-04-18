@@ -3,7 +3,7 @@ import { around } from "monkey-around";
 
 import { BookMasterSettings,DEFAULT_SETTINGS,DeviceSetting,DEFAULT_DEVICE_SETTINGS } from "./settings";
 import * as utils from './utils'
-import { OB_BOOKVAULT_ID } from "./constants";
+import { OB_BOOKVAULT_ID, supportBookExts } from "./constants";
 import { AbstractBook, Book, BookFolder, BookStatus, BookTreeSortType } from "./Book";
 import { BookExplorer, VIEW_TYPE_BOOK_EXPLORER } from "./view/BookExplorer";
 import BasicBookSettingModal from "./view/BasicBookSettingModal";
@@ -651,6 +651,7 @@ export default class BookMasterPlugin extends Plugin {
 
 	getBookFullPath(book: Book) {
 		// FIXME: url path
+
 		return utils.normalizePath(this.getBookVaultPath(book.vid),book.path);
 	}
 
@@ -893,7 +894,7 @@ export default class BookMasterPlugin extends Plugin {
 
 		if (this.settings.openAllBookWithDefaultApp || this.settings.openBookExtsWithDefaultApp.includes(book.ext)) {
 			this.openBookBySystem(book);
-		} else if (["pdf","epub","html"].includes(book.ext)) { // TODO: support exts
+		} else if (supportBookExts.includes(book.ext)) { // TODO: support exts
 			this.activateView(VIEW_TYPE_BOOK_VIEW,"center",newPanel).then((view: BookView) => {
 				return this.getBookId(book).then((bid) => {
 					view.openBook(bid);
