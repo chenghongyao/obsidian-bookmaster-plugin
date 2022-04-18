@@ -1,5 +1,7 @@
 import { ItemView, Menu, Notice, ViewStateResult, WorkspaceLeaf } from "obsidian";
 import { Book } from "src/Book";
+import * as utils from '../utils'
+
 import { DocumentViewer } from "../documentViewer/documentViewer";
 import { PDFTronViewer } from "../documentViewer/PDFTronViewer";
 import BookMasterPlugin from "src/main";
@@ -28,6 +30,8 @@ export class BookView extends ItemView {
 	tabContainer: HTMLDivElement;
 	viewerContainer: HTMLElement;
 
+	callbacks: any;
+
 	constructor(leaf: WorkspaceLeaf, plugin: BookMasterPlugin) {
 		super(leaf);
 		this.plugin = plugin;
@@ -35,6 +39,19 @@ export class BookView extends ItemView {
 		this.bookTabs = [];
 		this.currentTab = null;
 		// this.bid = null;
+
+		this.callbacks = {
+			onAddAnnotation: this.onAddAnnotation.bind(this),
+			onModifyAnnotation: this.onModifyAnnotation.bind(this),
+			onDeleteAnnotation: this.onDeleteAnnotation.bind(this),
+			onCopyAnnotation: this.onCopyAnnotation.bind(this),
+			onSaveAnnotaions: this.onSaveAnnotaions.bind(this),
+			onClose: this.onCloseViewer.bind(this),
+		}
+
+		// this.callbacks.onSaveAnnotaions.bind(this);
+		// this.callbacks.onSaveAnnotaions()
+
 	}
 
 	getDisplayText() {
@@ -155,7 +172,7 @@ export class BookView extends ItemView {
 
 
 	private async closeBookTab(tab: BookTab) {
-		console.log("close:",tab)
+		console.log("close tab:",tab)
 		await tab.viewer.closeDocument();
 		this.viewerContainer.removeChild(tab.container);
 		this.tabContainer.removeChild(tab.head);
@@ -178,12 +195,123 @@ export class BookView extends ItemView {
 			this.tabContainer.removeClass("visible")
 		}
 
-
-
-
+		if (this.callbacks?.onClose) {
+			this.callbacks.onClose();
+		}
 	}
 
+
+	// TODO: define annotation interface
+	private onAddAnnotation(viewer: DocumentViewer, annot: any) {
+		// console.log("add annot:",annot);
+	}
+
+	private onModifyAnnotation(viewer: DocumentViewer, annot: any) {
+		// console.log("modify annot:",annot);
+	}
+
+	private onDeleteAnnotation(viewer: DocumentViewer, annot: any) {
+		// console.log("delete annot:",annot);
+	}
+
+
+	// TODO: move to DocumentViewer ??
+	private async onCopyAnnotation(viewer: DocumentViewer, annot: any, ctrlKey: boolean) {
+
+		const annoType = annot.tagName;
+		const annoId = annot.getAttr("name");
+		const annoRect = annot.getAttr("rect")
+		const annoPage = Number(annot.getAttr("page")) + 1;
+
+
+
+		const link = `obsidian://bookmaster?type=annotation&bid=${viewer.bid}&aid=${annoId}&page=${annoPage}`;
+
+		var annoContent = "";
+		var template = null;
+		var isTextAnnot = false;
+		if (["highlight","underline" ,"strikeout","squiggly","freetext"].includes(annoType)) {
+			annoContent = annot.textContent;
+			template = this.plugin.settings.annotationTemplate.textAnnotation;
+			isTextAnnot = true;
+		} else {
+			template = this.plugin.settings.annotationTemplate.regionAnnotation;
+		}
+
+		var comment = "";
+		if (template.includes("comment")) {
+			comment = viewer.getAnnotationComment(annot) || "";
+		}
+	
+
+
+		var clipWidth = 0;
+		var clipHeight = 0;
+		const realZoom = this.plugin.settings.fixedAnnotationImageScale;
+		var imgName = "";
+
+		if (template.includes("{{img}}") || template.includes("{{width}}") || template.includes("{{height}}")) {
+			const clipBox = annoRect.split(",").map((t:string) => Number(t));
+
+			clipWidth = Math.round((clipBox[2] - clipBox[0])*realZoom);
+			clipHeight = Math.round((clipBox[3] - clipBox[1])*realZoom);
+
+			if (template.includes("{{img}}")) {
+				const image = await viewer.getAnnotationImage(annot,clipBox,realZoom);
+				if (image) {
+					imgName = await this.plugin.saveBookAnnotationImage(viewer.bid,annoId,image);
+				} else {
+					new Notice("无法获取标注图片图片");
+				}
+			}
+		}
+
+		var annoColor = "";
+		if (template.includes("{{color}}")) {
+			const hexColor = annot.getAttr("color");
+			const r = parseInt(hexColor.substr(1,2),16);
+			const g = parseInt(hexColor.substr(3,2),16);
+			const b = parseInt(hexColor.substr(5,2),16);
+			annoColor = `${r},${g},${b}`;
+		}
+
+		
+
+		
+		const params = {
+			url: link,
+			page: annoPage.toString(),
+			color: annoColor,
+			content: annoContent,
+			width: clipWidth.toString(),
+			height: clipHeight.toString(),
+			img: imgName,
+			comment: comment
+		}
+
+		const result = utils.encodeTemplate(template,params)
+		navigator.clipboard.writeText(result);
+
+		if (ctrlKey) {
+			this.plugin.tryInsertTextToActiveView(result);
+		} else {
+			new Notice("标注已复制",600);
+		}
+	}
+
+	private async onSaveAnnotaions(viewer: DocumentViewer) {
+		const annotations = viewer.exportAnnotations();
+		return this.plugin.saveBookAnnotations(viewer.bid,annotations);
+	}
+
+	private onCloseViewer(viewer: DocumentViewer) {
+
+	
+	}
+
+
 	async openBook(bid: string,state?: any) {
+
 		for(var i = 0; i < this.bookTabs.length; i++) {
 			const tab = this.bookTabs[i];
 			if (tab.bid === bid) {
@@ -193,17 +321,19 @@ export class BookView extends ItemView {
 			}
 		}
 
-		// return ??
-		return this.plugin.getBookById(bid).then((book) => {
-			// TODO: book is undefine
 
-			if (PDFTronViewer.isSupportExt(book.ext)) {
+		return Promise.all([this.plugin.getBookById(bid),this.plugin.loadBookAnnotations(bid)]).then((value) => {
+			// TODO: book is undefine
+			const book = value[0];
+			const annotations = value[1];
+
+			if (PDFTronViewer.isSupportedExt(book.ext)) {
 				return this.plugin.getBookData(book).then((data: ArrayBuffer) => {
 					const tab = this.addBookTab(bid,book.meta.title || book.name,book.ext);
 					tab.book = book; // TODO: save book ref??
 					const workerPath = this.plugin.getCurrentDeviceSetting().bookViewerWorkerPath + "//webviewer";
-					tab.viewer = new PDFTronViewer(tab.container,workerPath);
-					tab.viewer.show(data,state,book.ext);
+					tab.viewer = new PDFTronViewer(bid,tab.container,workerPath,this.callbacks);
+					tab.viewer.show(data,state,book.ext,annotations);
 				});
 			
 			} else if (book.ext === "txt") {
@@ -211,7 +341,7 @@ export class BookView extends ItemView {
 					const tab = this.addBookTab(bid,book.meta.title || book.name,book.ext);
 					tab.book = book;
 					
-					tab.viewer = new TxtViewer(tab.container);
+					tab.viewer = new TxtViewer(bid,tab.container);
 					tab.viewer.show(data,state,book.ext);
 				});
 			} 
@@ -221,10 +351,10 @@ export class BookView extends ItemView {
 				const url = "app://local/" + encodeURIComponent(this.plugin.getBookFullPath(book));
 
 				if (book.ext === "html") {
-					tab.viewer = new HtmlViewer(tab.container);
+					tab.viewer = new HtmlViewer(bid,tab.container);
 				} else if (book.ext === "epub") {
 					const workerPath = this.plugin.getCurrentDeviceSetting().bookViewerWorkerPath + "/epubjs-reader/reader/index.html";
-					tab.viewer = new EpubJSViewer(tab.container,workerPath);
+					tab.viewer = new EpubJSViewer(bid, tab.container,workerPath);
 				}
 
 				if (tab.viewer) {

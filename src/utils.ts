@@ -97,7 +97,7 @@ export function normalizePath(root: string,rpath:string) {
     // 
 }
 
-export async function safeWriteFile(path: string, data: Buffer|string, overwrite: boolean = false) {
+export async function safeWriteObFile(path: string, data: Buffer|string, overwrite: boolean = false) {
     const vault = app.vault;
     const file = vault.getAbstractFileByPath(path) as TFile;
     if (file) {
@@ -128,7 +128,11 @@ export async function safeWriteFile(path: string, data: Buffer|string, overwrite
 
         
     }
+}
 
+export async function safeReadObFile(path:string) {
+    const vault = app.vault;
+    return vault.read(vault.getAbstractFileByPath(path) as TFile);
 }
 
 
@@ -346,4 +350,13 @@ export function getMobileRelativePath(fullpath: string) {
     } else {
         return null;
     }
+}
+
+
+export function encodeTemplate(template: string, params: {[key: string]:string}) {
+    for (const key in params) {
+        const patten = RegExp(`{{${key}}}`,'g'); 
+        template = template.replace(patten,params[key]);
+    }
+    return template;
 }

@@ -194,7 +194,7 @@ export class Book extends AbstractBook {
         }
 
         const content = this.getBookMetaString();
-        return utils.safeWriteFile(filepath,content,true);
+        return utils.safeWriteObFile(filepath,content,true);
     }
 
     private getBookMetaString() {

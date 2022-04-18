@@ -94,6 +94,15 @@ export default class BookMasterPlugin extends Plugin {
 		return leaf.view;
 	}
 
+	tryInsertTextToActiveView(content: string) {
+		if (this.app.workspace.activeLeaf.view.getViewType() === "markdown") { // insert to markdown
+			(this.app.workspace.activeLeaf.view as MarkdownView).editor.replaceSelection(content);
+
+		} else {
+			new Notice("请先激活目标Markdown窗口");
+		}
+	}
+
 	//#region BookProject
 	private isProjectFile(file: TFile) {
 		return file && (utils.getPropertyValue(file, "bookmaster-plugin") || utils.getPropertyValue(file,"bm-books"));
@@ -539,8 +548,8 @@ export default class BookMasterPlugin extends Plugin {
 
 
 		await this.updateDispTree();
-		console.log(this.root);
-		console.log(this.bookIdMap);
+		// console.log(this.root);
+		// console.log(this.bookIdMap);
 
 		new Notice("书库加载完成");
 	}
@@ -661,19 +670,57 @@ export default class BookMasterPlugin extends Plugin {
 	}
 
 
+	async saveBookAnnotations(bid: string, annotations: string) {
+		return utils.safeWriteObFile(this.getBookAnnotationsFilePath(bid),annotations,true)
+	}
+	async saveBookAnnotationImage(bid: string, aid: string, data: Buffer, suffix?: string) {
+
+		if (suffix) {
+			suffix = "-" + suffix;
+		} else {
+			suffix = "";
+		}
+		const imageName = `${bid}-${aid}${suffix}.png`
+		const path = this.getBookAnnotationImagesPath() + "/" + imageName;
+		return utils.safeWriteObFile(path,data).then(() => {
+			return imageName;
+		});
+	}
+
+	async loadBookAnnotations(bid: string) {
+		const path = this.getBookAnnotationsFilePath(bid);
+		if (utils.isFileExists(path)) {
+			return utils.safeReadObFile(path);
+		} else {
+			return "";
+		}
+	}
+
+
 	private async getBookOpenLink(book: Book) {
 		return this.getBookId(book).then((bid) => {
 			return `obsidian://bookmaster?type=open-book&bid=${bid}`;
 		});
 	}
 
-	private getBookDataFilePath(book: Book) {
-		return this.getBookDataPath() + `/${book.bid}.md`;
+	private getBookDataFilePath(bid: string) {
+		return this.getBookDataPath() + `/${bid}.md`;
 	}
+	private getBookAnnotationsFilePath(bid: string) {
+		return this.getBookAnnotationsPath() + `/${bid}.xml`;
+	}
+	// private getBookAnnotationImageFilePath(bid: string, aid: string,suffix?: string) {
+	// 	if (suffix) {
+	// 		suffix = "-" + suffix;
+	// 	} else {
+	// 		suffix = "";
+	// 	}
+	// 	return this.getBookAnnotationImagesPath() + `/${bid}-${aid}${suffix}.png`;
+	// }
 
 	private async openBookDataFile(book: Book) {
 		return this.getBookId(book).then((bid) => {
-			return utils.openMdFileInObsidian(this.getBookDataFilePath(book));
+			return utils.openMdFileInObsidian(this.getBookDataFilePath(book.bid));
 		})
 	}
 
@@ -940,6 +987,12 @@ export default class BookMasterPlugin extends Plugin {
 
 	private getBookDataPath() {
 		return this.settings.dataPath + "/book-data";
+	}
+	private getBookAnnotationsPath() {
+		return this.settings.dataPath + "/book-annotations";
+	}
+	private getBookAnnotationImagesPath() {
+		return this.settings.dataPath + "/book-images";
 	}
 	
 	private async loadSettings() {

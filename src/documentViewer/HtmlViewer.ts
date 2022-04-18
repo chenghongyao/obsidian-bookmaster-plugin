@@ -5,8 +5,8 @@ export class HtmlViewer extends DocumentViewer {
 
     iframe: HTMLIFrameElement;
 
-    constructor(container: HTMLElement) {
-        super(container);
+    constructor(bid:string, container: HTMLElement) {
+        super(bid, container);
     }
 
     async show(url: string, state?: any, ext?: string){

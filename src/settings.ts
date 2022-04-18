@@ -28,7 +28,13 @@ export interface BookMasterSettings {
     bookTreeSortAsc: boolean;
 
     openAllBookWithDefaultApp: boolean;
-    openBookExtsWithDefaultApp: Array<string>
+    openBookExtsWithDefaultApp: Array<string>;
+
+    fixedAnnotationImageScale: number;
+    annotationTemplate: {
+        textAnnotation: string;
+        regionAnnotation: string;
+    }
 }
 
 export const DEFAULT_SETTINGS: BookMasterSettings = {
@@ -50,4 +56,10 @@ export const DEFAULT_SETTINGS: BookMasterSettings = {
 
     openAllBookWithDefaultApp: false,
     openBookExtsWithDefaultApp: [],
+
+    fixedAnnotationImageScale: 2,
+    annotationTemplate: {
+        textAnnotation: "[{{content}}]({{url}})\n{{page}}\n{{comment}}\n\n",
+        regionAnnotation: "![[{{img}}|{{width}}]]\n{{page}}\n{{comment}}\n\n"
+    }
 };

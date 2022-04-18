@@ -4,12 +4,12 @@ import { DocumentViewer } from "./documentViewer";
 
 export class TxtViewer extends DocumentViewer {
 
-    constructor(container: HTMLElement) {
-        super(container);
+    constructor(bid: string, container: HTMLElement) {
+        super(bid,container);
     }
 
     async show(data: ArrayBuffer, state?: any, ext?: string){
-        // console.log(data
+        // console.log(data)
         // const array = new Uint8Array(data)
 
 

@@ -8,8 +8,8 @@ export class EpubJSViewer extends DocumentViewer {
     redition: Rendition;
     workerPath: string;
 
-    constructor(container: HTMLElement,workerPath: string) {
-        super(container);
+    constructor(bid:string, container: HTMLElement,workerPath: string) {
+        super(bid, container);
         this.workerPath = workerPath;
     }
 
