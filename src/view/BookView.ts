@@ -110,7 +110,7 @@ export class BookView extends ItemView {
 		}
 	}
 
-	private addBookTab(bid:string,title:string,ext:string) {
+	private addBookTab(bid:string,title:string,type:string) {
 
 		if (this.bookTabs.length === 1) {
 			this.tabContainer.addClass("visible");
@@ -133,7 +133,7 @@ export class BookView extends ItemView {
 		// viewer container
 		const container = document.createElement("div");
 		container.addClass("bm-bookview-viewer-item-container");
-		container.addClass("bm-bookview-"+ext);
+		container.addClass("bm-bookview-"+type);
 		this.viewerContainer.appendChild(container);
 
 
@@ -360,7 +360,11 @@ export class BookView extends ItemView {
 				});
 			} 
 			else {
-				const tab = this.addBookTab(bid,book.meta.title || book.name,book.ext);
+
+				var isImageExt = ImageExts.includes(book.ext);
+			
+				
+				const tab = this.addBookTab(bid,book.meta.title || book.name, isImageExt ? "image":book.ext);
 				tab.book = book; // TODO: save book ref??
 				const url = this.plugin.getBookUrl(book);
 
