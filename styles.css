@@ -359,6 +359,10 @@ div.book-score-icon.fill {
     position: absolute;
     cursor: default !important;
 }
+/* .bm-bookview-viewer-item-container.bm-bookview-image img.annot-mode{
+} */
 
-
+.bm-bookview-viewer-item-container.bm-bookview-image .annotation-layer.annot-mode {
+    cursor: crosshair !important;
+}
 

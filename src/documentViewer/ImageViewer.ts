@@ -1,14 +1,119 @@
 import { DocumentViewer } from "./documentViewer";
 
 
+enum AnnotationType{
+	Square = "square",
+}
+
+
+// TODO:multi click,text;
+abstract class AnnotationBase {
+	container: HTMLElement;
+	annotEl: HTMLElement;
+
+	startX: number;
+	startY: number;
+
+	constructor(container: HTMLElement, ev: MouseEvent) {
+		this.container = container;
+
+		const {offsetX, offsetY} = this.getMousePosition(ev);
+
+		this.startX = offsetX;
+		this.startY = offsetY;
+	}	
+
+	protected getMousePosition(e: MouseEvent) {
+		var offX = 0;
+		var offY = 0;
+		if (e.target !== this.container) {
+			const tar = e.target as HTMLElement;
+			offX = tar.offsetLeft + e.offsetX;
+			offY = tar.offsetTop + e.offsetY;
+		} else {
+			offX = e.offsetX;
+			offY = e.offsetY;
+		}
+
+		return {offsetX: offX, offsetY: offY}
+	}
+
+
+	abstract getType(): AnnotationType;
+
+	abstract update(ev: MouseEvent): void;
+
+	abstract end(): void;
+	// {
+	// 	// console.log("add annotation:",this.annotEl);
+	// }
+}
+
+class AnnotationSquare extends AnnotationBase {
+	constructor(container: HTMLElement,ev: MouseEvent) {
+		super(container,ev);
+
+		this.annotEl = this.container.createDiv();
+		this.annotEl.style.border = "2px solid red";
+		this.annotEl.style.width = "0";
+		this.annotEl.style.height = "0";
+		this.annotEl.style.position = "absolute";
+
+		this.annotEl.style.left = this.startX*100/this.container.offsetWidth + "%"
+		this.annotEl.style.top = this.startY*100/this.container.offsetHeight + "%"
+	}
+
+
+	getType(): AnnotationType {
+		return AnnotationType.Square;
+	}
+
+
+	update(ev: MouseEvent) {
+		const {offsetX, offsetY} = this.getMousePosition(ev);
+
+		const left = Math.min(offsetX,this.startX);
+		const top = Math.min(offsetY,this.startY);
+		const width = Math.abs(offsetX - this.startX);
+		const height = Math.abs(offsetY - this.startY);
+
+		this.annotEl.style.left = left*100/this.container.offsetWidth + "%"
+		this.annotEl.style.top = top*100/this.container.offsetHeight + "%"
+		this.annotEl.style.width = width*100/this.container.offsetWidth + "%"
+		this.annotEl.style.height = height*100/this.container.offsetHeight + "%"
+	}
+
+	end() {
+		console.log("add annotation:",this.annotEl);
+	}
+}
+
 export class ImageViewer extends DocumentViewer {
 
     imgEl: HTMLImageElement;
+	annotContainer: HTMLDivElement;
+
+	annotType: AnnotationType;
+	annotIns: AnnotationBase;
+
     private zoomLevel: number = 1;
     constructor(bid:string, container: HTMLElement) {
         super(bid, container);
+		this.annotType = null;
     }
 
+
+	private enterAnnotMode(type: AnnotationType) {
+		this.annotType = type;
+		this.annotIns = null;
+		this.annotContainer.addClass("annot-mode");
+	}
+
+	private exitAnnotMode() {
+		this.annotType = null;
+		this.annotIns = null;
+		this.annotContainer.removeClass("annot-mode");
+	}
 
     private	async createImage(container: HTMLElement, src: string): Promise<HTMLImageElement> {
 
@@ -34,9 +139,10 @@ export class ImageViewer extends DocumentViewer {
 	// 	return this.imgEl?.height;
 	// }
 
-    private zoom(zoom: number) {
-        this.imgEl.width = this.imgWidth() * zoom;
-		this.imgEl.height = this.imgHeight() * zoom;
+    private zoom(zoomLevel: number) {
+        this.imgEl.width = this.imgWidth() * zoomLevel;
+		this.imgEl.height = this.imgHeight() * zoomLevel;
+		this.zoomLevel = zoomLevel;
 
 		if (this.imgEl.width < this.container.offsetWidth) {
 			this.imgEl.style.left = `${(this.container.offsetWidth - this.imgEl.offsetWidth)/2}px`;
@@ -49,6 +155,11 @@ export class ImageViewer extends DocumentViewer {
 		} else {
 			this.imgEl.style.top = "0";
         }
+
+		this.annotContainer.style.left = this.imgEl.style.left;
+		this.annotContainer.style.top = this.imgEl.style.top;
+		this.annotContainer.style.width = this.imgEl.width + "px";
+		this.annotContainer.style.height = this.imgEl.height + "px";
     }
 
     private zoomAt(zoomLevel: number,e: MouseEvent) {
@@ -80,6 +191,10 @@ export class ImageViewer extends DocumentViewer {
 		}
 
 
+		this.annotContainer.style.left = this.imgEl.style.left;
+		this.annotContainer.style.top = this.imgEl.style.top;
+		this.annotContainer.style.width = this.imgEl.width + "px";
+		this.annotContainer.style.height = this.imgEl.height + "px";
 
 		this.zoomLevel = zoomLevel;
 	}
@@ -95,18 +210,24 @@ export class ImageViewer extends DocumentViewer {
 			const scaleW = maxWidth/this.imgWidth();
 			const scaleH = maxHeight/this.imgHeight();
 
-			// const scale = Math.max(scaleW,scaleH);
-			this.zoomLevel = Math.max(scaleW,scaleH);
-			img.width = this.imgWidth() * this.zoomLevel;
-			img.height = this.imgHeight() * this.zoomLevel;
-			img.onwheel = (e) => {
+			
+			this.annotContainer = this.container.createDiv();
+			this.annotContainer.style.position = "absolute";
+			this.annotContainer.addClass("annotation-layer");
+
+			this.enterAnnotMode(AnnotationType.Square);
+
+			this.zoom(Math.max(scaleW,scaleH));
+
+			this.annotContainer.onwheel = (e) => {
 				if (e.ctrlKey) {
 					this.onZoom(e);
 				}
 			}
 
-			// img.onclick = this.onClick.bind(this);
-
+			this.annotContainer.onmousedown = this.onMouseDown.bind(this);
+			this.annotContainer.onmousemove = this.onMouseMove.bind(this);
+			this.annotContainer.onmouseup = this.onMouseUp.bind(this);
 
 		})
 
@@ -125,8 +246,26 @@ export class ImageViewer extends DocumentViewer {
 		if (newZoom > 0.1 && newZoom < 40) {
 			this.zoomAt(newZoom,e);
 		}
+	}
 
-	
+	private onMouseDown(e: MouseEvent) {
+		if (e.button === 0 &&　this.annotType) {
+			if (this.annotType === "square")
+			this.annotIns = new AnnotationSquare(this.annotContainer,e);
+		}
+	}
+
+	private onMouseUp(e: MouseEvent) {
+		if (e.button === 0 && this.annotType && this.annotIns) {
+			this.annotIns.end();
+			this.annotIns = null;
+		}
+	}
+
+	private onMouseMove(e: MouseEvent) {
+		if (this.annotType && this.annotIns) {
+			this.annotIns.update(e);
+		}
 	}
 
     async closeDocument() {
