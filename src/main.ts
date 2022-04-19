@@ -62,6 +62,7 @@ export default class BookMasterPlugin extends Plugin {
 	onunload() {
 	}
 
+	//#region common
 	// register view safely
 	private safeRegisterView(type: string, viewCreator: ViewCreator) {
 		this.registerView(type, viewCreator);
@@ -102,6 +103,7 @@ export default class BookMasterPlugin extends Plugin {
 			new Notice("请先激活目标Markdown窗口");
 		}
 	}
+	//#endregion
 
 	//#region BookProject
 	private isProjectFile(file: TFile) {
@@ -662,6 +664,19 @@ export default class BookMasterPlugin extends Plugin {
 		// FIXME: url path
 
 		return utils.normalizePath(this.getBookVaultPath(book.vid),book.path);
+	}
+
+	getBookUrl(book: Book) {
+		const fullpath = encodeURIComponent(this.getBookFullPath(book));
+		if (Platform.isDesktop || Platform.isMacOS) {
+			return "app://local/" + fullpath;
+		} else if (Platform.isAndroidApp) {
+			return "http://local" + fullpath;
+		} else if (Platform.isIosApp) {
+			return "capitor://local" + fullpath;
+		}
+		new Notice("未知系统,无法获取文件URL",0);
+		return null
 	}
 
 	async getBookData(book: Book) {

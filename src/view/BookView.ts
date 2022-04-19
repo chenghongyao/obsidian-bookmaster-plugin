@@ -8,6 +8,8 @@ import BookMasterPlugin from "src/main";
 import { EpubJSViewer } from "../documentViewer/EPUBJSViewer";
 import { HtmlViewer } from "../documentViewer/HtmlViewer";
 import { TxtViewer } from "../documentViewer/TxtViewer";
+import { ImageViewer } from "../documentViewer/ImageViewer";
+import { ImageExts } from "../constants";
 
 
 
@@ -113,13 +115,22 @@ export class BookView extends ItemView {
 		if (this.bookTabs.length === 1) {
 			this.tabContainer.addClass("visible");
 		}
-
-		const head = this.tabContainer.createDiv();
-		head.addClass("bm-bookview-tab-item-container")
-		head.title = title;
-		head.textContent = title;
-		this.tabContainer.appendChild(head);
 		
+		// head
+		const headContainer = this.tabContainer.createDiv();
+		headContainer.addClass("bm-bookview-tab-item-container")
+
+		const headText = headContainer.createDiv();
+		headText.addClass("bm-bookview-tab-item-text-container")
+		headText.title = title;
+		headText.textContent = title;
+
+		const headIcon = headContainer.createDiv();
+		headIcon.addClass("bm-bookview-tab-item-icon-container")
+
+		this.tabContainer.appendChild(headContainer);
+		
+		// viewer container
 		const container = document.createElement("div");
 		container.addClass("bm-bookview-viewer-item-container");
 		container.addClass("bm-bookview-"+ext);
@@ -128,7 +139,7 @@ export class BookView extends ItemView {
 
 		this.bookTabs.push({
 			bid: bid,
-			head:head,
+			head:headContainer,
 			container: container,
 			viewer: null,
 			title: title,
@@ -138,20 +149,23 @@ export class BookView extends ItemView {
 		const tab = this.bookTabs.last();
 		this.showBookTab(tab);
 
-		head.onclick = () => {
+		headText.onclick = () => {
 			this.showBookTab(tab);
 		};
-		head.oncontextmenu = (e) => {
-			const menu = new Menu(this.plugin.app);
-			menu.addItem((item) => {
-				item
-				.setTitle("关闭")
-				.setIcon("cross")
-				.onClick((e) => {
-					this.closeBookTab(tab);
-				})
-			})
-			menu.showAtMouseEvent(e);
+		// headText.oncontextmenu = (e) => {
+		// 	const menu = new Menu(this.plugin.app);
+		// 	menu.addItem((item) => {
+		// 		item
+		// 		.setTitle("关闭")
+		// 		.setIcon("cross")
+		// 		.onClick((e) => {
+		// 			this.closeBookTab(tab);
+		// 		})
+		// 	})
+		// 	menu.showAtMouseEvent(e);
+		// }
+		headIcon.onclick = (e) => {
+			this.closeBookTab(tab);
 		}
 		return tab;
 	}
@@ -348,14 +362,16 @@ export class BookView extends ItemView {
 			else {
 				const tab = this.addBookTab(bid,book.meta.title || book.name,book.ext);
 				tab.book = book; // TODO: save book ref??
-				const url = "app://local/" + encodeURIComponent(this.plugin.getBookFullPath(book));
+				const url = this.plugin.getBookUrl(book);
 
 				if (book.ext === "html") {
 					tab.viewer = new HtmlViewer(bid,tab.container);
 				} else if (book.ext === "epub") {
 					const workerPath = this.plugin.getCurrentDeviceSetting().bookViewerWorkerPath + "/epubjs-reader/reader/index.html";
 					tab.viewer = new EpubJSViewer(bid, tab.container,workerPath);
-				}
+				} else if(ImageExts.includes(book.ext)) {
+					tab.viewer = new ImageViewer(bid, tab.container);
+				} 
 
 				if (tab.viewer) {
 					return tab.viewer.show(url);

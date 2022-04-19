@@ -148,14 +148,21 @@ export class PDFTronViewer extends DocumentViewer {
 		return this.xfdfDoc ? new XMLSerializer().serializeToString(this.xfdfDoc) : "";
 	}
 
+
+	setTheme(theme: string): void {
+		this.postViewerWindowMessage("setTheme",theme);
+	}
+
 	private parseXfdfString(xfdfString: string) {
 		return new DOMParser().parseFromString(xfdfString,'text/xml');	
 	}
 
 	static isSupportedExt(ext: string) {
-		return [  "pdf",
-		"xlsx","xls","doc","docx","ppt","pptx", // office
-		"jpg","jpeg","png","bmp"].includes(ext);
+		return [  
+			"pdf",
+			"xlsx","xls","doc","docx","ppt","pptx", // office
+			// "jpg","jpeg","png","bmp"
+		].includes(ext);
 	}
 
 	private async getPDFAnnotationImage(annot: any, clipBox: Array<number>, zoom: number): Promise<Buffer>{

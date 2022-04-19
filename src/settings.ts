@@ -43,7 +43,7 @@ export const DEFAULT_SETTINGS: BookMasterSettings = {
 
 	validBookExts: ["pdf",
     "xlsx","xls","doc","docx","ppt","pptx", // office
-    "jpg","jpeg","png","bmp",               //image
+    "jpg","jpeg","png","bmp","jfif",               //image
     "epub",
     "txt",
     "html"],
