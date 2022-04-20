@@ -334,33 +334,26 @@ div.book-score-icon.fill {
 /* epub viewer */
 .bm-bookview-viewer-item-container.bm-bookview-epub {
     background: white;
-    width: 100%;
-    height: 100%;
 }
 
 /* txt viewer */
 .bm-bookview-viewer-item-container.bm-bookview-txt {
     padding: 10px 30px 10px;
-    width: 100%;
-    height: 100%;
     overflow: auto;
 }
 
 /* image viewer */
-.bm-bookview-viewer-item-container.bm-bookview-image {
+.bm-bookview-viewer-item-container.bm-bookview-image .image-container{
+    /* background-color: rgba(0, 255, 0, 0.3); */
     width: 100%;
     height: 100%;
-    /* background-color: rgba(0, 255, 0, 0.3); */
-
     position: relative;
     overflow: auto;
 }
-.bm-bookview-viewer-item-container.bm-bookview-image img{
+
+.bm-bookview-viewer-item-container.bm-bookview-image .main-image{
     position: absolute;
-    cursor: default !important;
 }
-/* .bm-bookview-viewer-item-container.bm-bookview-image img.annot-mode{
-} */
 
 .bm-bookview-viewer-item-container.bm-bookview-image .annotation-layer.annot-mode {
     cursor: crosshair !important;

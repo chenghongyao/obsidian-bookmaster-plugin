@@ -44,9 +44,6 @@ abstract class AnnotationBase {
 	abstract update(ev: MouseEvent): void;
 
 	abstract end(): void;
-	// {
-	// 	// console.log("add annotation:",this.annotEl);
-	// }
 }
 
 class AnnotationSquare extends AnnotationBase {
@@ -90,6 +87,7 @@ class AnnotationSquare extends AnnotationBase {
 
 export class ImageViewer extends DocumentViewer {
 
+	imgContainer: HTMLDivElement;
     imgEl: HTMLImageElement;
 	annotContainer: HTMLDivElement;
 
@@ -100,6 +98,8 @@ export class ImageViewer extends DocumentViewer {
     constructor(bid:string, container: HTMLElement) {
         super(bid, container);
 		this.annotType = null;
+		this.imgContainer = this.container.createDiv();
+		this.imgContainer.addClass("image-container");
     }
 
 
@@ -119,6 +119,7 @@ export class ImageViewer extends DocumentViewer {
 
 		return new Promise((resolve)=> {
 			const img = container.createEl("img",{attr:{src:src}});
+			img.addClass("main-image");
 			img.onload = (e) => {
 				const img = e.target as HTMLImageElement;
 				resolve(img);
@@ -144,14 +145,14 @@ export class ImageViewer extends DocumentViewer {
 		this.imgEl.height = this.imgHeight() * zoomLevel;
 		this.zoomLevel = zoomLevel;
 
-		if (this.imgEl.width < this.container.offsetWidth) {
-			this.imgEl.style.left = `${(this.container.offsetWidth - this.imgEl.offsetWidth)/2}px`;
+		if (this.imgEl.width < this.imgContainer.offsetWidth) {
+			this.imgEl.style.left = `${(this.imgContainer.offsetWidth - this.imgEl.offsetWidth)/2}px`;
 		} else {
 			this.imgEl.style.left = "0";
         }
 
-        if (this.imgEl.height < this.container.offsetHeight) {
-			this.imgEl.style.top = `${(this.container.offsetHeight - this.imgEl.offsetHeight)/2}px`;
+        if (this.imgEl.height < this.imgContainer.offsetHeight) {
+			this.imgEl.style.top = `${(this.imgContainer.offsetHeight - this.imgEl.offsetHeight)/2}px`;
 		} else {
 			this.imgEl.style.top = "0";
         }
@@ -164,30 +165,30 @@ export class ImageViewer extends DocumentViewer {
 
     private zoomAt(zoomLevel: number,e: MouseEvent) {
 
-		const scrollX = this.container.scrollLeft;
-		const scrollY = this.container.scrollTop;
+		const scrollX = this.imgContainer.scrollLeft;
+		const scrollY = this.imgContainer.scrollTop;
 		this.imgEl.width = this.imgWidth() * zoomLevel;
 		this.imgEl.height = this.imgHeight() * zoomLevel;
 
-		if (this.imgEl.width < this.container.offsetWidth) {
-			this.imgEl.style.left = `${(this.container.offsetWidth - this.imgEl.offsetWidth)/2}px`;
+		if (this.imgEl.width < this.imgContainer.offsetWidth) {
+			this.imgEl.style.left = `${(this.imgContainer.offsetWidth - this.imgEl.offsetWidth)/2}px`;
 		} else {
 			this.imgEl.style.left = "0";
 
 			const newX =  e.offsetX  * zoomLevel / this.zoomLevel;
 			const pageX =  e.offsetX - scrollX;
-			this.container.scrollLeft = newX - pageX; 
+			this.imgContainer.scrollLeft = newX - pageX; 
 
 		}
 
-		if (this.imgEl.height < this.container.offsetHeight) {
-			this.imgEl.style.top = `${(this.container.offsetHeight - this.imgEl.offsetHeight)/2}px`;
+		if (this.imgEl.height < this.imgContainer.offsetHeight) {
+			this.imgEl.style.top = `${(this.imgContainer.offsetHeight - this.imgEl.offsetHeight)/2}px`;
 		} else {
 			this.imgEl.style.top = "0";
 
 			const newY = e.offsetY * zoomLevel / this.zoomLevel;
 			const pageY = e.offsetY - scrollY;
-			this.container.scrollTop = newY - pageY;
+			this.imgContainer.scrollTop = newY - pageY;
 		}
 
 
@@ -201,17 +202,17 @@ export class ImageViewer extends DocumentViewer {
 
     async show(url: string, state?: any, ext?: string){
 
-        const maxWidth = this.container.offsetWidth;
-		const maxHeight = this.container.offsetHeight; 
+        const maxWidth = this.imgContainer.offsetWidth;
+		const maxHeight = this.imgContainer.offsetHeight; 
 
-		this.createImage(this.container,url).then((img) => {
+		this.createImage(this.imgContainer,url).then((img) => {
 			this.imgEl = img;
 
 			const scaleW = maxWidth/this.imgWidth();
 			const scaleH = maxHeight/this.imgHeight();
 
 			
-			this.annotContainer = this.container.createDiv();
+			this.annotContainer = this.imgContainer.createDiv();
 			this.annotContainer.style.position = "absolute";
 			this.annotContainer.addClass("annotation-layer");
 
