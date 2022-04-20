@@ -3,6 +3,7 @@ import { DocumentViewer } from "./documentViewer";
 
 enum AnnotationType{
 	Square = "square",
+	FreeText = "freetext",
 }
 
 
@@ -28,7 +29,7 @@ abstract class AnnotationBase {
 	container: HTMLElement;
 	annotContainer: HTMLElement;
 	ctrlContainer: HTMLDivElement;
-
+	type: AnnotationType;
 
 	startX: number;
 	startY: number;
@@ -36,11 +37,13 @@ abstract class AnnotationBase {
 	moveMode: string;
 	callbacks: any;
 
-	constructor(container: HTMLElement, ev: MouseEvent,callbacks?: any) {
+	constructor(type: AnnotationType, container: HTMLElement, ev: MouseEvent,callbacks?: any) {
+		this.type = type;
 		this.container = container;
 		this.annotContainer = this.container.createDiv();
 		this.annotContainer.style.position = "absolute";
 		this.annotContainer.addClass("annot-item-container");
+		this.annotContainer.addClass(type);
 
 		this.moveMode = null;
 		this.annotContainer.onmousedown = this.onMouseDown.bind(this);
@@ -51,6 +54,13 @@ abstract class AnnotationBase {
 		this.startX = offsetX;
 		this.startY = offsetY;
 	}	
+
+	getWidth() {
+		return this.container.offsetWidth;
+	}
+	getHeight() {
+		return this.container.offsetHeight;
+	}
 
 	select() {
 		this.annotContainer.addClass("selected");
@@ -70,17 +80,33 @@ abstract class AnnotationBase {
 
 	}
 
+	updateShape(startX: number, startY: number, endX: number, endY: number) {
+
+		const left = Math.min(endX,startX);
+		const top = Math.min(endY,startY);
+		const width = Math.abs(endX - startX);
+		const height = Math.abs(endY - startY);
+
+		this.annotContainer.style.left = left*100/this.container.offsetWidth + "%"
+		this.annotContainer.style.top = top*100/this.container.offsetHeight + "%"
+		this.annotContainer.style.width = width*100/this.container.offsetWidth + "%"
+		this.annotContainer.style.height = height*100/this.container.offsetHeight + "%"
+	}
+
+
 	protected onMouseDown(ev: MouseEvent) {
 		ev.stopPropagation();
 	}
-	abstract getType(): AnnotationType;
 
+	getType() {
+		return this.type;
+	}
 	abstract update(ev: MouseEvent): void;
 
-	abstract end(): void;
+	abstract updateEnd(): void;
 }
 
-class AnnotationSquare extends AnnotationBase {
+class AnnotationSquareBase extends AnnotationBase {
 
 	ctrlRB: HTMLDivElement;
 	ctrlLB: HTMLDivElement;
@@ -94,8 +120,8 @@ class AnnotationSquare extends AnnotationBase {
 	anchorEndX: number;
 	anchorEndY: number;
 
-	constructor(container: HTMLElement,ev: MouseEvent,callbacks?: any) {
-		super(container,ev,callbacks);
+	constructor(type: AnnotationType, container: HTMLElement,ev: MouseEvent,callbacks?: any) {
+		super(type, container,ev,callbacks);
 
 		this.annotContainer.style.border = "2px solid red";
 		this.updateShape(this.startX,this.startY,this.startX,this.startY);
@@ -205,53 +231,52 @@ class AnnotationSquare extends AnnotationBase {
 		this.moveMode = null;
 		// TODO: onModify;
 	}
-
-	// protected onMouseMove(ev: MouseEvent): void {
-	// 	if (!this.moveMode) return;
-
-	// 	if (this.moveMode === "move-rb") {
-	// 		const {offsetX, offsetY} = getMouseOffset(ev,this.container);
-	// 		const dX = offsetX - this.moveStartX;
-	// 		const dY = offsetY - this.moveStartY;
-
-	// 		const endX = this.anchorEndX + dX;
-	// 		const endY = this.anchorEndY + dY;
-	// 		this.updateShape(this.anchorStartX,this.anchorStartY,endX,endY);
-	// 	}
-	// }
-
-	// protected onMouseUp(ev: MouseEvent): void {
-	// 	if (!this.moveMode) return;
-
-	// 	this.moveMode = null;
-	// 	// TODO: onModify;
-	// }
-
-	getType(): AnnotationType {
-		return AnnotationType.Square;
-	}
-
 	
-	private updateShape(startX: number, startY: number, endX: number, endY: number) {
 
-		const left = Math.min(endX,startX);
-		const top = Math.min(endY,startY);
-		const width = Math.abs(endX - startX);
-		const height = Math.abs(endY - startY);
-
-		this.annotContainer.style.left = left*100/this.container.offsetWidth + "%"
-		this.annotContainer.style.top = top*100/this.container.offsetHeight + "%"
-		this.annotContainer.style.width = width*100/this.container.offsetWidth + "%"
-		this.annotContainer.style.height = height*100/this.container.offsetHeight + "%"
-	}
 
 	update(ev: MouseEvent) {
 		const {offsetX, offsetY} = getMouseOffset(ev,this.container);
 		this.updateShape(this.startX,this.startY,offsetX,offsetY);
 	}
 
-	end() {
+	updateEnd() {
 		// console.log("add annotation:",this.annotContainer);
+	}
+}
+
+
+class AnnotationSquare extends AnnotationSquareBase {
+	constructor(container: HTMLElement,ev: MouseEvent,callbacks?: any) {
+		super(AnnotationType.Square, container,ev,callbacks);
+	}
+}
+
+
+// class AnnotationFreeText extends AnnotationBase {
+
+// 	constructor(container: HTMLElement,ev: MouseEvent,callbacks?: any) {
+// 		super(AnnotationType.FreeText,container,ev,callbacks);
+
+// 		this.annotContainer.style.border = "1px solid blue";
+// 		this.annotContainer.contentEditable = "true";
+// 		const {offsetX, offsetY} = getMouseOffset(ev,this.container);
+// 		this.updateShape(offsetX,offsetY,offsetX,offsetY);
+// 	}
+
+// 	update(ev: MouseEvent) {
+// 		const {offsetX, offsetY} = getMouseOffset(ev,this.container);
+// 		this.updateShape(this.startX,this.startY,offsetX,offsetY);
+// 	}
+
+// 	updateEnd() {
+// 		// console.log("add annotation:",this.annotContainer);
+// 		console.log(this.getWidth(),this.getHeight());
+// 	}
+// }
+
+class AnnotationFreeText extends AnnotationSquareBase {
+	constructor(container: HTMLElement,ev: MouseEvent,callbacks?: any) {
+		super(AnnotationType.FreeText, container,ev,callbacks);
 	}
 }
 
@@ -264,8 +289,9 @@ export class ImageViewer extends DocumentViewer {
 	annotType: AnnotationType;
 	currAnnot: AnnotationBase;
 
-	moveAnnotMode: boolean;
+	moveMode: string;
 	moveAnnot: AnnotationBase;
+
 
 	annotations: Array<AnnotationBase> = [];
 	selectedAnnotations: Array<AnnotationBase> = [];
@@ -390,7 +416,7 @@ export class ImageViewer extends DocumentViewer {
 			this.annotLayer.style.position = "absolute";
 			this.annotLayer.addClass("annotation-layer");
 
-			this.enterAnnotMode(AnnotationType.Square);
+			this.enterAnnotMode(AnnotationType.FreeText);
 
 			this.zoom(Math.max(scaleW,scaleH));
 
@@ -441,18 +467,25 @@ export class ImageViewer extends DocumentViewer {
 	private onMouseDown(e: MouseEvent) {
 		if (e.button === 0 ) {
 
-			if (this.annotType === "square") {
-				this.currAnnot = new AnnotationSquare(this.annotLayer,e,{
-					onMove: (ev:MouseEvent, ins: AnnotationBase, moveMode: string) => {
-						if (moveMode) {
-							this.moveAnnot = ins;
-						} else {
-							// just click
-						}
-						this.selectAnnotationOnly(ins);
-					}	
-				});
+			const callback = {
+				onMove: (ev:MouseEvent, ins: AnnotationBase, moveMode: string) => {
+					if (moveMode) {
+						this.moveAnnot = ins;
+						this.moveMode = moveMode;
+						this.annotLayer.addClass(moveMode);
+					} else {
+						// just click
+					}
+					this.selectAnnotationOnly(ins);
+				}	
 			}
+
+			if (this.annotType === AnnotationType.Square) {
+				this.currAnnot = new AnnotationSquare(this.annotLayer,e,callback);
+			} else if (this.annotType == AnnotationType.FreeText) {
+				this.currAnnot = new AnnotationFreeText(this.annotLayer,e,callback);
+			}
+			this.annotLayer.addClass("drawing");
 		}
 
 		this.deselectAll();
@@ -461,16 +494,20 @@ export class ImageViewer extends DocumentViewer {
 	private onMouseUp(e: MouseEvent) {
 		if (e.button === 0) {
 			if (this.annotType && this.currAnnot) {
-					this.currAnnot.end(); // FIXME: not quite end
+					this.currAnnot.updateEnd(); // FIXME: not quite end
 
 					this.deselectAll();
 					this.annotations.push(this.currAnnot);
 					this.selectAnnotation(this.currAnnot);
 					this.currAnnot = null;
+					this.annotLayer.removeClass("drawing");
+
 			} else if(this.moveAnnot) {
 				// this.moveAnnotMode = false;
 				this.moveAnnot.moveEnd(e);
+				this.annotLayer.removeClass(this.moveMode);
 				this.moveAnnot = null;
+				this.moveMode = null;
 			}
 		} 
 	}
