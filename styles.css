@@ -355,7 +355,40 @@ div.book-score-icon.fill {
     position: absolute;
 }
 
+
 .bm-bookview-viewer-item-container.bm-bookview-image .annotation-layer.annot-mode {
     cursor: crosshair !important;
+    overflow: hidden;
 }
 
+
+.bm-bookview-viewer-item-container.bm-bookview-image .annot-item-container {
+    cursor: pointer ;
+}
+.bm-bookview-viewer-item-container.bm-bookview-image .annot-item-container .control-container {
+    display: none;
+    position: absolute;
+    width: calc(100% + 20px);
+    height: calc(100% + 20px);
+    left: -10px;
+    top: -10px;
+}
+.bm-bookview-viewer-item-container.bm-bookview-image .annot-item-container.selected .control-container {
+    display: block;
+    border: 2px dashed green;
+    cursor: move;
+}
+
+.bm-bookview-viewer-item-container.bm-bookview-image .annot-item-container.selected .control-point {
+    display: none;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 1px solid white;
+    background-color: green;
+    opacity: 0.8;
+}
+
+.bm-bookview-viewer-item-container.bm-bookview-image .annot-item-container.selected .control-point {
+    display: block;
+}
