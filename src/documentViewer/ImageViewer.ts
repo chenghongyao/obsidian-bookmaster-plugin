@@ -101,9 +101,9 @@ abstract class AnnotationBase {
 	getType() {
 		return this.type;
 	}
-	abstract update(ev: MouseEvent): void;
+	abstract draw(ev: MouseEvent): void;
 
-	abstract updateEnd(): void;
+	abstract drawEnd(): void;
 }
 
 class AnnotationSquareBase extends AnnotationBase {
@@ -234,12 +234,12 @@ class AnnotationSquareBase extends AnnotationBase {
 	
 
 
-	update(ev: MouseEvent) {
+	draw(ev: MouseEvent) {
 		const {offsetX, offsetY} = getMouseOffset(ev,this.container);
 		this.updateShape(this.startX,this.startY,offsetX,offsetY);
 	}
 
-	updateEnd() {
+	drawEnd() {
 		// console.log("add annotation:",this.annotContainer);
 	}
 }
@@ -415,6 +415,8 @@ export class ImageViewer extends DocumentViewer {
 			this.annotLayer = this.imgContainer.createDiv();
 			this.annotLayer.style.position = "absolute";
 			this.annotLayer.addClass("annotation-layer");
+			this.annotLayer.addClass("normal-mode");
+
 
 			this.enterAnnotMode(AnnotationType.FreeText);
 
@@ -472,6 +474,8 @@ export class ImageViewer extends DocumentViewer {
 					if (moveMode) {
 						this.moveAnnot = ins;
 						this.moveMode = moveMode;
+						this.annotLayer.removeClass("normal-mode")
+						this.annotLayer.addClass("modify-mode");
 						this.annotLayer.addClass(moveMode);
 					} else {
 						// just click
@@ -485,7 +489,8 @@ export class ImageViewer extends DocumentViewer {
 			} else if (this.annotType == AnnotationType.FreeText) {
 				this.currAnnot = new AnnotationFreeText(this.annotLayer,e,callback);
 			}
-			this.annotLayer.addClass("drawing");
+			this.annotLayer.removeClass("normal-mode")
+			this.annotLayer.addClass("draw-mode");
 		}
 
 		this.deselectAll();
@@ -494,18 +499,22 @@ export class ImageViewer extends DocumentViewer {
 	private onMouseUp(e: MouseEvent) {
 		if (e.button === 0) {
 			if (this.annotType && this.currAnnot) {
-					this.currAnnot.updateEnd(); // FIXME: not quite end
+					this.currAnnot.drawEnd(); // FIXME: not quite end
 
 					this.deselectAll();
 					this.annotations.push(this.currAnnot);
 					this.selectAnnotation(this.currAnnot);
 					this.currAnnot = null;
-					this.annotLayer.removeClass("drawing");
+					this.annotLayer.removeClass("draw-mode");
+					this.annotLayer.addClass("normal-mode")
+
 
 			} else if(this.moveAnnot) {
 				// this.moveAnnotMode = false;
 				this.moveAnnot.moveEnd(e);
 				this.annotLayer.removeClass(this.moveMode);
+				this.annotLayer.removeClass("modify-mode");
+				this.annotLayer.addClass("normal-mode")
 				this.moveAnnot = null;
 				this.moveMode = null;
 			}
@@ -514,7 +523,7 @@ export class ImageViewer extends DocumentViewer {
 
 	private onMouseMove(e: MouseEvent) {
 		if (this.annotType && this.currAnnot) {
-			this.currAnnot.update(e);
+			this.currAnnot.draw(e);
 		} else if (this.moveAnnot) {
 			this.moveAnnot.move(e);
 		}

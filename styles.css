@@ -354,21 +354,41 @@ div.book-score-icon.fill {
     position: absolute;
 }
 
-
+/* annotation-layer */
 .bm-bookview-viewer-item-container.bm-bookview-image .annotation-layer {
     overflow: hidden;
 }
-
+/* cursor */
 .bm-bookview-viewer-item-container.bm-bookview-image .annotation-layer.annot-mode {
     cursor: crosshair;
 }
 
-
-.bm-bookview-viewer-item-container.bm-bookview-image .annotation-layer:not(.drawing) .annot-item-container:not(.selected) {
+.bm-bookview-viewer-item-container.bm-bookview-image .annotation-layer.normal-mode .annot-item-container:not(.selected) {
     cursor: pointer ;
 }
 
-/* control layer*/
+.bm-bookview-viewer-item-container.bm-bookview-image .annotation-layer.normal-mode .annot-item-container.selected .control-container {
+    cursor: move;
+}
+
+.bm-bookview-viewer-item-container.bm-bookview-image .annotation-layer.modify-mode.resize-rb
+{
+    cursor: nw-resize ;
+}
+.bm-bookview-viewer-item-container.bm-bookview-image .annotation-layer.modify-mode.resize-lt {
+    cursor: nw-resize;
+}
+.bm-bookview-viewer-item-container.bm-bookview-image .annotation-layer.modify-mode.resize-rt {
+    cursor: ne-resize;
+}
+.bm-bookview-viewer-item-container.bm-bookview-image .annotation-layer.modify-mode.resize-lb {
+    cursor: ne-resize;
+}
+.bm-bookview-viewer-item-container.bm-bookview-image .annotation-layer.modify-mode.move {
+    cursor: move;
+}
+
+/* control layer of annotation item*/
 .bm-bookview-viewer-item-container.bm-bookview-image .annot-item-container .control-container {
     display: none;
     position: absolute;
@@ -380,15 +400,10 @@ div.book-score-icon.fill {
 .bm-bookview-viewer-item-container.bm-bookview-image .annot-item-container.selected .control-container {
     display: block;
     border: 2px dashed green;
-    cursor: move;
 }
 
-/* .bm-bookview-viewer-item-container.bm-bookview-image .annot-item-container.selected .control-container {
-     */
-/* } */
 
-
-.bm-bookview-viewer-item-container.bm-bookview-image .annot-item-container.selected .control-point {
+.bm-bookview-viewer-item-container.bm-bookview-image  .annot-item-container.selected .control-point {
     display: none;
     width: 10px;
     height: 10px;
@@ -402,22 +417,6 @@ div.book-score-icon.fill {
     display: block;
 }
 
-.bm-bookview-viewer-item-container.bm-bookview-image .annotation-layer.resize-rb
-{
-    cursor: nw-resize !important;
-}
-.bm-bookview-viewer-item-container.bm-bookview-image .annotation-layer.resize-lt {
-    cursor: nw-resize;
-}
-.bm-bookview-viewer-item-container.bm-bookview-image .annotation-layer.resize-rt {
-    cursor: ne-resize;
-}
-.bm-bookview-viewer-item-container.bm-bookview-image .annotation-layer.resize-lb {
-    cursor: ne-resize;
-}
-.bm-bookview-viewer-item-container.bm-bookview-image .annotation-layer.move {
-    cursor: move;
-}
 /* freetext */
 /* .bm-bookview-viewer-item-container.bm-bookview-image .annot-item-container.freetext {
     overflow: hidden;
