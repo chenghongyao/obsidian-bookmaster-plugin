@@ -427,17 +427,19 @@ div.book-score-icon.fill {
 }
 
 /* freetext */
-/* .bm-bookview-viewer-item-container.bm-bookview-image .annot-item-container.freetext.selected,
-.bm-bookview-viewer-item-container.bm-bookview-image .annot-item-container.freetext.drawing */
-.bm-bookview-viewer-item-container.bm-bookview-image .annot-item-container.freetext
+.bm-bookview-viewer-item-container.bm-bookview-image .annot-item-container.freetext.selected,
+.bm-bookview-viewer-item-container.bm-bookview-image .annot-item-container.freetext.drawing
 {
     border: 1px solid red;
+}
+
+.bm-bookview-viewer-item-container.bm-bookview-image .annot-item-container.freetext {
     font-size: 20pt;
 }
 
 .bm-bookview-viewer-item-container.bm-bookview-image .annot-item-container.freetext .content-container {
     text-align: left;
-    padding: 6px;
+    /* padding: 6px; */
     white-space: nowrap;
     text-overflow: ellipsis;
     font-size: calc(100% * var(--zoom-level));

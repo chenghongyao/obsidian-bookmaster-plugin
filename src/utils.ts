@@ -323,7 +323,6 @@ export async function openMdFileInObsidian(path: string) {
 }
 
 export function showBookLocationInSystem(path: string) {
-    console.log(getDirPath(path),path);
     window.open("file:///"+getDirPath(path));
 }
 
