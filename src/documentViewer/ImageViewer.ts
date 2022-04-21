@@ -29,6 +29,7 @@ abstract class AnnotationBase {
 	container: HTMLElement;
 	annotContainer: HTMLElement;
 	ctrlContainer: HTMLDivElement;
+	contentContainer: HTMLDivElement;
 	type: AnnotationType;
 
 	startX: number;
@@ -44,6 +45,19 @@ abstract class AnnotationBase {
 		this.annotContainer.style.position = "absolute";
 		this.annotContainer.addClass("annot-item-container");
 		this.annotContainer.addClass(type);
+		this.annotContainer.addClass("drawing");
+
+
+		this.ctrlContainer = this.annotContainer.createDiv();
+		this.ctrlContainer.addClass("control-container");
+
+		this.contentContainer = this.annotContainer.createDiv();
+		this.contentContainer.addClass("content-container");
+
+
+	
+
+
 
 		this.moveMode = null;
 		this.annotContainer.onmousedown = this.onMouseDown.bind(this);
@@ -123,11 +137,6 @@ class AnnotationSquareBase extends AnnotationBase {
 	constructor(type: AnnotationType, container: HTMLElement,ev: MouseEvent,callbacks?: any) {
 		super(type, container,ev,callbacks);
 
-		this.updateShape(this.startX,this.startY,this.startX,this.startY);
-
-		this.ctrlContainer = this.annotContainer.createDiv();
-		this.ctrlContainer.addClass("control-container");
-
 		this.ctrlRB = this.ctrlContainer.createDiv();
 		this.ctrlRB.addClass("control-point");
 		this.ctrlRB.style.position = "absolute";
@@ -156,6 +165,7 @@ class AnnotationSquareBase extends AnnotationBase {
 		this.ctrlRT.style.bottom = "100%";
 		this.ctrlRT.style.cursor = "ne-resize";
 
+		this.updateShape(this.startX,this.startY,this.startX,this.startY);
 	}
 
 	protected onMouseDown(ev: MouseEvent) {
@@ -179,9 +189,10 @@ class AnnotationSquareBase extends AnnotationBase {
 			this.moveMode = "resize-lt";
 		} else if (ev.target === this.ctrlRT) {
 			this.moveMode = "resize-rt";
-		} else if (ev.target === this.ctrlContainer) {
+		} else if (this.ctrlContainer === ev.target) {
 			this.moveMode = "move";
 		}
+
 		// else just click
 
 		this.callbacks?.onMove(ev,this,this.moveMode);
@@ -239,6 +250,7 @@ class AnnotationSquareBase extends AnnotationBase {
 	}
 
 	drawEnd() {
+		this.annotContainer.removeClass("drawing");
 		// console.log("add annotation:",this.annotContainer);
 	}
 }
@@ -251,31 +263,34 @@ class AnnotationSquare extends AnnotationSquareBase {
 }
 
 
-// class AnnotationFreeText extends AnnotationBase {
 
-// 	constructor(container: HTMLElement,ev: MouseEvent,callbacks?: any) {
-// 		super(AnnotationType.FreeText,container,ev,callbacks);
-
-// 		this.annotContainer.style.border = "1px solid blue";
-// 		this.annotContainer.contentEditable = "true";
-// 		const {offsetX, offsetY} = getMouseOffset(ev,this.container);
-// 		this.updateShape(offsetX,offsetY,offsetX,offsetY);
-// 	}
-
-// 	update(ev: MouseEvent) {
-// 		const {offsetX, offsetY} = getMouseOffset(ev,this.container);
-// 		this.updateShape(this.startX,this.startY,offsetX,offsetY);
-// 	}
-
-// 	updateEnd() {
-// 		// console.log("add annotation:",this.annotContainer);
-// 		console.log(this.getWidth(),this.getHeight());
-// 	}
-// }
 
 class AnnotationFreeText extends AnnotationSquareBase {
 	constructor(container: HTMLElement,ev: MouseEvent,callbacks?: any) {
 		super(AnnotationType.FreeText, container,ev,callbacks);
+
+		this.contentContainer.spellcheck = false;
+		this.contentContainer.contentEditable = "true";
+		this.contentContainer.style.fontSize = "10pt";
+		this.contentContainer.style.color = "red";
+
+		this.contentContainer.onkeydown = (ev: KeyboardEvent) => {
+			if (ev.ctrlKey && ev.key == "enter") {
+				console.log("finish");
+			}
+		};
+	}
+
+	drawEnd(): void {
+		// this.contentContainer.textContent = "FreeText";
+		this.contentContainer.focus();
+		// this.contentContainer.click();
+		// this.contentContainer.click();
+		// const range = document.createRange();
+		// range.selectNodeContents(this.contentContainer)
+		// window.getSelection().addRange(range);
+
+		this.annotContainer.removeClass("drawing");
 	}
 }
 
@@ -526,6 +541,11 @@ export class ImageViewer extends DocumentViewer {
 		} else if (this.moveAnnot) {
 			this.moveAnnot.move(e);
 		}
+
+		
+		// const el = e.target as HTMLElement;
+		// console.log(el.className);
+
 	}
 
     async closeDocument() {

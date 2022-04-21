@@ -367,7 +367,7 @@ div.book-score-icon.fill {
     cursor: pointer ;
 }
 
-.bm-bookview-viewer-item-container.bm-bookview-image .annotation-layer.normal-mode .annot-item-container.selected .control-container {
+.bm-bookview-viewer-item-container.bm-bookview-image .annotation-layer.normal-mode .annot-item-container.selected {
     cursor: move;
 }
 
@@ -389,9 +389,6 @@ div.book-score-icon.fill {
 }
 
 /* annotation item*/
-.bm-bookview-viewer-item-container.bm-bookview-image .annot-item-container {
-    border: 2px solid red;
-}
 
 .bm-bookview-viewer-item-container.bm-bookview-image .annot-item-container.selected .control-container {
     position: absolute;
@@ -401,6 +398,17 @@ div.book-score-icon.fill {
     top: -10px;
     border: 2px dashed green;
 }
+
+.bm-bookview-viewer-item-container.bm-bookview-image .annot-item-container .content-container {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    z-index: 99;
+}
+
+
 
 .bm-bookview-viewer-item-container.bm-bookview-image .annot-item-container.selected .control-point {
     display: block;
@@ -412,7 +420,26 @@ div.book-score-icon.fill {
     opacity: 0.8;
 }
 
+/* squre */
+.bm-bookview-viewer-item-container.bm-bookview-image .annot-item-container.square .content-container {
+    border: 2px solid red;
+}
+
 /* freetext */
+/* .bm-bookview-viewer-item-container.bm-bookview-image .annot-item-container.freetext.selected,
+.bm-bookview-viewer-item-container.bm-bookview-image .annot-item-container.freetext.drawing */
+.bm-bookview-viewer-item-container.bm-bookview-image .annot-item-container.freetext
+{
+    border: 1px solid red;
+}
+
+.bm-bookview-viewer-item-container.bm-bookview-image .annot-item-container.freetext .content-container {
+    text-align: left;
+    padding: 6px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
 /* .bm-bookview-viewer-item-container.bm-bookview-image .annot-item-container.freetext {
     overflow: hidden;
     color: red;
