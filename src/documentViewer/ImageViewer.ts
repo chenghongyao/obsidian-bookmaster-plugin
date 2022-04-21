@@ -271,8 +271,6 @@ class AnnotationFreeText extends AnnotationSquareBase {
 
 		this.contentContainer.spellcheck = false;
 		this.contentContainer.contentEditable = "true";
-		this.contentContainer.style.fontSize = "10pt";
-		this.contentContainer.style.color = "red";
 
 		this.contentContainer.onkeydown = (ev: KeyboardEvent) => {
 			if (ev.ctrlKey && ev.key == "enter") {
@@ -358,6 +356,8 @@ export class ImageViewer extends DocumentViewer {
         this.imgEl.width = this.imgWidth() * zoomLevel;
 		this.imgEl.height = this.imgHeight() * zoomLevel;
 		this.zoomLevel = zoomLevel;
+		this.annotLayer.style.setProperty("--zoom-level",`${this.zoomLevel}`);
+
 
 		if (this.imgEl.width < this.imgContainer.offsetWidth) {
 			this.imgEl.style.left = `${(this.imgContainer.offsetWidth - this.imgEl.offsetWidth)/2}px`;
@@ -412,6 +412,8 @@ export class ImageViewer extends DocumentViewer {
 		this.annotLayer.style.height = this.imgEl.height + "px";
 
 		this.zoomLevel = zoomLevel;
+		this.annotLayer.style.setProperty("--zoom-level",`${this.zoomLevel}`);
+
 	}
 
     async show(url: string, state?: any, ext?: string){
@@ -520,7 +522,7 @@ export class ImageViewer extends DocumentViewer {
 					this.selectAnnotation(this.currAnnot);
 					this.currAnnot = null;
 					this.annotLayer.removeClass("draw-mode");
-					this.annotLayer.addClass("normal-mode")
+					this.annotLayer.addClass("normal-mode");
 
 
 			} else if(this.moveAnnot) {
@@ -528,7 +530,7 @@ export class ImageViewer extends DocumentViewer {
 				this.moveAnnot.moveEnd(e);
 				this.annotLayer.removeClass(this.moveMode);
 				this.annotLayer.removeClass("modify-mode");
-				this.annotLayer.addClass("normal-mode")
+				this.annotLayer.addClass("normal-mode");
 				this.moveAnnot = null;
 				this.moveMode = null;
 			}
