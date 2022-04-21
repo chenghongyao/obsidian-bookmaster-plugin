@@ -123,7 +123,6 @@ class AnnotationSquareBase extends AnnotationBase {
 	constructor(type: AnnotationType, container: HTMLElement,ev: MouseEvent,callbacks?: any) {
 		super(type, container,ev,callbacks);
 
-		this.annotContainer.style.border = "2px solid red";
 		this.updateShape(this.startX,this.startY,this.startX,this.startY);
 
 		this.ctrlContainer = this.annotContainer.createDiv();

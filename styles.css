@@ -388,33 +388,28 @@ div.book-score-icon.fill {
     cursor: move;
 }
 
-/* control layer of annotation item*/
-.bm-bookview-viewer-item-container.bm-bookview-image .annot-item-container .control-container {
-    display: none;
+/* annotation item*/
+.bm-bookview-viewer-item-container.bm-bookview-image .annot-item-container {
+    border: 2px solid red;
+}
+
+.bm-bookview-viewer-item-container.bm-bookview-image .annot-item-container.selected .control-container {
     position: absolute;
     width: calc(100% + 20px);
     height: calc(100% + 20px);
     left: -10px;
     top: -10px;
-}
-.bm-bookview-viewer-item-container.bm-bookview-image .annot-item-container.selected .control-container {
-    display: block;
     border: 2px dashed green;
 }
 
-
-.bm-bookview-viewer-item-container.bm-bookview-image  .annot-item-container.selected .control-point {
-    display: none;
+.bm-bookview-viewer-item-container.bm-bookview-image .annot-item-container.selected .control-point {
+    display: block;
     width: 10px;
     height: 10px;
     border-radius: 50%;
     border: 1px solid white;
     background-color: green;
     opacity: 0.8;
-}
-
-.bm-bookview-viewer-item-container.bm-bookview-image .annot-item-container.selected .control-point {
-    display: block;
 }
 
 /* freetext */
