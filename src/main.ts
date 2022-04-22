@@ -134,9 +134,9 @@ export default class BookMasterPlugin extends Plugin {
 					self.getBookById(params.bid).then((book) => {
 						const state = {
 							aid: params.aid,
-							page: params.page,
+							page: params.page, // TODO: currently support pdf only
 						};
-						self.openBook(book,state);
+						self.openBook(book,false,state);
 					})
 				}
 			},
@@ -996,7 +996,7 @@ export default class BookMasterPlugin extends Plugin {
 		}
 	}
 
-	async openBook(book: Book, state?: any) {
+	async openBook(book: Book, newPanel: boolean=false, state?: any) {
 		if (book.lost) {
 			// TODO: fix lost book
 			new Notice("文件丢失");

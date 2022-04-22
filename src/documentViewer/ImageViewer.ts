@@ -1,4 +1,5 @@
 import { DocumentViewer } from "./documentViewer";
+import { ImageExts } from "../constants";
 
 
 enum AnnotationType{
@@ -320,6 +321,10 @@ export class ImageViewer extends DocumentViewer {
 		this.imgContainer.addClass("image-container");
     }
 
+
+	static isSupportedExt(ext: string) {
+		return ImageExts.includes(ext);
+	}
 
 	private enterAnnotMode(type: AnnotationType) {
 		this.annotType = type;

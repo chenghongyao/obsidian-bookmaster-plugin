@@ -98,11 +98,14 @@ export const BookMetaMap : {[type:string]:BookMetaOptionMap}= {
 };
 
 export const ImageExts = ["jpg","jpeg","png","bmp","jfif"]
+export const AudioExts = ["wav","mp3","ogg"] // support by <audio>
+export const OfficeExts = [ "xlsx","xls","doc","docx","ppt","pptx"]
 
 export const supportBookExts = [
     "pdf",
-    "xlsx","xls","doc","docx","ppt","pptx", // office
-    "jpg","jpeg","png","bmp","jfif",               //image
+    ...OfficeExts,
+    ...ImageExts,               //image
+    ...AudioExts,
     "epub",
     "txt",
     "html"

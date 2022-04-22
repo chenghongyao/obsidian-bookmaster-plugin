@@ -9,8 +9,9 @@ import { EpubJSViewer } from "../documentViewer/EPUBJSViewer";
 import { HtmlViewer } from "../documentViewer/HtmlViewer";
 import { TxtViewer } from "../documentViewer/TxtViewer";
 import { ImageViewer } from "../documentViewer/ImageViewer";
-import { ImageExts } from "../constants";
+import { AudioViewer } from "../documentViewer/AudioViewer";
 
+import { ImageExts,AudioExts } from "../constants";
 
 
 interface BookTab {
@@ -25,8 +26,6 @@ interface BookTab {
 export const VIEW_TYPE_BOOK_VIEW = "bm-book-view"
 export class BookView extends ItemView {
 	plugin: BookMasterPlugin;
-	// bid: string;
-	// viewer: DocumentViewer;
 	bookTabs: Array<BookTab>;
 	currentTab: BookTab;
 	tabContainer: HTMLDivElement;
@@ -85,9 +84,8 @@ export class BookView extends ItemView {
 
 	async setState(state: any, result: ViewStateResult) {
 		// console.log("[BookView]set state")
+
 		if (!state.tabs) return;
-		console.log(state);
-		
 		const tabsState:Array<any> = state.tabs;
 		for (var i = 0; i < tabsState.length; i++) {
 			const t = tabsState[i];
@@ -392,10 +390,11 @@ export class BookView extends ItemView {
 			} 
 			else {
 
-				var isImageExt = ImageExts.includes(book.ext);
-			
-				
-				const tab = this.addBookTab(bid,book.meta.title || book.name, isImageExt ? "image":book.ext);
+				var type = book.ext;
+				if (ImageExts.includes(book.ext)) type = "image";
+				else if (AudioExts.includes(book.ext)) type = "audio";
+
+				const tab = this.addBookTab(bid,book.meta.title || book.name, type);
 				tab.book = book; // TODO: save book ref??
 				const url = this.plugin.getBookUrl(book);
 
@@ -404,12 +403,14 @@ export class BookView extends ItemView {
 				} else if (book.ext === "epub") {
 					const workerPath = this.plugin.getCurrentDeviceSetting().bookViewerWorkerPath + "/epubjs-reader/reader/index.html";
 					tab.viewer = new EpubJSViewer(bid, tab.container,workerPath);
-				} else if(ImageExts.includes(book.ext)) {
+				} else if(ImageViewer.isSupportedExt(book.ext)) {
 					tab.viewer = new ImageViewer(bid, tab.container);
-				} 
+				} else if (AudioViewer.isSupportedExt(book.ext)) {
+					tab.viewer = new AudioViewer(bid,tab.container);
+				}
 
 				if (tab.viewer) {
-					return tab.viewer.show(url);
+					return tab.viewer.show(url,state,book.ext);
 				} else {
 					console.error("unvalid book:",book.ext,book);
 					throw "unvalid book:"+book.path;

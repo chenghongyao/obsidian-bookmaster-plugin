@@ -445,3 +445,13 @@ div.book-score-icon.fill {
     font-size: calc(100% * var(--zoom-level));
     color: red;
 }
+
+
+/* audio viewer */
+.bm-bookview-viewer-item-container.bm-bookview-audio .audio-container {
+    width: 100%;
+    height: 100%;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+}
