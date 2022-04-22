@@ -455,3 +455,16 @@ div.book-score-icon.fill {
     display: flex;
     align-items: center;
 }
+
+/* video viewer */
+.bm-bookview-viewer-item-container.bm-bookview-video .video-container {
+    width: 100%;
+    height: 100%;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+}
+
+.bm-bookview-viewer-item-container.bm-bookview-video .video-controls {
+    width: 100%;
+}

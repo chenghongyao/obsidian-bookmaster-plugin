@@ -1,5 +1,5 @@
 
-import { AudioExts, ImageExts, MAIN_BOOKVAULT_ID, OfficeExts } from "./constants"; 
+import { AudioExts, ImageExts, MAIN_BOOKVAULT_ID, OfficeExts, VideoExts } from "./constants"; 
 import { BookTreeSortType } from "./Book";
 
 export interface DeviceSetting {
@@ -44,7 +44,8 @@ export const DEFAULT_SETTINGS: BookMasterSettings = {
 	validBookExts: ["pdf", "epub","txt","html",
     ...OfficeExts,
     ...ImageExts,
-    ...AudioExts],
+    ...AudioExts,
+    ...VideoExts],
 
     currentBookVault: MAIN_BOOKVAULT_ID,
     bookVaultNames: {[MAIN_BOOKVAULT_ID]:"我的书库"},

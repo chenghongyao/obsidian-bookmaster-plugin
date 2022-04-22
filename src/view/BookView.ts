@@ -10,8 +10,9 @@ import { HtmlViewer } from "../documentViewer/HtmlViewer";
 import { TxtViewer } from "../documentViewer/TxtViewer";
 import { ImageViewer } from "../documentViewer/ImageViewer";
 import { AudioViewer } from "../documentViewer/AudioViewer";
+import { VideoViewer } from "../documentViewer/VideoViewer";
 
-import { ImageExts,AudioExts } from "../constants";
+import { ImageExts,AudioExts, VideoExts } from "../constants";
 
 
 interface BookTab {
@@ -393,6 +394,7 @@ export class BookView extends ItemView {
 				var type = book.ext;
 				if (ImageExts.includes(book.ext)) type = "image";
 				else if (AudioExts.includes(book.ext)) type = "audio";
+				else if (VideoExts.includes(book.ext)) type = "video";
 
 				const tab = this.addBookTab(bid,book.meta.title || book.name, type);
 				tab.book = book; // TODO: save book ref??
@@ -407,6 +409,8 @@ export class BookView extends ItemView {
 					tab.viewer = new ImageViewer(bid, tab.container);
 				} else if (AudioViewer.isSupportedExt(book.ext)) {
 					tab.viewer = new AudioViewer(bid,tab.container);
+				} else if (VideoViewer.isSupportedExt(book.ext)) {
+					tab.viewer = new VideoViewer(bid,tab.container);
 				}
 
 				if (tab.viewer) {
