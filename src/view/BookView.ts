@@ -69,19 +69,47 @@ export class BookView extends ItemView {
 	}
 
 	getState() {
+		const tabsState = new Array<any>();
+		for (var i = 0; i < this.bookTabs.length; i++) {
+			const tab = this.bookTabs[i];
+			tabsState.push({
+				bid: tab.bid,
+				state: tab.viewer.getState(),
+			})
+		}
 		return {
-			// bid: this.bid,
-			// state: this.viewer?.getState()
+			tabs: tabsState,
+			currentBid: this.currentTab?.bid,
 		}
 	}
 
 	async setState(state: any, result: ViewStateResult) {
-		console.log("[BookView]set state")
-		// console.log(state);
-		// console.log(result);
-		// if (state.bid) {
-		// 	this.openBook(state.bid,state.state);
-		// }
+		// console.log("[BookView]set state")
+		if (!state.tabs) return;
+		console.log(state);
+		
+		const tabsState:Array<any> = state.tabs;
+		for (var i = 0; i < tabsState.length; i++) {
+			const t = tabsState[i];
+			if (t.bid) {
+				try {
+					await this.openBook(t.bid,t.state);	
+				} catch (error) {
+					new Notice(error,0);
+				}
+			}
+		}
+
+		if (state.currentBid) {
+			for (var i = 0; i < this.bookTabs.length; i++) {
+				const tab = this.bookTabs[i];
+				if (tab.bid === state.currentBid) {
+					this.showBookTab(tab);
+					break;
+				}
+			}
+		}
+
 	}
 
     private setTitle(title: string) {
@@ -90,6 +118,7 @@ export class BookView extends ItemView {
 
     async onOpen() {
 		console.log("BookView Open");
+
 		this.contentEl.empty();
         this.contentEl.style.padding = "0";
 		this.contentEl.addClass("bm-bookview");
@@ -104,7 +133,7 @@ export class BookView extends ItemView {
 
 	private getCurrentBook() {
 		if (this.currentTab) {
-			return this.plugin.getBookById(this.currentTab.bid);
+			return this.currentTab.book;
 		} else {
 			return null;
 		}
@@ -186,7 +215,7 @@ export class BookView extends ItemView {
 
 
 	private async closeBookTab(tab: BookTab) {
-		console.log("close tab:",tab)
+		// console.log("close tab:",tab)
 		await tab.viewer.closeDocument();
 		this.viewerContainer.removeChild(tab.container);
 		this.tabContainer.removeChild(tab.head);
@@ -239,7 +268,7 @@ export class BookView extends ItemView {
 
 
 
-		const link = `obsidian://bookmaster?type=annotation&bid=${viewer.bid}&aid=${annoId}&page=${annoPage}`;
+		const link = `obsidian://bookmaster?type=open-book&bid=${viewer.bid}&aid=${annoId}&page=${annoPage}`;
 
 		var annoContent = "";
 		var template = null;
@@ -325,11 +354,11 @@ export class BookView extends ItemView {
 
 
 	async openBook(bid: string,state?: any) {
-
 		for(var i = 0; i < this.bookTabs.length; i++) {
 			const tab = this.bookTabs[i];
 			if (tab.bid === bid) {
 				this.showBookTab(tab);
+				tab.viewer.setState(state);
 				this.setTitle(tab.title)
 				return;
 			}
@@ -337,9 +366,11 @@ export class BookView extends ItemView {
 
 
 		return Promise.all([this.plugin.getBookById(bid),this.plugin.loadBookAnnotations(bid)]).then((value) => {
-			// TODO: book is undefine
 			const book = value[0];
 			const annotations = value[1];
+			if (!book) {
+				throw "cant open book with bid:"+bid;
+			};
 
 			if (PDFTronViewer.isSupportedExt(book.ext)) {
 				return this.plugin.getBookData(book).then((data: ArrayBuffer) => {

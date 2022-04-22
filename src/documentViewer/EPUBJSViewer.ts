@@ -26,9 +26,7 @@ export class EpubJSViewer extends DocumentViewer {
         }
     }
 
-    private selectRange(e: MouseEvent) {
 
-    }
 
     async show(data: ArrayBuffer | string, state?: any, ext?: string) {
 
@@ -93,7 +91,9 @@ export class EpubJSViewer extends DocumentViewer {
         }
     }
     getState() {
-        throw new Error("Method not implemented.");
     }
+
+    setState(state?: any): void {
+	}
     
 }

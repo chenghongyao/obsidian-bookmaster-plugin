@@ -26,7 +26,9 @@ export class HtmlViewer extends DocumentViewer {
     }
 
     getState() {
-        throw new Error("Method not implemented.");
     }
+
+	setState(state?: any): void {
+	}
 
 }

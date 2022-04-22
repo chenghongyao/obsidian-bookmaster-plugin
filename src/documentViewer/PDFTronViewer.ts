@@ -220,7 +220,7 @@ export class PDFTronViewer extends DocumentViewer {
 		const clipWidth = Math.round((clipBox[2] - clipBox[0]));
 		const clipHeight = Math.round((clipBox[3] - clipBox[1]));
 
-		console.log(clipBox[0],clipBox[1],clipWidth,clipHeight)
+		// console.log(clipBox[0],clipBox[1],clipWidth,clipHeight)
 		return createImageBitmap(this.image,clipBox[0],clipBox[1],clipWidth,clipHeight).then((clipImage) => {
 				
 				//https://stackoverflow.com/questions/52959839/convert-imagebitmap-to-blob
@@ -277,72 +277,7 @@ export class PDFTronViewer extends DocumentViewer {
 		return commentEl?.length ? commentEl[0].textContent : "";
 	}
 
-	// async getAnnotationParams(annot: any, annotTemplate: any, imageScale: number = 2) {
 
-	// 	const annoType = annot.tagName;
-	// 	const annoId = annot.getAttr("name");
-	// 	const annoRect = annot.getAttr("rect")
-	// 	const annoPage = Number(annot.getAttr("page")) + 1;
-
-
-
-	// 	const link = `obsidian://bookmaster?type=annotation&bid=${this.bid}&aid=${annoId}&page=${annoPage}`;
-
-	// 	var annoContent = "";
-	// 	var template = null;
-	// 	var isTextAnnot = false;
-	// 	if (["highlight","underline" ,"strikeout","squiggly","freetext"].includes(annoType)) {
-	// 		annoContent = annot.textContent;
-	// 		template = annotTemplate.textAnnotation;
-	// 		isTextAnnot = true;
-	// 	} else {
-	// 		template = annotTemplate.regionAnnotation;
-	// 	}
-
-	// 	var comment = "";
-	// 	if (template.includes("comment")) {
-	// 		comment = this.getAnnotationComment(annot) || "";
-	// 	}
-	
-
-
-	// 	var clipWidth = 0;
-	// 	var clipHeight = 0;
-	// 	if (template.includes("{{width}}") || template.includes("{{height}}")) {
-	// 		const clipBox = annoRect.split(",").map((t:string) => Number(t));
-	// 		clipWidth = Math.round((clipBox[2] - clipBox[0])*imageScale);
-	// 		clipHeight = Math.round((clipBox[3] - clipBox[1])*imageScale);
-	// 	}
-
-	// 	var annoColor = "";
-	// 	if (template.includes("{{color}}")) {
-	// 		const hexColor = annot.getAttr("color");
-	// 		const r = parseInt(hexColor.substr(1,2),16);
-	// 		const g = parseInt(hexColor.substr(3,2),16);
-	// 		const b = parseInt(hexColor.substr(5,2),16);
-	// 		annoColor = `${r},${g},${b}`;
-	// 	}
-
-	// 	var img: string|Buffer= "";
-	// 	if (template.includes("{{img}}")) {
-	// 		const image = await this.getAnnotationImage();
-	// 		img = image ? image : "无法获取标注图片图片";
-	// 	}
-
-		
-	// 	const params = {
-	// 		link: link,
-	// 		page: annoPage.toString(),
-	// 		color: annoColor,
-	// 		content: annoContent,
-	// 		width: clipWidth.toString(),
-	// 		height: clipHeight.toString(),
-	// 		img: img,
-	// 		comment: comment
-	// 	}
-
-	// 	return params;
-	// }
 
     private getViewerWindow() {
 		const self = this;
@@ -416,6 +351,7 @@ export class PDFTronViewer extends DocumentViewer {
 				if(!self.documentReady) {
 					setTimeout(wait,100);
 				} else {
+					self.setState(state);
 					resolve();
 				}
 			}
@@ -423,10 +359,28 @@ export class PDFTronViewer extends DocumentViewer {
 		});
     }
 
+	showAnnotation(aid: string) {
+		this.postViewerWindowMessage("showAnnotation", aid);
+	}
+
+	showBookPage(page: number) {
+		this.postViewerWindowMessage("showBookPage", page);
+	}
 
 	getState() {
 		return {page: this.currentPage};
 	}
+
+	setState(state?: any): void {
+		if (!state) return;
+
+        if (state.aid) {
+			this.showAnnotation(state.aid);
+		} else if (state.page) {
+			this.showBookPage(state.page);
+		}
+	}
+
 
     async closeDocument() {
 

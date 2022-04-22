@@ -58,6 +58,9 @@ export abstract class DocumentViewer {
             this.debounceSaveBookAnnotations();    
         }
     }
+
+    abstract setState(state?: any): void;
+
     abstract show(data: ArrayBuffer | string,state?: any, ext?: string, annotations?: string): Promise<void>;
     abstract closeDocument(): Promise<void>;
     abstract getState(): any;

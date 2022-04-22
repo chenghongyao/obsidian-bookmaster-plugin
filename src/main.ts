@@ -1,4 +1,4 @@
-import {loadMathJax, loadPrism, MarkdownView, Menu, normalizePath, Notice,Platform,Plugin, TAbstractFile, TFile, TFolder, ViewCreator} from "obsidian";
+import {loadMathJax, loadPrism, MarkdownView, Menu, normalizePath, Notice,ObsidianProtocolData,Platform,Plugin, TAbstractFile, TFile, TFolder, ViewCreator} from "obsidian";
 import { around } from "monkey-around";
 
 import { BookMasterSettings,DEFAULT_SETTINGS,DeviceSetting,DEFAULT_DEVICE_SETTINGS } from "./settings";
@@ -51,6 +51,7 @@ export default class BookMasterPlugin extends Plugin {
 
 
 		this.registerBookProject();
+		this.registerProtocalHandler();
 
 		this.safeRegisterView(VIEW_TYPE_BOOK_EXPLORER,leaf => new BookExplorer(leaf,this));
 		this.safeRegisterView(VIEW_TYPE_BOOK_PROJECT,leaf => new BookProject(leaf,this));
@@ -103,6 +104,58 @@ export default class BookMasterPlugin extends Plugin {
 			new Notice("请先激活目标Markdown窗口");
 		}
 	}
+
+	registerProtocalHandler() {
+		const self = this;
+		const obProtocalHandler: any = {
+			// "annotation": function(params: ObsidianProtocolData) {
+			// 	const bid = params.bid;
+			// 	const aid = params.aid;
+			// 	if (bid && aid) {
+			// 		self.getBookById(bid).then((book) => {
+			// 			self.openBook(book);
+			// 		})
+			// 	}
+
+			// 	const annotBook = self.decodeBookFromPath(params["book"]);
+			// 	console.log("anotBook:",annotBook);
+			// 	if (annotId && annotBook) {
+			// 		// TODO:还需要支持?
+			// 		if (self.isForceOpenBySystem(annotBook)) {
+			// 			self.openBookBySystem(annotBook);
+			// 		} else {
+			// 			self.showAnnotationById(annotBook,annotId);
+			// 		}
+			// 	} else {
+			// 		new Notice("标注链接参数错误");
+			// 	}
+			"open-book": function(params: ObsidianProtocolData) {
+				if (params.bid) {
+					self.getBookById(params.bid).then((book) => {
+						const state = {
+							aid: params.aid,
+							page: params.page,
+						};
+						self.openBook(book,state);
+					})
+				}
+			},
+			"update-book-explorer": function(params: ObsidianProtocolData) {
+				self.updateDispTree();
+			}
+		}
+
+		this.registerObsidianProtocolHandler("bookmaster", (params) => {
+			if (obProtocalHandler[params["type"]]) {
+				obProtocalHandler[params["type"]](params);				
+			} else {
+				new Notice("[bookmaster]不支持的协议类型："+params["type"]);
+			}
+		});
+
+	
+	}
+
 	//#endregion
 
 	//#region BookProject
@@ -924,7 +977,7 @@ export default class BookMasterPlugin extends Plugin {
 	}
 
 
-	async openBookBySystem(book: Book) {
+	async openBookBySystem(book: Book, state?: any) {
 		if (book.ext === "url") {
 			if (Platform.isMobile) {
 				(this.app as any).openWithDefaultApp(book.path);
@@ -943,19 +996,20 @@ export default class BookMasterPlugin extends Plugin {
 		}
 	}
 
-	async openBook(book: Book, newPanel: boolean = false) {
+	async openBook(book: Book, state?: any) {
 		if (book.lost) {
 			// TODO: fix lost book
 			new Notice("文件丢失");
 			return;
 		}
 
+
 		if (this.settings.openAllBookWithDefaultApp || this.settings.openBookExtsWithDefaultApp.includes(book.ext)) {
 			this.openBookBySystem(book);
 		} else if (supportBookExts.includes(book.ext)) { // TODO: support exts
-			this.activateView(VIEW_TYPE_BOOK_VIEW,"center",newPanel).then((view: BookView) => {
+			this.activateView(VIEW_TYPE_BOOK_VIEW,"center",true).then((view: BookView) => {
 				return this.getBookId(book).then((bid) => {
-					view.openBook(bid);
+					return view.openBook(bid,state);
 				});
 			});	
 		} else {

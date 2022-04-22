@@ -418,15 +418,17 @@ export class ImageViewer extends DocumentViewer {
 
     async show(url: string, state?: any, ext?: string){
 
-        const maxWidth = this.imgContainer.offsetWidth;
-		const maxHeight = this.imgContainer.offsetHeight; 
+        // const maxWidth = this.imgContainer.offsetWidth;
+		// const maxHeight = this.imgContainer.offsetHeight; 
+		// FIXME: imgContainer.offsetWidt is 0 when viewer is open by workspace???
 
 		this.createImage(this.imgContainer,url).then((img) => {
 			this.imgEl = img;
 
-			const scaleW = maxWidth/this.imgWidth();
-			const scaleH = maxHeight/this.imgHeight();
-
+			// const scaleW = maxWidth/this.imgWidth();
+			// const scaleH = maxHeight/this.imgHeight();
+			const scaleW = 0.5;
+			const scaleH = 0.5;
 			
 			this.annotLayer = this.imgContainer.createDiv();
 			this.annotLayer.style.position = "absolute";
@@ -554,7 +556,8 @@ export class ImageViewer extends DocumentViewer {
     }
 
     getState() {
-        throw new Error("Method not implemented.");
     }
+	setState(state?: any): void {
+	}
 
 }
