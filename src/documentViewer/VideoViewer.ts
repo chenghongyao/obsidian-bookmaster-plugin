@@ -4,7 +4,7 @@ import { VideoExts } from "../constants";
 export class VideoViewer extends DocumentViewer {
 
     videoContainer: HTMLDivElement;
-    videoControlEl: HTMLAudioElement;
+    videoControlEl: HTMLVideoElement;
     videoSourceEl: HTMLSourceElement;
 
     constructor(bid:string, container: HTMLElement) {
@@ -26,6 +26,18 @@ export class VideoViewer extends DocumentViewer {
         this.videoSourceEl = this.videoControlEl.createEl("source");
         this.videoSourceEl.src = url;
 
+        // this.videoControlEl.onloadeddata = (e) => {
+        //     const w = this.videoControlEl.videoWidth;
+        //     const h = this.videoControlEl.videoHeight;
+
+        //     if (w && h) {
+        //         if (w > h) {
+
+        //             this.videoControlEl.style.width = "100%"
+        //             this.videoControlEl.style.aspectRatio = `${w}:${h}`;
+        //         }
+        //     }
+        // }
         this.setState(state);
     }
 
