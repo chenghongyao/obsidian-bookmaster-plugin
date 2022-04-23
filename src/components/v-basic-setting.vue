@@ -24,6 +24,7 @@
         <div class="book-setting-label">标题：</div>
         <div class="book-setting-value-container">
             <input style="width: 100%" type="text" v-model="book.meta.title" 
+            @change="$emit('change','title')"
             @keypress="$emit('change','title')" />
         </div>
     </div>

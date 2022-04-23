@@ -29,7 +29,7 @@ export default class BookMasterPlugin extends Plugin {
 		this.loadAllBookVaults().then(()=>{
 		});
 	
-		this.addRibbonIcon("dice","BookExplorer",(evt) => {
+		this.addRibbonIcon("library","BookExplorer",(evt) => {
 			this.activateView(VIEW_TYPE_BOOK_EXPLORER,"left");
 			// this.activateView(VIEW_TYPE_BOOK_VIEW,"center");
 		});

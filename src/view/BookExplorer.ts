@@ -26,7 +26,7 @@ export class BookExplorer extends ItemView {
         return VIEW_TYPE_BOOK_EXPLORER;
     }
     getIcon() {
-		return "bold-glyph";	
+		return "library";	
 	}
 
 

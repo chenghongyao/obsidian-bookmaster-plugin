@@ -70,7 +70,7 @@ export class EpubJSViewer extends DocumentViewer {
             // });
 
             // this.redition.themes.select("dark");
-            return this.redition.display();
+            // return this.redition.display();
 
         } else {
             throw "unvalid data type for epub viewer";
