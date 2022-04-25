@@ -274,10 +274,10 @@ export class BookView extends ItemView {
 		var isTextAnnot = false;
 		if (["highlight","underline" ,"strikeout","squiggly","freetext"].includes(annoType)) {
 			annoContent = annot.textContent;
-			template = this.plugin.settings.annotationTemplate.textAnnotation;
+			template = this.plugin.settings.annotationTemplate.pdf.textAnnotation;
 			isTextAnnot = true;
 		} else {
-			template = this.plugin.settings.annotationTemplate.regionAnnotation;
+			template = this.plugin.settings.annotationTemplate.pdf.regionAnnotation;
 		}
 
 		var comment = "";

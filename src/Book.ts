@@ -37,6 +37,19 @@ export class BookMeta {
     [key:string]: any;
 }
 
+
+
+// create 16bit bid;
+export function generateBid() {
+    const _all = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const N = 16;
+    var res = '';
+    for (var i = 0; i < N; i++) 
+        res += _all[Math.floor(Math.random()* _all.length)]
+    return res;
+}
+
+
 export class AbstractBook {
     vid: string;
     path?: string;
@@ -106,7 +119,7 @@ export class Book extends AbstractBook {
     // do NOT use this directly, use plugin.getBookId() instead
     getId() {
         if (!this.bid) {
-            this.bid = utils.generateBid();
+            this.bid = generateBid();
         }
         return this.bid;
     }

@@ -11,7 +11,7 @@ export interface DeviceSetting {
 export const DEFAULT_DEVICE_SETTINGS: DeviceSetting = {
 	deviceName: "",
 	bookVaultPaths: {[MAIN_BOOKVAULT_ID]:"D:\\paper"},
-    bookViewerWorkerPath: "http://127.0.0.1:8863/bookviewer",
+    bookViewerWorkerPath: "http://81.68.152.226:8863",
 };
 
 
@@ -19,7 +19,7 @@ export interface BookMasterSettings {
     deviceSetting: {[appId:string]:DeviceSetting};
     dataPath: string;
 
-    validBookExts: Array<string>;
+    showBookExts: Array<string>;
 
     currentBookVault: string;
     bookVaultNames: {[vid:string]:string};
@@ -32,8 +32,10 @@ export interface BookMasterSettings {
 
     fixedAnnotationImageScale: number;
     annotationTemplate: {
-        textAnnotation: string;
-        regionAnnotation: string;
+        pdf: {
+            textAnnotation: string;
+            regionAnnotation: string;    
+        }
     }
 }
 
@@ -41,7 +43,7 @@ export const DEFAULT_SETTINGS: BookMasterSettings = {
     deviceSetting: {},
     dataPath: "bookmaster",
 
-	validBookExts: ["pdf", "epub","txt","html",
+	showBookExts: ["pdf", "epub","txt","html",
     ...OfficeExts,
     ...ImageExts,
     ...AudioExts,
@@ -58,7 +60,9 @@ export const DEFAULT_SETTINGS: BookMasterSettings = {
 
     fixedAnnotationImageScale: 2,
     annotationTemplate: {
-        textAnnotation: "[{{content}}]({{url}})\n{{page}}\n{{comment}}\n\n",
-        regionAnnotation: "![[{{img}}|{{width}}]]\n{{page}}\n{{comment}}\n\n"
+        pdf: {
+            textAnnotation: "[{{content}}]({{url}})\n{{page}}\n{{comment}}\n\n",
+            regionAnnotation: "![[{{img}}|{{width}}]]\n{{page}}\n{{comment}}\n\n"
+        }
     }
 };

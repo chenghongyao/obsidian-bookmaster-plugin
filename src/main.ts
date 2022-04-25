@@ -580,7 +580,7 @@ export default class BookMasterPlugin extends Plugin {
 			this.root[vid] = new BookFolder(null,vid,vaultName,null);	
 		}
 		
-		return this.walkBookVault(vid,vaultPath,"",this.root[vid],this.bookMap,this.settings.validBookExts);
+		return this.walkBookVault(vid,vaultPath,"",this.root[vid],this.bookMap,this.settings.showBookExts);
 	}
 
 	async loadAllBookVaults() {
