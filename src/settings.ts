@@ -30,6 +30,8 @@ export interface BookMasterSettings {
     openAllBookWithDefaultApp: boolean;
     openBookExtsWithDefaultApp: Array<string>;
 
+    recentBookNumberLimit: number;
+
     fixedAnnotationImageScale: number;
     annotationTemplate: {
         pdf: {
@@ -58,6 +60,8 @@ export const DEFAULT_SETTINGS: BookMasterSettings = {
     openAllBookWithDefaultApp: false,
     openBookExtsWithDefaultApp: [],
 
+    recentBookNumberLimit: 10,
+    
     fixedAnnotationImageScale: 2,
     annotationTemplate: {
         pdf: {

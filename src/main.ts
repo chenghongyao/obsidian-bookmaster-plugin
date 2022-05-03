@@ -1,4 +1,4 @@
-import {loadMathJax, loadPrism, MarkdownView, Menu, normalizePath, Notice,ObsidianProtocolData,Platform,Plugin, TAbstractFile, TFile, TFolder, ViewCreator} from "obsidian";
+import {debounce, loadMathJax, loadPrism, MarkdownView, Menu, normalizePath, Notice,ObsidianProtocolData,Platform,Plugin, TAbstractFile, TFile, TFolder, ViewCreator} from "obsidian";
 import { around } from "monkey-around";
 
 import { BookMasterSettings,DEFAULT_SETTINGS,DeviceSetting,DEFAULT_DEVICE_SETTINGS } from "./settings";
@@ -11,6 +11,7 @@ import BookSuggestModal from "./view/BookSuggestModal";
 import { BookProject, VIEW_TYPE_BOOK_PROJECT } from "./view/BookProject";
 import { BookView, VIEW_TYPE_BOOK_VIEW } from "./view/BookView";
 import {BookMasterSettingTab} from "./view/BookMasterSettingTab"
+import { RecentBookView, VIEW_TYPE_RECENT_BOOKS } from "./view/RecentBookView";
 
 export default class BookMasterPlugin extends Plugin {
 	settings: BookMasterSettings;
@@ -22,6 +23,11 @@ export default class BookMasterPlugin extends Plugin {
 
 	currentBookProjectFile: TFile;
 	currentBookProjectBooks: BookFolder;
+
+	bookVaultLoading: boolean;
+
+	recentBooks: BookFolder;
+	debounceSaveRecentBooks: any;
 	
 	async onload() {
 		await this.loadSettings();
@@ -29,6 +35,8 @@ export default class BookMasterPlugin extends Plugin {
 		this.app.workspace.onLayoutReady(() => {
 			this.loadAllBookVaults().then(()=>{
 			});
+
+			this.loadRecentBooks();
 		})
 
 		this.addRibbonIcon("library","BookExplorer",(evt) => {
@@ -51,6 +59,13 @@ export default class BookMasterPlugin extends Plugin {
 
 		});
 
+		this.addCommand({
+			id: "bm-open-recent-book-view",
+			name: "Open Recent Book View",
+			callback: () => {
+				this.activateView(VIEW_TYPE_RECENT_BOOKS,"left");
+			}
+		});
 
 		this.registerBookProject();
 		this.registerProtocalHandler();
@@ -58,8 +73,14 @@ export default class BookMasterPlugin extends Plugin {
 		this.safeRegisterView(VIEW_TYPE_BOOK_EXPLORER,leaf => new BookExplorer(leaf,this));
 		this.safeRegisterView(VIEW_TYPE_BOOK_PROJECT,leaf => new BookProject(leaf,this));
 		this.safeRegisterView(VIEW_TYPE_BOOK_VIEW,leaf => new BookView(leaf,this));
+		this.safeRegisterView(VIEW_TYPE_RECENT_BOOKS,leaf => new RecentBookView(leaf,this));
 		this.addSettingTab(new BookMasterSettingTab(this.app, this));
 
+		this.recentBooks = new BookFolder(null,null,"RecentBook","");
+		this.debounceSaveRecentBooks = debounce(() => {
+			this.saveRecentBooks()
+		},2000,true);
+		
 	}
 
 	onunload() {
@@ -156,6 +177,56 @@ export default class BookMasterPlugin extends Plugin {
 		});
 
 	
+	}
+
+	private async loadRecentBooks() {
+		this.recentBooks.children = []
+
+		const content = await utils.safeReadObFile(normalizePath(this.settings.dataPath + "/recent.md"));
+		if (!content) return;
+
+		const r = /\[.*\]\((.*)\)/g 
+		var item = null;
+		do {
+			item = r.exec(content)?.[1];
+			if (!item) continue;
+			const url = new URL(item);
+			if (!url) continue;
+			const bid = url.searchParams.get("bid");
+			if (!url) continue;
+			const book = await this.getBookById(bid);
+			if (book) {
+				this.recentBooks.push(book);
+			}	
+		} while(item)
+	}
+
+	private async saveRecentBooks() {
+		var content = "";
+		for (var i = 0; i !== this.recentBooks.children.length;i++) {
+			const book = this.recentBooks.children[i] as Book;
+			content += `- [${book.meta.title||book.name}](obsidian://bookmaster?type=open-book&bid=${book.bid})\r\n`;
+		}
+		return utils.safeWriteObFile(normalizePath(this.settings.dataPath + "/recent.md"),content,true);
+	}
+
+	resetRecentBooks() {
+		this.recentBooks.children = [];
+		this.debounceSaveRecentBooks();
+	}
+
+
+
+	private async appendRecentBook(book: Book) {
+		const ind = this.recentBooks.children.indexOf(book);
+		if (ind == 0) return;
+		else if (ind > 0) {
+			this.recentBooks.children.splice(ind,1);
+		} else if (this.recentBooks.children.length >= this.settings.recentBookNumberLimit) {
+			this.recentBooks.children.pop();
+		}
+		this.recentBooks.children.splice(0,0,book);
+		this.debounceSaveRecentBooks();
 	}
 
 	//#endregion
@@ -587,6 +658,9 @@ export default class BookMasterPlugin extends Plugin {
 
 	async loadAllBookVaults() {
 
+		if (this.bookVaultLoading) return;
+		this.bookVaultLoading = true;
+
 		new Notice("书库加载中...");
 
 		if (!this.root) {	// first load
@@ -609,6 +683,7 @@ export default class BookMasterPlugin extends Plugin {
 		// console.log(this.bookIdMap);
 
 		new Notice("书库加载完成");
+		this.bookVaultLoading = false;
 	}
 
 	private getBookFolder(vid:string, path: string, rootFolder: BookFolder) {
@@ -1005,12 +1080,12 @@ export default class BookMasterPlugin extends Plugin {
 			return;
 		}
 
-
 		if (this.settings.openAllBookWithDefaultApp || this.settings.openBookExtsWithDefaultApp.includes(book.ext)) {
 			this.openBookBySystem(book);
 		} else if (supportBookExts.includes(book.ext)) { // TODO: support exts
-			this.activateView(VIEW_TYPE_BOOK_VIEW,"center",true).then((view: BookView) => {
+			return this.activateView(VIEW_TYPE_BOOK_VIEW,"center",true).then((view: BookView) => {
 				return this.getBookId(book).then((bid) => {
+					this.appendRecentBook(book);
 					return view.openBook(bid,state);
 				});
 			});	
@@ -1018,6 +1093,13 @@ export default class BookMasterPlugin extends Plugin {
 			this.openBookBySystem(book);
 		}
 
+
+		// if open by system
+		if (book.vid) {
+			return this.getBookId(book).then((bid) => {
+				this.appendRecentBook(book);
+			});
+		}
 	}
 
 
