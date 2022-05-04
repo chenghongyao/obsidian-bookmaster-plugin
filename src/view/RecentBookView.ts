@@ -25,7 +25,7 @@ export class RecentBookView extends ItemView {
 	}
 
 	getIcon() {
-		return "import-glyph";	
+		return "book-open";	
 	}
 
 
@@ -62,6 +62,7 @@ export class RecentBookView extends ItemView {
 			render: h => h('obtree', {
 				attrs: {
 					data: self.plugin.recentBooks,
+					showTitle: false,
 				},
 				on: {
 					'select-file': function (book: Book) {
