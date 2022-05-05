@@ -166,6 +166,7 @@ export class BookExplorer extends ItemView {
 		menu.addItem((item) => {
 			item
 			.setTitle("切换书库")
+			.setIcon("arrow-left-right")
 			.onClick((e) => {
 				const m = new Menu(this.app);
 				this.createOptionsMenu(m);

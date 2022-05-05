@@ -31,6 +31,7 @@ export default class BookMasterPlugin extends Plugin {
 	
 	async onload() {
 		await this.loadSettings();
+		this.recentBooks = new BookFolder(null,null,"RecentBook","");
 
 		this.app.workspace.onLayoutReady(() => {
 			this.loadAllBookVaults().then(()=>{
@@ -60,12 +61,14 @@ export default class BookMasterPlugin extends Plugin {
 		});
 
 		this.addCommand({
-			id: "bm-open-recent-book-view",
-			name: "Open Recent Book View",
+			id: "bm-open-recent-books-view",
+			name: "Open Recent Books View",
 			callback: () => {
 				this.activateView(VIEW_TYPE_RECENT_BOOKS,"left");
 			}
 		});
+
+
 
 		this.registerBookProject();
 		this.registerProtocalHandler();
@@ -76,7 +79,6 @@ export default class BookMasterPlugin extends Plugin {
 		this.safeRegisterView(VIEW_TYPE_RECENT_BOOKS,leaf => new RecentBookView(leaf,this));
 		this.addSettingTab(new BookMasterSettingTab(this.app, this));
 
-		this.recentBooks = new BookFolder(null,null,"RecentBook","");
 		this.debounceSaveRecentBooks = debounce(() => {
 			this.saveRecentBooks()
 		},2000,true);
@@ -212,6 +214,10 @@ export default class BookMasterPlugin extends Plugin {
 
 	resetRecentBooks() {
 		this.recentBooks.children = [];
+		this.debounceSaveRecentBooks();
+	}
+	removeRecentBook(book: Book) {
+		this.recentBooks.children.remove(book);
 		this.debounceSaveRecentBooks();
 	}
 
@@ -498,6 +504,13 @@ export default class BookMasterPlugin extends Plugin {
 			} 
 			
 		});
+
+		// update book project when file is changed
+		this.app.metadataCache.on("changed",(file,data,cache) => {
+			if (this.currentBookProjectFile && this.currentBookProjectFile == file && this.app.workspace.getLeavesOfType(VIEW_TYPE_BOOK_PROJECT).length > 0 ) {
+				this.updateBookProject();
+			}
+		})
 	}
 	//#endregion
 

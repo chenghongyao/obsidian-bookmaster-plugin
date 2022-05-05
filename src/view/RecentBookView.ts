@@ -17,7 +17,7 @@ export class RecentBookView extends ItemView {
 	}
 
 	getDisplayText() {
-		return "Recent Book";
+		return "Recent Books";
 	}
 
 	getViewType() {
@@ -31,6 +31,16 @@ export class RecentBookView extends ItemView {
 
 	openContextMenu(evt: MouseEvent, book:Book) {
 		const menu = new Menu(this.app);
+
+		menu.addItem((item) => {
+            item
+            .setTitle("清除所选")
+			.setIcon("trash")
+            .onClick(() => {
+                this.plugin.removeRecentBook(book);
+            })
+        });
+		menu.addSeparator();
         this.plugin.createBookContextMenu(menu,book);
 		menu.showAtMouseEvent(evt);
 	}
@@ -43,7 +53,7 @@ export class RecentBookView extends ItemView {
             .onClick(() => {
                 this.plugin.resetRecentBooks();
             })
-        })
+        });
         super.onHeaderMenu(menu);
     }
 

@@ -49,15 +49,18 @@ export class BookProject extends ItemView {
         this.contentEl.style.padding = "0";
 
 		this.navHeader = new NavHeader(this,this.contentEl);
-		this.navHeader.addAction("reset","更新",(evt) => {
-			this.plugin.updateBookProject();
-		})
+		// this.navHeader.addAction("reset","更新",(evt) => {
+		// 	this.plugin.updateBookProject();
+		// })
 		this.navHeader.addAction("document","占位",(evt) => {
 			console.log(evt);
-		})
+		});
 		this.navHeader.addAction("document","占位",(evt) => {
 			console.log(evt);
-		})
+		});
+		this.navHeader.addAction("document","占位",(evt) => {
+			console.log(evt);
+		});
 
 		// const title = this.plugin.path.basename(this.plugin.settings.bookPath);
 		const el = this.contentEl.createDiv()
