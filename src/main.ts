@@ -12,6 +12,7 @@ import { BookProject, VIEW_TYPE_BOOK_PROJECT } from "./view/BookProject";
 import { BookView, VIEW_TYPE_BOOK_VIEW } from "./view/BookView";
 import {BookMasterSettingTab} from "./view/BookMasterSettingTab"
 import { RecentBookView, VIEW_TYPE_RECENT_BOOKS } from "./view/RecentBookView";
+import RelocateBookModal from "./view/RelocateBookModal";
 
 export default class BookMasterPlugin extends Plugin {
 	settings: BookMasterSettings;
@@ -155,7 +156,16 @@ export default class BookMasterPlugin extends Plugin {
 			// 		new Notice("标注链接参数错误");
 			// 	}
 			"open-book": function(params: ObsidianProtocolData) {
-				if (params.bid) {
+
+				if (params.fullpath) {
+					const book = self.getBookByFullPath(params.fullpath);
+					const state = {
+						aid: params.aid,
+						page: params.page, // TODO: currently support pdf only
+					};
+					self.openBook(book,false,state);
+				}
+				else if (params.bid) {
 					self.getBookById(params.bid).then((book) => {
 						const state = {
 							aid: params.aid,
@@ -516,7 +526,7 @@ export default class BookMasterPlugin extends Plugin {
 
 
 	//#region BookVault
-	private getBookVaultPath(vid: string) {
+	getBookVaultPath(vid: string) {
 		if (vid === OB_BOOKVAULT_ID) {
 			return (this.app.vault.adapter as any).basePath;
 		} else {
@@ -541,17 +551,16 @@ export default class BookMasterPlugin extends Plugin {
 	private async loadAllBookData() {
 		const dataFolder = this.app.vault.getAbstractFileByPath(this.getBookDataPath()) as TFolder;
 		if (!dataFolder || !(dataFolder instanceof TFolder)) return;
+
 		for(var i = 0 ;i < dataFolder.children.length; i++) {
 			const file = dataFolder.children[i];
 			if (!(file instanceof TFile)) continue;
 			const meta = await this.app.metadataCache.getFileCache(file as TFile).frontmatter;
-			if (!meta) {
+			if (!meta || !meta["bm-meta"]) {
 				new Notice("配置文件错误:"+file.name,0)
 				continue;
 			}
 			
-			if (!meta["bm-meta"]) continue;
-
 			const {vid,bid,path,name,ext,visual} = meta;
 			if (!vid || !bid)continue; // FIXME: check path?
 
@@ -638,15 +647,19 @@ export default class BookMasterPlugin extends Plugin {
 		// if the test flag is still false, then it has been deleted
 		for (var i = 0; i < root.children.length; i++) {  
 			const abs = root.children[i];
-			if (abs._existsFlag || abs.lost) continue;
+			if (abs._existsFlag || abs.lost) continue;	// exist or already lost
 
-			const entry = `${abs.vid}:${abs.path}`;
-			delete map[entry];
-			root.children.splice(i,1);
-
-			if (abs.isFolder()) {
-				utils.cleanFolderInMap(abs as BookFolder,map);
-			} 
+			if (!abs.isFolder() && (abs as Book).bid) { // book is lost
+				(abs as Book).lost = true;
+			} else {
+				const entry = `${abs.vid}:${abs.path}`;
+				delete map[entry];
+				root.children.splice(i,1);
+	
+				if (abs.isFolder()) {
+					utils.cleanFolderInMap(abs as BookFolder,map);
+				}
+			}
 		}
 	}
 
@@ -781,16 +794,30 @@ export default class BookMasterPlugin extends Plugin {
 
 	//#region Book
 
-	// private async getBookByPath(vid: string, path: string) {
-	// 	const entry = `${vid}:${path}`;
-	// 	if (this.root) {	
-	// 		return this.bookMap[entry];
-	// 	} else {
-	// 		return this.loadAllBookVaults().then(() => {
-	// 			return this.bookMap[entry];
-	// 		});
-	// 	}
-	// }
+	private async getBookByPath(vid: string, path: string) {
+		const entry = `${vid}:${path}`;
+		if (this.root) {	
+			return this.bookMap[entry];
+		} else {
+			return this.loadAllBookVaults().then(() => {
+				return this.bookMap[entry];
+			});
+		}
+	}
+
+	private getBookByFullPath(fullpath: string): Book {
+		if (!this.root) return;
+
+		for (var vid in this.root) {
+			const vaultPath = this.getBookVaultPath(vid);
+			if (fullpath.startsWith(vaultPath)) {
+				const path = fullpath.substring(vaultPath.length).replace(/\\/g,"/");
+				const entry = `${vid}:${path}`;
+				const book = this.bookMap[entry] as Book;
+				return book;
+			}
+		}
+	}
 
 	// TODO: invalid bid?
 	async getBookById(bid: string) {
@@ -884,6 +911,10 @@ export default class BookMasterPlugin extends Plugin {
 		})
 	}
 
+	private relocateBook(book: Book) {
+		new RelocateBookModal(this,book).open();
+	}
+
 	createBookContextMenu(menu: Menu, book: Book) {
 		if (book.vid) {
 
@@ -894,6 +925,7 @@ export default class BookMasterPlugin extends Plugin {
 					.setIcon("popup-open")
 					.onClick(()=>{
 						// TODO: relocate book
+						this.relocateBook(book);
 					})
 				);
 				menu.addSeparator();
