@@ -65,7 +65,7 @@ export class BookView extends ItemView {
 	}
 
 	getIcon() {
-		return "pdf-file";	
+		return "book";	
 	}
 
 	getState() {
