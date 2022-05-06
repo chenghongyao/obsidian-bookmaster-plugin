@@ -737,7 +737,9 @@ export default class BookMasterPlugin extends Plugin {
 		} else {
 			// load book file
 			for(const vid in this.getCurrentDeviceSetting().bookVaultPaths) {
-				await this.loadBookVault(vid);
+				await this.loadBookVault(vid).catch(() => {
+					
+				});
 			}
 
 			await this.loadBookVault(OB_BOOKVAULT_ID); // TODO: don't load this vault

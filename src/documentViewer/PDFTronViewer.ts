@@ -35,6 +35,8 @@ export class PDFTronViewer extends DocumentViewer {
 	private pdfjsDoc: PDFDocumentProxy; // pdfDocument
 	private image: ImageBitmap;
 
+	private data: ArrayBuffer;
+
     constructor(bid: string, container: HTMLElement, workerPath: string, callbacks?: any) {
         super(bid,container,callbacks);
 
@@ -56,6 +58,7 @@ export class PDFTronViewer extends DocumentViewer {
 				console.log("[webviewer]viewer ready");
 				if (self.viewerReady) {
 					console.error("viewer reload!!")
+					self.show(self.data,self.getState(),self.ext,self.exportAnnotations());
 				}
 				self.viewerReady = true;
 			},
@@ -325,6 +328,8 @@ export class PDFTronViewer extends DocumentViewer {
 	}
 
     async show(data: ArrayBuffer, state?: any, ext?: string, annotations?: string){
+
+		this.data = data;
 
 		this.ext = ext || "pdf";
         const arr = new Uint8Array(data);
