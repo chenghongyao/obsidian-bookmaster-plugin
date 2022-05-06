@@ -35,10 +35,8 @@ export class BookMasterSettingTab extends PluginSettingTab {
         .addExtraButton((btn) => {
             btn.setIcon("cross");
             btn.onClick(async () => {
-                commonSetting.bookVaultNames[vid] = undefined;
-                deviceSetting.bookVaultPaths[vid] = undefined;
-                await this.plugin.saveSettings();
-                
+
+                this.plugin.removeBookVault(vid);
                 bookVaultSetting.settingEl.remove();
             })
         }) 

@@ -183,9 +183,7 @@ export class BookExplorer extends ItemView {
 				item
 				.setTitle(this.plugin.settings.bookVaultNames[key])
 				.onClick((e) => {
-					this.plugin.settings.currentBookVault = key;
-					this.plugin.saveSettings();
-					this.plugin.updateDispTree();
+					this.plugin.switchBookVault(key);
 				});
 
 				if (key === this.plugin.settings.currentBookVault) {

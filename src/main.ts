@@ -531,6 +531,7 @@ export default class BookMasterPlugin extends Plugin {
 			return (this.app.vault.adapter as any).basePath;
 		} else {
 			const vaultPath = this.getCurrentDeviceSetting().bookVaultPaths[vid];
+			if (!vaultPath) return;
 			if (vaultPath.startsWith("@")) {
 				return (this.app.vault.adapter as any).basePath + vaultPath.substring(1);
 			} else {
@@ -663,30 +664,51 @@ export default class BookMasterPlugin extends Plugin {
 		}
 	}
 
-	
+
+	async removeBookVault(vid: string) {
+		delete this.settings.bookVaultNames[vid];
+		delete this.getCurrentDeviceSetting().bookVaultPaths[vid];
+		if (this.root[vid]) {// FIXME: remove all book of this vault??
+			for (var key in this.bookMap) {
+				if (key.startsWith(vid)) {
+					const book = this.bookMap[key];
+					if (!book.isFolder() && (book as Book).bid) {
+						(book as Book).lost = true;
+					} else {
+						delete this.bookMap[key];
+					}
+				}
+			}
+			delete this.root[vid];
+
+			if (this.settings.currentBookVault === vid) {
+				this.updateDispTree();
+			}
+		}
+
+		await this.saveSettings();
+	}
+
+	async switchBookVault(vid: string) {
+		this.settings.currentBookVault = vid;
+		await this.saveSettings();
+		this.updateDispTree();
+	}
+
 	private async loadBookVault(vid: string) {
 		const vaultPath = this.getBookVaultPath(vid);
 
 		if (!vaultPath) {
-			if (this.root[vid]) {// FIXME: remove all book of this vault??
-				this.root[vid] = undefined; 
-				for (var key in this.bookMap) {
-					if (key.startsWith(vid)) {
-						const book = this.bookMap[key];
-						if (!book.isFolder() && (book as Book).bid) {
-							(book as Book).lost = true;
-						} else {
-							delete this.bookMap[key];
-						}
-					}
-				}
-			}
-			return; 
+			this.removeBookVault(vid);
+			return Promise.reject("empty vault path");
 		}
 		const vaultName = this.getBookVaultName(vid);
 		if (!await utils.isFolderExists(vaultPath)) { // TODO: virtual vault
-			new Notice(`书库“${vaultName}(${vid}):${vaultPath}”不存在`,0); 
-			return;
+			const err = `书库“${vaultName}(${vid}):${vaultPath}”不存在`;
+			if (vaultPath) {
+				new Notice(err,0); 
+			}
+			return Promise.reject(err);
 		}		
 
 
@@ -697,7 +719,7 @@ export default class BookMasterPlugin extends Plugin {
 		return this.walkBookVault(vid,vaultPath,"",this.root[vid],this.bookMap,this.settings.showBookExts);
 	}
 
-	async loadAllBookVaults() {
+	async loadAllBookVaults(vid: string = null) {
 
 		if (this.bookVaultLoading) return;
 		this.bookVaultLoading = true;
@@ -708,18 +730,25 @@ export default class BookMasterPlugin extends Plugin {
 			this.root = {};
 		}
 
-		// load book file
-		for(const vid in this.getCurrentDeviceSetting().bookVaultPaths) {
-			await this.loadBookVault(vid);
+		if (vid) { //load this vault only
+			await this.loadBookVault(vid).then(() => {
+				return this.loadAllBookData();
+			});
+		} else {
+			// load book file
+			for(const vid in this.getCurrentDeviceSetting().bookVaultPaths) {
+				await this.loadBookVault(vid);
+			}
+
+			await this.loadBookVault(OB_BOOKVAULT_ID); // TODO: don't load this vault
+
+
+			// load book data
+			await this.loadAllBookData();
+
+
+			await this.updateDispTree();
 		}
-
-		await this.loadBookVault(OB_BOOKVAULT_ID); // TODO: don't load this vault
-
-		// load book data
-		await this.loadAllBookData();
-
-
-		await this.updateDispTree();
 		// console.log(this.root);
 		// console.log(this.bookIdMap);
 
@@ -749,19 +778,27 @@ export default class BookMasterPlugin extends Plugin {
 	}
 	
 	async updateDispTree() {
-		if (!this.root) { // FIXME: can this happen??
-			return this.loadAllBookVaults();
-		}
 
 		var vid = this.settings.currentBookVault;
-		if (!this.root[vid]) {
-			new Notice("当前书库不存在:\n"+this.getBookVaultPath(vid)); // TODO
-			vid = null;
+		if (!this.root) { // FIXME: can this happen??
+			return this.loadAllBookVaults();
+		} else if (!this.root[vid] && this.getCurrentDeviceSetting().bookVaultPaths[vid]) { // try again
+			await this.loadAllBookVaults(vid);
+		}
 
+		if (!this.root[vid]) {
+			const rawVaultPath = this.getBookVaultPath(vid);
+			if (rawVaultPath !== undefined) { // not deleted
+				new Notice(`当前书库(${vid})不存在:\n`+rawVaultPath); // TODO
+			}
+
+			vid = null;
 			for (var v in this.root) {
 				if (v !== "99") {
 					vid = v;
-					new Notice("切换为书库:\n"+this.getBookVaultPath(vid)); // TODO
+					if (rawVaultPath !== undefined) {
+						new Notice("切换为书库:\n"+this.getBookVaultPath(vid)); 
+					}
 					break;
 				}
 			}
