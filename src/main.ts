@@ -98,10 +98,10 @@ export default class BookMasterPlugin extends Plugin {
 		});
 	}
 
-	async activateView(type: string, dir?: string, split?: boolean) {
+	async activateView(type: string, dir?: string, split?: boolean, newPanel?: boolean) {
 
 		var leaf;
-		if (this.app.workspace.getLeavesOfType(type).length == 0) { // not exists, create new one,
+		if (this.app.workspace.getLeavesOfType(type).length == 0 || newPanel) { // not exists, create new one,
 			if (dir === "left") {
 				leaf = this.app.workspace.getLeftLeaf(split);
 			} else if (dir === "right") {
@@ -114,6 +114,9 @@ export default class BookMasterPlugin extends Plugin {
 				active: true,
 			});
 		} else {
+			// TODO: activate one
+			const view = this.app.workspace.getActiveViewOfType(BookView);
+			console.log(view);
 			leaf = this.app.workspace.getLeavesOfType(type)[0];
 		}
 
@@ -1201,12 +1204,20 @@ export default class BookMasterPlugin extends Plugin {
 		if (this.settings.openAllBookWithDefaultApp || this.settings.openBookExtsWithDefaultApp.includes(book.ext)) {
 			this.openBookBySystem(book);
 		} else if (supportBookExts.includes(book.ext)) { // TODO: support exts
-			return this.activateView(VIEW_TYPE_BOOK_VIEW,"center",true).then((view: BookView) => {
-				return this.getBookId(book).then((bid) => {
-					this.appendRecentBook(book);
-					return view.openBook(bid,state);
-				});
-			});	
+
+			if (book.tab) {
+				this.app.workspace.revealLeaf(book.tab.bookview.leaf);
+				book.tab.bookview.showBookTab(book.tab);
+			} else {
+	
+				return this.activateView(VIEW_TYPE_BOOK_VIEW,"center",true,newPanel).then((view: BookView) => {
+					return this.getBookId(book).then((bid) => {
+						this.appendRecentBook(book);
+						return view.openBook(bid,state);
+					});
+				});		
+				
+			}
 		} else {
 			this.openBookBySystem(book);
 		}

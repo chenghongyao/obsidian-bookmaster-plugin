@@ -15,13 +15,14 @@ import { VideoViewer } from "../documentViewer/VideoViewer";
 import { ImageExts,AudioExts, VideoExts } from "../constants";
 
 
-interface BookTab {
+export interface BookTab {
 	bid: string;
 	head: HTMLDivElement;
 	container: HTMLDivElement;
 	viewer: DocumentViewer;
 	title: string;
 	book: Book;
+	bookview: BookView;
 }
 
 export const VIEW_TYPE_BOOK_VIEW = "bm-book-view"
@@ -138,8 +139,10 @@ export class BookView extends ItemView {
 		}
 	}
 
-	private addBookTab(bid:string,title:string,type:string) {
+	private addBookTab(bid:string,book: Book,type?: string) {
 
+		const title = book.meta.title || book.name;
+		type = type || book.ext;
 		if (this.bookTabs.length === 1) {
 			this.tabContainer.addClass("visible");
 		}
@@ -151,7 +154,7 @@ export class BookView extends ItemView {
 		const headText = headContainer.createDiv();
 		headText.addClass("bm-bookview-tab-item-text-container")
 		headText.title = title;
-		headText.textContent = title;
+		headText.textContent = headText.title;
 
 		const headIcon = headContainer.createDiv();
 		headIcon.addClass("bm-bookview-tab-item-icon-container")
@@ -164,17 +167,18 @@ export class BookView extends ItemView {
 		container.addClass("bm-bookview-"+type);
 		this.viewerContainer.appendChild(container);
 
-
-		this.bookTabs.push({
+		const tab: BookTab = {
 			bid: bid,
 			head:headContainer,
 			container: container,
 			viewer: null,
 			title: title,
-			book: null,
-		})
+			book: book,
+			bookview: this,
+		}
 
-		const tab = this.bookTabs.last();
+		this.bookTabs.push(tab);
+		book.tab = tab; 
 		this.showBookTab(tab);
 
 		headText.onclick = () => {
@@ -198,7 +202,7 @@ export class BookView extends ItemView {
 		return tab;
 	}
 
-	private showBookTab(tab: BookTab) {
+	showBookTab(tab: BookTab) {
 		if (tab == this.currentTab) return;
 		if (this.currentTab) {
 			this.currentTab.container.removeClass("visible");
@@ -215,6 +219,7 @@ export class BookView extends ItemView {
 
 	private async closeBookTab(tab: BookTab) {
 		// console.log("close tab:",tab)
+		tab.book.tab = null;
 		await tab.viewer.closeDocument();
 		this.viewerContainer.removeChild(tab.container);
 		this.tabContainer.removeChild(tab.head);
@@ -373,8 +378,7 @@ export class BookView extends ItemView {
 
 			if (PDFTronViewer.isSupportedExt(book.ext)) {
 				return this.plugin.getBookData(book).then((data: ArrayBuffer) => {
-					const tab = this.addBookTab(bid,book.meta.title || book.name,book.ext);
-					tab.book = book; // TODO: save book ref??
+					const tab = this.addBookTab(bid,book);
 					const workerPath = this.plugin.getCurrentDeviceSetting().bookViewerWorkerPath + "//webviewer";
 					tab.viewer = new PDFTronViewer(bid,tab.container,workerPath,this.callbacks);
 					tab.viewer.show(data,state,book.ext,annotations);
@@ -382,9 +386,7 @@ export class BookView extends ItemView {
 			
 			} else if (book.ext === "txt") {
 				return this.plugin.getBookData(book).then((data: ArrayBuffer) => {
-					const tab = this.addBookTab(bid,book.meta.title || book.name,book.ext);
-					tab.book = book;
-					
+					const tab = this.addBookTab(bid,book);					
 					tab.viewer = new TxtViewer(bid,tab.container);
 					tab.viewer.show(data,state,book.ext);
 				});
@@ -396,8 +398,7 @@ export class BookView extends ItemView {
 				else if (AudioExts.includes(book.ext)) type = "audio";
 				else if (VideoExts.includes(book.ext)) type = "video";
 
-				const tab = this.addBookTab(bid,book.meta.title || book.name, type);
-				tab.book = book; // TODO: save book ref??
+				const tab = this.addBookTab(bid,book, type);
 				const url = this.plugin.getBookUrl(book);
 
 				if (book.ext === "html") {
@@ -430,6 +431,7 @@ export class BookView extends ItemView {
 
     async onClose() {
 		this.bookTabs.map((tab) => {
+			tab.book.tab = null;
 			tab.viewer.closeDocument();
 		})
 		this.bookTabs = [];

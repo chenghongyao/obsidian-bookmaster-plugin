@@ -2,6 +2,7 @@
 import * as utils from "./utils";
 import { normalizePath, TFile } from "obsidian";
 import { BookMetaMap, ext2type } from "./constants";
+import { BookTab } from "./view/BookView";
 
 
 export enum BookTreeSortType {
@@ -103,6 +104,7 @@ export class Book extends AbstractBook {
     visual: boolean;
     
     meta: BookMeta;
+    tab: BookTab;
 
     constructor(parent: AbstractBook, vid: string,  path: string, name: string,ext: string, bid?: string, visual: boolean = false, losted: boolean = false) {
         super(parent,vid,name,path,visual ? false : losted);
