@@ -91,13 +91,16 @@ export class BookView extends ItemView {
 		const tabsState:Array<any> = state.tabs;
 		for (var i = 0; i < tabsState.length; i++) {
 			const t = tabsState[i];
-			if (t.bid) {
-				try {
-					await this.openBook(t.bid,t.state);	
-				} catch (error) {
-					new Notice(error,0);
+
+			await this.plugin.getBookById(t.bid).then((book) => {
+				if (!book.tab) {
+					try {
+						return this.openBook(t.bid,t.state);	
+					} catch (error) {
+						new Notice(error,0);
+					}
 				}
-			}
+			})
 		}
 
 		if (state.currentBid) {

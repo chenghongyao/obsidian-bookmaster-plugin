@@ -117,7 +117,11 @@ export default class BookMasterPlugin extends Plugin {
 			// TODO: activate one
 			const view = this.app.workspace.getActiveViewOfType(BookView);
 			console.log(view);
-			leaf = this.app.workspace.getLeavesOfType(type)[0];
+			if (view) {
+				leaf = view.leaf;
+			} else {
+				leaf = this.app.workspace.getLeavesOfType(type)[0];
+			}
 		}
 
 		this.app.workspace.revealLeaf(leaf);
@@ -1205,7 +1209,7 @@ export default class BookMasterPlugin extends Plugin {
 			this.openBookBySystem(book);
 		} else if (supportBookExts.includes(book.ext)) { // TODO: support exts
 
-			if (book.tab) {
+			if (book.tab) { // already opened
 				this.app.workspace.revealLeaf(book.tab.bookview.leaf);
 				book.tab.bookview.showBookTab(book.tab);
 			} else {
