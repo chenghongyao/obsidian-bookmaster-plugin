@@ -1,5 +1,5 @@
 import { ItemView, Menu, Notice, WorkspaceLeaf } from "obsidian";
-import { Book, BookTreeSortType } from "../Book";
+import { Book, BookFolder, BookTreeSortType } from "../Book";
 import BookMasterPlugin from "../main";
 import Vue from "vue";
 
@@ -135,6 +135,12 @@ export class BookExplorer extends ItemView {
 		menu.showAtMouseEvent(evt);
     }
 
+	private openBookFolderContextMenu(evt: MouseEvent, folder: BookFolder) {
+        const menu = new Menu(this.app);
+		this.plugin.createBookFolderContextMenu(menu,folder);
+		menu.showAtMouseEvent(evt);
+    }
+
 	private createHeader() {
         this.header = new NavHeader(this,this.contentEl);
 
@@ -232,6 +238,10 @@ export class BookExplorer extends ItemView {
 						},
 						'context-menu': function(evt: MouseEvent, book: Book) {
 							self.openBookContextMenu(evt,book);
+							
+						},
+						'folder-context-menu': function(evt: MouseEvent, folder: BookFolder) {
+							self.openBookFolderContextMenu(evt,folder);
 							
 						}
 	

@@ -1,7 +1,12 @@
 <template>
 <!-- folder -->
 <div v-if="isFolder" class="nav-folder" :class="{'is-collapsed':!isOpen}">
-	<div class="nav-folder-title" :data-path="item.path" :data-count="item.count" @click="toggleFolder">
+	<div class="nav-folder-title" 
+		:data-path="item.path" 
+		:data-count="item.count" 
+		@click="toggleFolder"
+		@contextmenu.prevent="onFolderContextMenu"
+		>
 		<div class="nav-folder-collapse-indicator collapse-icon"/>
 		<div class="nav-folder-title-content">{{item.name}}</div>
 	</div>	
@@ -67,6 +72,9 @@ export default {
 		},
 		onContextMenu(e) {
 			this.$emit('context-menu',e,this)
+		},
+		onFolderContextMenu(e) {
+			this.$emit('folder-context-menu',e,this)
 		}
 
 	},

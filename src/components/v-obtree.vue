@@ -11,6 +11,7 @@
 				v-on:select-file="onSelectFile"
 				v-on:open-file="(item)=>$emit('open-file',item,false)"
 				v-on:context-menu="onContextMenu"
+				v-on:folder-context-menu="onFolderContextMenu"
 				:showNoteIcon="showNoteIcon"
 				/>
 			</div>
@@ -61,6 +62,9 @@ export default {
 			this.activatedNode.isActivate = true;
 
 			this.$emit('context-menu',e, node.item)
+		},
+		onFolderContextMenu(e,node) {
+			this.$emit('folder-context-menu',e, node.item)
 		},
 		setTitle(title) {
 			this.$refs.titleEl.setText(title);

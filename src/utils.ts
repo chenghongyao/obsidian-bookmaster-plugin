@@ -1,6 +1,8 @@
 import { App, Platform, TFile, TFolder } from "obsidian";
 import { AbstractBook, Book, BookFolder } from "./Book";
 
+import {exec} from "child_process";
+
 export const app: App = (window as any).app as App;
 export const appId: string = (app as any).appId as string;
 export const fs: any = (app.vault.adapter as any).fs;
@@ -316,8 +318,17 @@ export async function openMdFileInObsidian(path: string) {
     });
 }
 
+
 export function showBookLocationInSystem(path: string) {
-    window.open("file:///"+getDirPath(path));
+
+    if (Platform.isDesktop) {
+        // var exec = require('child_process').exec;
+        exec(`explorer.exe /select,"${path}"`)
+        return
+    } else if (Platform.isMacOS) {
+        window.open("file:///"+ path);
+    }
+
 }
 
 

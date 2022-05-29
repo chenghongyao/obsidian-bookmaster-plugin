@@ -35,7 +35,7 @@ export default class BookMasterPlugin extends Plugin {
 		this.recentBooks = new BookFolder(null,null,"RecentBook","");
 
 		this.app.workspace.onLayoutReady(() => {
-			this.loadAllBookVaults().then(()=>{
+			this.loadAllBookVaults(null,true).then(()=>{
 			});
 
 			this.loadRecentBooks();
@@ -623,7 +623,7 @@ export default class BookMasterPlugin extends Plugin {
 			const path = rootPath+"/"+name;
 			const entry = `${vid}:${path}`;
 
-			if (await utils.isFolder(utils.normalizePath(vaultPath,path))) {
+			if (await utils.isFolder(utils.normalizePath(vaultPath,path))) { // book folder
 				if (name.startsWith(".")) continue;
 
 				var folder = map[entry];
@@ -635,7 +635,7 @@ export default class BookMasterPlugin extends Plugin {
 
 				folder._existsFlag = true;
 				await this.walkBookVault(vid,vaultPath,path,folder as BookFolder,map,validBookExts);
-			} else {
+			} else { // book
 				const ext = utils.getExtName(path);
 				if (!utils.isValidBook(name,ext,validBookExts)) continue;
 
@@ -646,6 +646,8 @@ export default class BookMasterPlugin extends Plugin {
 					book.loadBookData(null); // init book data
 					root.push(book);
 					map[entry] = book;
+				} else if (!book.lost) { // file is back
+					book.lost = false;
 				}
 
 				book._existsFlag = true;
@@ -709,6 +711,7 @@ export default class BookMasterPlugin extends Plugin {
 			this.removeBookVault(vid);
 			return Promise.reject("empty vault path");
 		}
+
 		const vaultName = this.getBookVaultName(vid);
 		if (!await utils.isFolderExists(vaultPath)) { // TODO: virtual vault
 			const err = `书库“${vaultName}(${vid}):${vaultPath}”不存在`;
@@ -726,7 +729,7 @@ export default class BookMasterPlugin extends Plugin {
 		return this.walkBookVault(vid,vaultPath,"",this.root[vid],this.bookMap,this.settings.showBookExts);
 	}
 
-	async loadAllBookVaults(vid: string = null) {
+	async loadAllBookVaults(vid: string = null, loadData: boolean = false) {
 
 		if (this.bookVaultLoading) return;
 		this.bookVaultLoading = true;
@@ -739,7 +742,9 @@ export default class BookMasterPlugin extends Plugin {
 
 		if (vid) { //load this vault only
 			await this.loadBookVault(vid).then(() => {
-				return this.loadAllBookData();
+				if (loadData) {
+					return this.loadAllBookData();
+				}
 			});
 		} else {
 			// load book file
@@ -753,13 +758,13 @@ export default class BookMasterPlugin extends Plugin {
 
 
 			// load book data
-			await this.loadAllBookData();
+			if (loadData) {
+				await this.loadAllBookData();
+			}
 
 
 			await this.updateDispTree();
 		}
-		// console.log(this.root);
-		// console.log(this.bookIdMap);
 
 		new Notice("书库加载完成");
 		this.bookVaultLoading = false;
@@ -789,13 +794,14 @@ export default class BookMasterPlugin extends Plugin {
 	async updateDispTree() {
 
 		var vid = this.settings.currentBookVault;
+
 		if (!this.root) { // FIXME: can this happen??
 			return this.loadAllBookVaults();
 		} else if (!this.root[vid] && this.getCurrentDeviceSetting().bookVaultPaths[vid]) { // try again
 			await this.loadAllBookVaults(vid);
 		}
 
-		if (!this.root[vid]) {
+		if (!this.root[vid]) {	//switch current book vault
 			const rawVaultPath = this.getBookVaultPath(vid);
 			if (rawVaultPath !== undefined) { // not deleted
 				new Notice(`当前书库(${vid})不存在:\n`+rawVaultPath); // TODO
@@ -855,19 +861,6 @@ export default class BookMasterPlugin extends Plugin {
 		utils.accumulateTreeCount(this.dispTree);
 		utils.sortBookTree(this.dispTree,this.settings.bookTreeSortAsc);
 	}
-
-	
-	// async updateCurrentBookVault() {
-	// 	if (!this.root) {	// first load
-	// 		this.root = {};
-	// 	}
-
-	// 	return this.loadBookVault(this.settings.currentBookVault).then(() => {
-	// 		return this.loadAllBookData().then(() => { // TODO: only load book of current vault??
-	// 			return this.updateDispTree();
-	// 		})
-	// 	})
-	// }
 
 	//#endregion
 
@@ -1001,7 +994,7 @@ export default class BookMasterPlugin extends Plugin {
 			if (book.lost) {
 				menu.addItem((item: any) =>
 				item
-					.setTitle("重定位文件(todo)")
+					.setTitle("重定位文件")
 					.setIcon("popup-open")
 					.onClick(()=>{
 						// TODO: relocate book
@@ -1176,6 +1169,30 @@ export default class BookMasterPlugin extends Plugin {
 			};
 	
 		}
+	}
+
+	// make sure folder has real path
+	createBookFolderContextMenu(menu: Menu, folder: BookFolder) {
+
+		if (!folder.vid) return;
+
+
+		if (this.settings.bookTreeSortType == BookTreeSortType.PATH && !Platform.isMobile) {
+			menu.addItem((item) =>
+			item
+				.setTitle("在系统资源管理器中显示")
+				.setIcon("popup-open")
+				.onClick(()=>{
+					// FIXME: http?
+					if (folder.path) {
+						utils.showBookLocationInSystem(
+							utils.normalizePath(this.getBookVaultPath(folder.vid),folder.path),
+						);
+					}					
+				})
+			)
+		}
+		
 	}
 
 
