@@ -113,7 +113,17 @@ export const supportBookExts = [
     "html"
 ];
 
-export const ext2type : {[ext:string]:any}= {
+
+export const BOOK_TYPES = [
+    "article",
+    "conference",
+    "thesis",
+    "web",
+    "movie",
+    "unknown",
+];
+
+export const EXT2TYPE : {[ext:string]:any}= {
     pdf: "paper",
     epub: "book",
     jpg: "image",

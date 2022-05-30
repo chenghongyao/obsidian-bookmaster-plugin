@@ -188,6 +188,10 @@ div.book-read-status-indicator.finished.active {
     background: rgb(20, 73, 27);
 }
 
+.book-setting-item  .dropdown {
+    padding: 3px 25px 3px 8px;
+    width: fit-content;
+}
 
 div.book-setting-note-indicator {
     position: relative;

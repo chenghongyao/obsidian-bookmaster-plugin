@@ -2,6 +2,19 @@
 
 <div>
     <div class="book-setting-item oneline">
+        <div class="book-setting-label">类型：</div>
+        <div class="book-setting-value-container">
+            <select class="dropdown book-type" v-model="book.meta.type" @change="onChangeBookType()" ref="bookTypeSelect">
+                <option v-for="(item,index) in BOOK_TYPES" 
+                    :key="index" 
+                    :value="item"
+                >
+                    {{item}}
+                </option>
+        </select>
+        </div>
+    </div>
+    <div class="book-setting-item oneline">
         <div class="book-setting-label">状态：</div>
         <div class="book-setting-value-container">
             <div class="book-read-status-indicator"   
@@ -56,6 +69,7 @@
 
 <script>
 import vArrayInput from "./v-array-input.vue"
+import {BOOK_TYPES} from "../constants"
 
 export default {
     components: {
@@ -77,7 +91,8 @@ export default {
                     value: "已读"
                 },
 
-            ]
+            ],
+            BOOK_TYPES: BOOK_TYPES
         }
     },
     methods: {
@@ -95,9 +110,15 @@ export default {
             this.book.meta.rating = newScore;
             this.$emit("change","rating");
         },
+        onChangeBookType() {
+            this.$emit("change","type");
+        },
         openNote() {
             this.$emit("open-note");
         }
+
+    },
+    created() {
 
     },
     computed: {

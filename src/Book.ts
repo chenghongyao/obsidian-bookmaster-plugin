@@ -1,7 +1,7 @@
 
 import * as utils from "./utils";
 import { normalizePath, TFile } from "obsidian";
-import { BookMetaMap, ext2type } from "./constants";
+import { BookMetaMap, EXT2TYPE } from "./constants";
 import { BookTab } from "./view/BookView";
 
 
@@ -168,7 +168,7 @@ export class Book extends AbstractBook {
             }
 
             if (this.meta.type === undefined) {
-                this.meta.type = ext2type[this.ext] || "unknown";
+                this.meta.type = EXT2TYPE[this.ext] || "unknown";
             }
 
             if ( BookMetaMap[this.meta.type]) {
