@@ -85,7 +85,7 @@ export class BookView extends ItemView {
 	}
 
 	async setState(state: any, result: ViewStateResult) {
-		// console.log("[BookView]set state")
+		// console.log("[BookView]set state",state);
 
 		if (!state.tabs) return;
 		const tabsState:Array<any> = state.tabs;

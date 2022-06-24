@@ -36,9 +36,11 @@ export default class BookMasterPlugin extends Plugin {
 
 		this.app.workspace.onLayoutReady(() => {
 			this.loadAllBookVaults(null,true).then(()=>{
+				this.updateDispTree();
+				this.loadRecentBooks();
+				new Notice("书库加载完成");
 			});
 
-			this.loadRecentBooks();
 		})
 
 		this.addRibbonIcon("library","BookExplorer",(evt) => {
@@ -165,12 +167,16 @@ export default class BookMasterPlugin extends Plugin {
 			"open-book": function(params: ObsidianProtocolData) {
 
 				if (params.fullpath) {
-					const book = self.getBookByFullPath(params.fullpath);
-					const state = {
-						aid: params.aid,
-						page: params.page, // TODO: currently support pdf only
-					};
-					self.openBook(book,false,state);
+					self.getBookByFullPath(params.fullpath).then((book) => {
+						const state = {
+							aid: params.aid,
+							page: params.page, // TODO: currently support pdf only
+						};
+						self.openBook(book,false,state);
+					}).catch((err) => {
+						new Notice(err);
+					});
+					
 				}
 				else if (params.bid) {
 					self.getBookById(params.bid).then((book) => {
@@ -179,7 +185,9 @@ export default class BookMasterPlugin extends Plugin {
 							page: params.page, // TODO: currently support pdf only
 						};
 						self.openBook(book,false,state);
-					})
+					}).catch((err) => {
+						new Notice(err);
+					});
 				}
 			},
 			"update-book-explorer": function(params: ObsidianProtocolData) {
@@ -555,6 +563,9 @@ export default class BookMasterPlugin extends Plugin {
 		}
 	}
 	
+	getCurrentBookVault() {
+		return this.settings.currentBookVault;
+	}
 	// FIXME: data file not ready
 	private async loadAllBookData() {
 		const dataFolder = this.app.vault.getAbstractFileByPath(this.getBookDataPath()) as TFolder;
@@ -701,7 +712,7 @@ export default class BookMasterPlugin extends Plugin {
 	async switchBookVault(vid: string) {
 		this.settings.currentBookVault = vid;
 		await this.saveSettings();
-		this.updateDispTree();
+		return this.updateDispTree();
 	}
 
 	private async loadBookVault(vid: string) {
@@ -715,9 +726,6 @@ export default class BookMasterPlugin extends Plugin {
 		const vaultName = this.getBookVaultName(vid);
 		if (!await utils.isFolderExists(vaultPath)) { // TODO: virtual vault
 			const err = `书库“${vaultName}(${vid}):${vaultPath}”不存在`;
-			if (vaultPath) {
-				new Notice(err,0); 
-			}
 			return Promise.reject(err);
 		}		
 
@@ -731,7 +739,11 @@ export default class BookMasterPlugin extends Plugin {
 
 	async loadAllBookVaults(vid: string = null, loadData: boolean = false) {
 
-		if (this.bookVaultLoading) return;
+		if (this.bookVaultLoading) {
+			await this.waitBookVaultLoading();
+			return;
+		}
+
 		this.bookVaultLoading = true;
 
 		new Notice("书库加载中...");
@@ -745,28 +757,29 @@ export default class BookMasterPlugin extends Plugin {
 				if (loadData) {
 					return this.loadAllBookData();
 				}
+			}).catch((err) => {
+				new Notice(err);
 			});
+
 		} else {
-			// load book file
+
+			// load book files
 			for(const vid in this.getCurrentDeviceSetting().bookVaultPaths) {
-				await this.loadBookVault(vid).catch(() => {
-					
+				await this.loadBookVault(vid).catch((err) => {
+					new Notice(err);
 				});
 			}
 
-			await this.loadBookVault(OB_BOOKVAULT_ID); // TODO: don't load this vault
-
+			// await this.loadBookVault(OB_BOOKVAULT_ID); // TODO: don't load this vault
 
 			// load book data
 			if (loadData) {
 				await this.loadAllBookData();
 			}
 
-
-			await this.updateDispTree();
+			console.log("book vaults root:",this.root,this.bookIdMap);
 		}
 
-		new Notice("书库加载完成");
 		this.bookVaultLoading = false;
 	}
 
@@ -793,14 +806,14 @@ export default class BookMasterPlugin extends Plugin {
 	
 	async updateDispTree() {
 
-		var vid = this.settings.currentBookVault;
-
-		if (!this.root) { // FIXME: can this happen??
-			return this.loadAllBookVaults();
-		} else if (!this.root[vid] && this.getCurrentDeviceSetting().bookVaultPaths[vid]) { // try again
+		var vid = this.getCurrentBookVault();
+		await this.waitBookVaultLoading();
+		
+		// TODO: avoid try twice
+		if (!this.root[vid] && this.getCurrentDeviceSetting().bookVaultPaths[vid]) { // try again
+			console.log(`try book vault ${vid}:${this.getCurrentDeviceSetting().bookVaultPaths[vid]} again`);
 			await this.loadAllBookVaults(vid);
 		}
-
 		if (!this.root[vid]) {	//switch current book vault
 			const rawVaultPath = this.getBookVaultPath(vid);
 			if (rawVaultPath !== undefined) { // not deleted
@@ -819,7 +832,7 @@ export default class BookMasterPlugin extends Plugin {
 			}
 	
 			if (!vid) {
-				throw "没有可用书库";
+				return Promise.reject("没有可用书库");
 			} else {
 				this.settings.currentBookVault = vid;
 				await this.saveSettings();
@@ -868,18 +881,20 @@ export default class BookMasterPlugin extends Plugin {
 	//#region Book
 
 	private async getBookByPath(vid: string, path: string) {
+		await this.waitBookVaultLoading();
+
 		const entry = `${vid}:${path}`;
-		if (this.root) {	
-			return this.bookMap[entry];
+		const book = this.bookMap[entry];
+		if (book) {
+			return book
 		} else {
-			return this.loadAllBookVaults().then(() => {
-				return this.bookMap[entry];
-			});
+			return Promise.reject("cant find book: "+entry);
 		}
 	}
 
-	private getBookByFullPath(fullpath: string): Book {
-		if (!this.root) return;
+	async getBookByFullPath(fullpath: string): Promise<Book> {
+
+		await this.waitBookVaultLoading();
 
 		for (var vid in this.root) {
 			const vaultPath = this.getBookVaultPath(vid);
@@ -892,14 +907,33 @@ export default class BookMasterPlugin extends Plugin {
 		}
 	}
 
-	// TODO: invalid bid?
-	async getBookById(bid: string) {
-		if (this.root) {	 
-			return this.bookIdMap[bid];
+	async waitBookVaultLoading(): Promise<void>{
+		const self = this;
+		if (!this.root) {
+			return this.loadAllBookVaults(null,true);
 		} else {
-			return this.loadAllBookVaults().then(() => {
-				return this.bookIdMap[bid];
+			return new Promise((resolve) => {
+				const wait = () => {
+					if (self.bookVaultLoading) {
+						setTimeout(wait,100);
+					} else {
+						resolve();
+	
+					}
+				}	
+				wait();
 			});
+		}
+		
+	}
+
+	async getBookById(bid: string) {
+		await this.waitBookVaultLoading();		
+		const book = this.bookIdMap[bid];
+		if (book) {
+			return book
+		} else {
+			return Promise.reject("cant find bid: "+bid);
 		}
 	}
 

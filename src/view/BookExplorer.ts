@@ -40,7 +40,7 @@ export class BookExplorer extends ItemView {
 				if (!self.plugin.settings.bookTreeSortAsc) {
 					self.plugin.settings.bookTreeSortAsc = true;
 					await self.plugin.saveSettings(); 
-					self.plugin.updateDispTree();
+					return self.plugin.updateDispTree();
 				}
 			});
 			if (self.plugin.settings.bookTreeSortAsc) {
@@ -55,7 +55,7 @@ export class BookExplorer extends ItemView {
 				if (self.plugin.settings.bookTreeSortAsc) {
 					self.plugin.settings.bookTreeSortAsc = false;
 					await self.plugin.saveSettings(); 
-					self.plugin.updateDispTree();
+					return self.plugin.updateDispTree();
 				}
 			});
 			if (!self.plugin.settings.bookTreeSortAsc) {
@@ -71,7 +71,7 @@ export class BookExplorer extends ItemView {
 				if (self.plugin.settings.bookTreeSortType !== BookTreeSortType.PATH) {
 					self.plugin.settings.bookTreeSortType = BookTreeSortType.PATH;
 					await self.plugin.saveSettings();
-					self.plugin.updateDispTree();
+					return self.plugin.updateDispTree();
 				}
 			});
 			if (self.plugin.settings.bookTreeSortType === BookTreeSortType.PATH)
@@ -85,7 +85,7 @@ export class BookExplorer extends ItemView {
 				if (self.plugin.settings.bookTreeSortType !== BookTreeSortType.TAG) {
 					self.plugin.settings.bookTreeSortType = BookTreeSortType.TAG;
 					await self.plugin.saveSettings();
-					self.plugin.updateDispTree();
+					return self.plugin.updateDispTree();
 				}
 			});
 
@@ -101,7 +101,7 @@ export class BookExplorer extends ItemView {
 				if (self.plugin.settings.bookTreeSortType !== BookTreeSortType.AUTHOR) {
 					self.plugin.settings.bookTreeSortType = BookTreeSortType.AUTHOR;
 					await self.plugin.saveSettings();
-					self.plugin.updateDispTree();
+					return self.plugin.updateDispTree();
 				}
 			});
 
@@ -117,7 +117,7 @@ export class BookExplorer extends ItemView {
 				if (self.plugin.settings.bookTreeSortType !== BookTreeSortType.PUBLISH_YEAR) {
 					self.plugin.settings.bookTreeSortType = BookTreeSortType.PUBLISH_YEAR;
 					await self.plugin.saveSettings();
-					self.plugin.updateDispTree();
+					return self.plugin.updateDispTree();
 				}
 			});
 
@@ -145,10 +145,12 @@ export class BookExplorer extends ItemView {
         this.header = new NavHeader(this,this.contentEl);
 
         this.header.addAction("reset","更新",(evt) => {
-			this.plugin.loadAllBookVaults().then(() => {
-				new Notice("已更新");
-            }).catch((err) => {
-				new Notice("书库加载失败,重新检查书库路径\n"+err);
+			this.plugin.loadAllBookVaults(this.plugin.getCurrentBookVault()).then(() => {
+				return this.plugin.updateDispTree()
+            }).then(() => {
+				new Notice("当前书库已更新");
+			}).catch((err) => {
+				new Notice("书库加载失败：\n"+err);
 				this.leaf.detach();
 			})
 		});

@@ -81,25 +81,25 @@ export class BookMasterSettingTab extends PluginSettingTab {
         );
 
 
-        new Setting(containerEl)
-        .setName("主书库名")
-        .setDesc("主书库名,为空着使用书库文件夹名")
-        .addText((text) =>
-            text.setValue(commonSetting.bookVaultNames["00"]).onChange(async (value) => {
-                commonSetting.bookVaultNames["00"] = value;
-                await this.plugin.saveSettings();
-            })
-        );
+        // new Setting(containerEl)
+        // .setName("主书库名")
+        // .setDesc("主书库名,为空着使用书库文件夹名")
+        // .addText((text) =>
+        //     text.setValue(commonSetting.bookVaultNames["00"]).onChange(async (value) => {
+        //         commonSetting.bookVaultNames["00"] = value;
+        //         await this.plugin.saveSettings();
+        //     })
+        // );
 
-        new Setting(containerEl)
-        .setName("主书库路径")
-        .setDesc("必须使用绝对路径(可用@表示ob库地路径)")
-        .addText((text) =>
-            text.setValue(deviceSetting.bookVaultPaths["00"]).onChange(async (value) => {
-                deviceSetting.bookVaultPaths["00"] = value;
-                await this.plugin.saveSettings();
-            })
-        );
+        // new Setting(containerEl)
+        // .setName("主书库路径")
+        // .setDesc("必须使用绝对路径(可用@表示ob库地路径)")
+        // .addText((text) =>
+        //     text.setValue(deviceSetting.bookVaultPaths["00"]).onChange(async (value) => {
+        //         deviceSetting.bookVaultPaths["00"] = value;
+        //         await this.plugin.saveSettings();
+        //     })
+        // );
 
 
         
@@ -176,7 +176,7 @@ export class BookMasterSettingTab extends PluginSettingTab {
         new Setting(containerEl)
         .setName("PDF区域标注模板")
         .addTextArea((text) => {
-            text.setValue(commonSetting.annotationTemplate.pdf.textAnnotation).onChange(async (value) => {
+            text.setValue(commonSetting.annotationTemplate.pdf.regionAnnotation).onChange(async (value) => {
                 commonSetting.annotationTemplate.pdf.regionAnnotation = value;
                 await this.plugin.saveSettings();
             });
@@ -191,12 +191,13 @@ export class BookMasterSettingTab extends PluginSettingTab {
                 .setButtonText("+")
                 .onClick(async () => {
                     var vid: string = null;
-                    for (var v = 1; v < 99; v++) {
+                    for (var v = 0; v < 99; v++) {
                         vid = v < 10 ? ('0' + v.toString()) : v.toString();
                         if (commonSetting.bookVaultNames[vid] == undefined) {
                             break
                         }
                     }
+
                     if (!vid) {
                         new Notice("无法添加更多书库")
                         return;
@@ -215,7 +216,6 @@ export class BookMasterSettingTab extends PluginSettingTab {
         
 
         for (var vid in commonSetting.bookVaultNames) {
-            if (vid === "00") continue;
             this.addBookVaultSetting(vid);
         }
 
