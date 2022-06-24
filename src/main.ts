@@ -35,7 +35,7 @@ export default class BookMasterPlugin extends Plugin {
 		this.recentBooks = new BookFolder(null,null,"RecentBook","");
 
 		this.app.workspace.onLayoutReady(() => {
-			this.loadAllBookVaults(null,true).then(()=>{
+			this.waitBookVaultLoading().then(()=>{
 				this.updateDispTree();
 				this.loadRecentBooks();
 				new Notice("书库加载完成");

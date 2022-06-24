@@ -33,6 +33,7 @@ module.exports = {
     externals: {
         obsidian: 'obsidian',
         child_process: 'child_process',
+        electron: 'electron',
     },
     plugins: [
         new VueLoaderPlugin(),

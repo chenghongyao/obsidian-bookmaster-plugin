@@ -1,7 +1,6 @@
 import { App, Platform, TFile, TFolder } from "obsidian";
 import { AbstractBook, Book, BookFolder } from "./Book";
 
-import {exec} from "child_process";
 
 export const app: App = (window as any).app as App;
 export const appId: string = (app as any).appId as string;
@@ -322,7 +321,7 @@ export async function openMdFileInObsidian(path: string) {
 export function showBookLocationInSystem(path: string) {
 
     if (Platform.isDesktop) {
-        // var exec = require('child_process').exec;
+        var exec = require('child_process').exec;
         exec(`explorer.exe /select,"${path}"`)
         return
     } else if (Platform.isMacOS) {
@@ -365,4 +364,19 @@ export function encodeTemplate(template: string, params: {[key: string]:string})
         template = template.replace(patten,params[key]);
     }
     return template;
+}
+
+
+export async function pickFolder(): Promise<string>{
+    if (Platform.isDesktop) {
+        return require("electron").remote.dialog.showOpenDialog({properties:["openDirectory"]}).then((res: any) => {
+            if (res.canceled) {
+                return Promise.reject("pick folder canceled")
+            } else {
+                return res.filePaths[0] as string;
+            }
+        });
+    } else {
+        return Promise.reject("pick folder unsupported")
+    }
 }

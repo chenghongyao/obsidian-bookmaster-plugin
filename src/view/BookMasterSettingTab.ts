@@ -1,4 +1,4 @@
-import { App, Notice, PluginSettingTab, Setting } from "obsidian";
+import { App, Notice, Platform, PluginSettingTab, Setting, TextComponent } from "obsidian";
 import BookMasterPlugin from "src/main";
 import * as utils from '../utils'
 
@@ -18,6 +18,8 @@ export class BookMasterSettingTab extends PluginSettingTab {
         const commonSetting = this.plugin.settings;
     
         const bookVaultSetting = new Setting(this.containerEl);
+        var pathComp: TextComponent = null;
+
         bookVaultSetting
         .setName("vid:"+vid)
         .addSearch((text) => {
@@ -27,15 +29,29 @@ export class BookMasterSettingTab extends PluginSettingTab {
             })
         })
         .addSearch((text) => {
-            text.setValue(deviceSetting.bookVaultPaths[vid]).onChange(async (value) => {
+            pathComp = text;
+            text.setValue(deviceSetting.bookVaultPaths[vid]).onChange(async (value) => {                
                 deviceSetting.bookVaultPaths[vid] = value;
                 await this.plugin.saveSettings();
             })
         })
-        .addExtraButton((btn) => {
+
+        if (Platform.isDesktop) {
+            bookVaultSetting.addButton((btn) => {
+                btn.setIcon("folder");
+                btn.onClick(() => {
+                    utils.pickFolder().then((path) => {
+                        pathComp.setValue(path);
+                        deviceSetting.bookVaultPaths[vid] = path;
+                        return this.plugin.saveSettings();
+                    })
+                })
+            })
+        }
+       
+        bookVaultSetting.addButton((btn) => {
             btn.setIcon("cross");
             btn.onClick(async () => {
-
                 this.plugin.removeBookVault(vid);
                 bookVaultSetting.settingEl.remove();
             })
@@ -80,29 +96,6 @@ export class BookMasterSettingTab extends PluginSettingTab {
             })
         );
 
-
-        // new Setting(containerEl)
-        // .setName("主书库名")
-        // .setDesc("主书库名,为空着使用书库文件夹名")
-        // .addText((text) =>
-        //     text.setValue(commonSetting.bookVaultNames["00"]).onChange(async (value) => {
-        //         commonSetting.bookVaultNames["00"] = value;
-        //         await this.plugin.saveSettings();
-        //     })
-        // );
-
-        // new Setting(containerEl)
-        // .setName("主书库路径")
-        // .setDesc("必须使用绝对路径(可用@表示ob库地路径)")
-        // .addText((text) =>
-        //     text.setValue(deviceSetting.bookVaultPaths["00"]).onChange(async (value) => {
-        //         deviceSetting.bookVaultPaths["00"] = value;
-        //         await this.plugin.saveSettings();
-        //     })
-        // );
-
-
-        
 
         new Setting(containerEl)
         .setName("显示的文件格式")
