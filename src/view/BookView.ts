@@ -325,9 +325,7 @@ export class BookView extends ItemView {
 			annoColor = `${r},${g},${b}`;
 		}
 
-		
 
-		
 		const params = {
 			url: link,
 			page: annoPage.toString(),
@@ -336,7 +334,7 @@ export class BookView extends ItemView {
 			width: clipWidth.toString(),
 			height: clipHeight.toString(),
 			img: imgName,
-			comment: comment
+			comment: comment, // TODO: add all book meta fields
 		}
 
 		const result = utils.encodeTemplate(template,params)
@@ -347,6 +345,19 @@ export class BookView extends ItemView {
 		} else {
 			new Notice("标注已复制",600);
 		}
+	}
+
+	private async onCopyPageLink(book: Book,page: number) {
+		const link = `obsidian://bookmaster?type=open-book&bid=${book.bid}&page=${page}`;
+
+		const params = {
+			url: link,
+			page: page.toString(),
+		}
+		const result = utils.encodeTemplate(this.plugin.settings.currentPageLinkTemplate,params)
+
+		navigator.clipboard.writeText(result);
+		new Notice("链接已复制",600);
 	}
 
 	private async onSaveAnnotaions(viewer: DocumentViewer) {
@@ -428,7 +439,26 @@ export class BookView extends ItemView {
 	}
 
 	async onMoreOptionsMenu(menu: Menu) {
+
+		menu.addItem((item) => {
+			item.setIcon("link");
+			item.setTitle("复制当前页链接");
+			item.onClick(() => {
+				this.onCopyPageLink(this.currentTab.book,this.currentTab.viewer.getState().page)
+			})
+		})
+		menu.addSeparator();
+
 		this.plugin.createBookContextMenu(menu,this.currentTab.book);
+
+		menu.addSeparator();
+		menu.addItem((item) => {
+			item.setIcon("cross");
+			item.setTitle("关闭");
+			item.onClick(() => {
+				this.leaf.detach();
+			})
+		})
 	}
 
 

@@ -39,6 +39,7 @@ export interface BookMasterSettings {
             regionAnnotation: string;    
         }
     }
+    currentPageLinkTemplate: string;
 }
 
 export const DEFAULT_SETTINGS: BookMasterSettings = {
@@ -68,5 +69,6 @@ export const DEFAULT_SETTINGS: BookMasterSettings = {
             textAnnotation: "[{{content}}]({{url}})\n{{page}}\n{{comment}}\n\n",
             regionAnnotation: "![[{{img}}|{{width}}]]\n{{page}}\n{{comment}}\n\n"
         }
-    }
+    },
+    currentPageLinkTemplate: "[**P{{page}}**]({{url}})\n"
 };
