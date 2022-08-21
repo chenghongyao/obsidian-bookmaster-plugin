@@ -32,7 +32,7 @@ export class BookProject extends ItemView {
 
 
 	openContextMenu(evt: MouseEvent, book:Book) {
-		const menu = new Menu(this.app);
+		const menu = new Menu();
         this.plugin.createBookContextMenu(menu,book);
 		menu.showAtMouseEvent(evt);
 	}

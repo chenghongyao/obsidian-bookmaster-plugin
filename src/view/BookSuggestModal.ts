@@ -65,7 +65,7 @@ export default class BookSuggestModal extends SuggestModal<Book> {
 
 	onChooseSuggestion(item: Book, evt: MouseEvent | KeyboardEvent) {
 		if (evt instanceof MouseEvent && evt.button === 2) {
-			const menu = new Menu(this.app);
+			const menu = new Menu();
 			this.plugin.createBookContextMenu(menu,item);
 			menu.showAtMouseEvent(evt);
 		} else {

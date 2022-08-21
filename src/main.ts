@@ -394,7 +394,7 @@ export default class BookMasterPlugin extends Plugin {
 		// add item in more options
 		this.register(
 			around(MarkdownView.prototype, {
-				onMoreOptionsMenu(next) {
+				onPaneMenu(next) {
 					return function (menu: Menu) {
 						// book meta file
 						if (utils.getPropertyValue(this.file,"bm-meta")) { 

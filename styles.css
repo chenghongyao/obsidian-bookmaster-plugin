@@ -164,6 +164,9 @@ div.book-setting-value-container {
 div.book-setting-value-container.full {
     flex: 1;
 }
+div.book-setting-value-container textarea.book-desc-textarea {
+    height: 8em !important;
+}
 div.book-read-status-indicator {
     padding: 0px 6px;
     font-size: 11pt;

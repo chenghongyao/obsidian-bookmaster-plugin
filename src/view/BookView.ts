@@ -438,7 +438,7 @@ export class BookView extends ItemView {
 		});
 	}
 
-	async onMoreOptionsMenu(menu: Menu) {
+	async onPaneMenu(menu: Menu) {
 
 		menu.addItem((item) => {
 			item.setIcon("link");

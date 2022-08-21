@@ -115,6 +115,7 @@ export const supportBookExts = [
 
 
 export const BOOK_TYPES = [
+    "book",
     "article",
     "conference",
     "thesis",
@@ -124,7 +125,7 @@ export const BOOK_TYPES = [
 ];
 
 export const EXT2TYPE : {[ext:string]:any}= {
-    pdf: "paper",
+    pdf: "book",
     epub: "book",
     jpg: "image",
     png: "image",

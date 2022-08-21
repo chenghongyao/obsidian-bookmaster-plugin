@@ -30,7 +30,7 @@ export class RecentBookView extends ItemView {
 
 
 	openContextMenu(evt: MouseEvent, book:Book) {
-		const menu = new Menu(this.app);
+		const menu = new Menu();
 
 		menu.addItem((item) => {
             item
@@ -45,7 +45,7 @@ export class RecentBookView extends ItemView {
 		menu.showAtMouseEvent(evt);
 	}
 
-    onHeaderMenu(menu: Menu): void {
+    onPaneMenu(menu: Menu, source: 'more-options' | 'tab-header' | string): void {
         
         menu.addItem((item) => {
             item
@@ -54,7 +54,7 @@ export class RecentBookView extends ItemView {
                 this.plugin.resetRecentBooks();
             })
         });
-        super.onHeaderMenu(menu);
+        super.onPaneMenu(menu, source);
     }
 
     

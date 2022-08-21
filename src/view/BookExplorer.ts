@@ -31,7 +31,7 @@ export class BookExplorer extends ItemView {
 
 
 	private openSortContextMenu(evt: MouseEvent) {
-		const menu = new Menu(this.app);
+		const menu = new Menu();
 		const self = this;
 		menu.addItem((item) => {
 			item
@@ -130,13 +130,13 @@ export class BookExplorer extends ItemView {
 	}
 
 	private openBookContextMenu(evt: MouseEvent, book: Book) {
-        const menu = new Menu(this.app);
+        const menu = new Menu();
 		this.plugin.createBookContextMenu(menu,book);
 		menu.showAtMouseEvent(evt);
     }
 
 	private openBookFolderContextMenu(evt: MouseEvent, folder: BookFolder) {
-        const menu = new Menu(this.app);
+        const menu = new Menu();
 		this.plugin.createBookFolderContextMenu(menu,folder);
 		menu.showAtMouseEvent(evt);
     }
@@ -163,7 +163,7 @@ export class BookExplorer extends ItemView {
 		});
 
 		this.header.addAction("gear","设置",(evt) => {
-			const menu = new Menu(this.app);
+			const menu = new Menu();
 			this.createSettingMenu(menu)
 			menu.showAtMouseEvent(evt);
 
@@ -176,7 +176,7 @@ export class BookExplorer extends ItemView {
 			.setTitle("切换书库")
 			.setIcon("arrow-left-right")
 			.onClick((e) => {
-				const m = new Menu(this.app);
+				const m = new Menu();
 				this.createOptionsMenu(m);
 				m.showAtMouseEvent(e as MouseEvent);
 
@@ -201,16 +201,12 @@ export class BookExplorer extends ItemView {
 		}
 		
 	}
-	onMoreOptionsMenu(menu: Menu): void {
-		this.createOptionsMenu(menu);
-
-	}
-
-	onHeaderMenu(menu: Menu): void {
+	onPaneMenu(menu: Menu, source: 'more-options' | 'tab-header' | string): void {
 		this.createOptionsMenu(menu);
 		menu.addSeparator();
-		super.onHeaderMenu(menu);
+		super.onPaneMenu(menu, source);
 	}
+
 
     async onOpen() {
         console.log("Book Explorer Open");

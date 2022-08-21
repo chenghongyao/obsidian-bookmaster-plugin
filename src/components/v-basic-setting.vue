@@ -56,6 +56,14 @@
         </div>
     </div>
     <div class="book-setting-item">
+        <div class="book-setting-label">描述：</div>
+        <div class="book-setting-value-container">
+            <textarea style="width: 100%;" v-model="book.meta.desc" class="book-desc-textarea"
+            @change="$emit('change','desc')"
+            @keypress="$emit('change','desc')" />
+        </div>
+    </div>
+    <div class="book-setting-item">
         <div class="book-setting-label">笔记：<div v-if="book.meta.note" @click="openNote" class="book-setting-note-indicator"></div></div>
         <div class="book-setting-value-container">
             <input style="width: 100%" type="text" v-model="book.meta.note" 
