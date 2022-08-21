@@ -1,4 +1,5 @@
 import { App, Notice, Platform, PluginSettingTab, Setting, TextComponent } from "obsidian";
+import { DocumentViewerTheme } from "../documentViewers/documentViewer";
 import BookMasterPlugin from "src/main";
 import * as utils from '../utils'
 
@@ -175,6 +176,27 @@ export class BookMasterSettingTab extends PluginSettingTab {
             });
         });
 
+
+        new Setting(containerEl)
+        .setName("阅读器主题")
+        .setDesc("背景色需要重新打开阅读器生效")
+        .addDropdown((dp) => {
+            dp.addOption(DocumentViewerTheme.Dark,"深色");
+            dp.addOption(DocumentViewerTheme.DarkYellow,"深色(羊皮纸)");
+            dp.addOption(DocumentViewerTheme.DarkGreen,"深色(护眼绿)");
+            dp.addOption(DocumentViewerTheme.Light,"浅色");
+            dp.addOption(DocumentViewerTheme.LightYellow,"浅色(羊皮纸)");
+            dp.addOption(DocumentViewerTheme.LightGreen,"浅色(护眼绿)");
+
+            dp.setValue(commonSetting.documentViewerTheme);
+
+            dp.onChange(async (value) => {
+                commonSetting.documentViewerTheme = value as DocumentViewerTheme;
+                this.plugin.setDocumentViewerTheme(commonSetting.documentViewerTheme);
+                await this.plugin.saveSettings();
+                
+            })
+        })
 
         new Setting(containerEl)
             .setHeading()

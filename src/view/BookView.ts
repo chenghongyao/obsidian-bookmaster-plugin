@@ -2,15 +2,15 @@ import { ItemView, Menu, Notice, ViewStateResult, WorkspaceLeaf } from "obsidian
 import { Book } from "src/Book";
 import * as utils from '../utils'
 
-import { DocumentViewer } from "../documentViewer/documentViewer";
-import { PDFTronViewer } from "../documentViewer/PDFTronViewer";
+import { DocumentViewer, DocumentViewerTheme } from "../documentViewers/documentViewer";
+import { PDFTronViewer } from "../documentViewers/PDFTronViewer";
 import BookMasterPlugin from "src/main";
-import { EpubJSViewer } from "../documentViewer/EPUBJSViewer";
-import { HtmlViewer } from "../documentViewer/HtmlViewer";
-import { TxtViewer } from "../documentViewer/TxtViewer";
-import { ImageViewer } from "../documentViewer/ImageViewer";
-import { AudioViewer } from "../documentViewer/AudioViewer";
-import { VideoViewer } from "../documentViewer/VideoViewer";
+import { EpubJSViewer } from "../documentViewers/EPUBJSViewer";
+import { HtmlViewer } from "../documentViewers/HtmlViewer";
+import { TxtViewer } from "../documentViewers/TxtViewer";
+import { ImageViewer } from "../documentViewers/ImageViewer";
+import { AudioViewer } from "../documentViewers/AudioViewer";
+import { VideoViewer } from "../documentViewers/VideoViewer";
 
 import { ImageExts,AudioExts, VideoExts } from "../constants";
 
@@ -113,6 +113,12 @@ export class BookView extends ItemView {
 			}
 		}
 
+	}
+
+	setTheme(theme: DocumentViewerTheme) {
+		this.bookTabs.map((tab) => {
+			tab.viewer.setTheme(theme);
+		})
 	}
 
     private setTitle(title: string) {
@@ -394,7 +400,8 @@ export class BookView extends ItemView {
 				return this.plugin.getBookData(book).then((data: ArrayBuffer) => {
 					const tab = this.addBookTab(bid,book);
 					const workerPath = this.plugin.getCurrentDeviceSetting().bookViewerWorkerPath + "//webviewer";
-					tab.viewer = new PDFTronViewer(bid,tab.container,workerPath,this.callbacks);
+					console.log("default theme:",this.plugin.settings.documentViewerTheme)
+					tab.viewer = new PDFTronViewer(bid,tab.container,workerPath,this.plugin.settings.documentViewerTheme,this.callbacks);
 					tab.viewer.show(data,state,book.ext,annotations);
 				});
 			

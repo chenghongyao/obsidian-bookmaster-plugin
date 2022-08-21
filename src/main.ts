@@ -13,6 +13,7 @@ import { BookView, VIEW_TYPE_BOOK_VIEW } from "./view/BookView";
 import {BookMasterSettingTab} from "./view/BookMasterSettingTab"
 import { RecentBookView, VIEW_TYPE_RECENT_BOOKS } from "./view/RecentBookView";
 import RelocateBookModal from "./view/RelocateBookModal";
+import { DocumentViewerTheme } from "./documentViewers/documentViewer";
 
 export default class BookMasterPlugin extends Plugin {
 	settings: BookMasterSettings;
@@ -118,7 +119,6 @@ export default class BookMasterPlugin extends Plugin {
 		} else {
 			// TODO: activate one
 			const view = this.app.workspace.getActiveViewOfType(BookView);
-			console.log(view);
 			if (view) {
 				leaf = view.leaf;
 			} else {
@@ -221,10 +221,12 @@ export default class BookMasterPlugin extends Plugin {
 			if (!url) continue;
 			const bid = url.searchParams.get("bid");
 			if (!url) continue;
-			const book = await this.getBookById(bid);
-			if (book) {
+			this.getBookById(bid).then((book) => {
 				this.recentBooks.push(book);
-			}	
+			}).catch((res) => {
+				console.warn(res);
+			})
+		
 		} while(item)
 	}
 
@@ -1264,7 +1266,7 @@ export default class BookMasterPlugin extends Plugin {
 				this.app.workspace.revealLeaf(book.tab.bookview.leaf);
 				book.tab.bookview.showBookTab(book.tab);
 			} else {
-	
+
 				return this.activateView(VIEW_TYPE_BOOK_VIEW,"center",true,newPanel).then((view: BookView) => {
 					return this.getBookId(book).then((bid) => {
 						this.appendRecentBook(book);
@@ -1283,6 +1285,14 @@ export default class BookMasterPlugin extends Plugin {
 			return this.getBookId(book).then((bid) => {
 				this.appendRecentBook(book);
 			});
+		}
+	}
+
+	setDocumentViewerTheme(theme: DocumentViewerTheme) {
+		const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_BOOK_VIEW);
+		for (const leaf of leaves) {
+			const view = leaf.view as BookView;
+			view.setTheme(theme);
 		}
 	}
 

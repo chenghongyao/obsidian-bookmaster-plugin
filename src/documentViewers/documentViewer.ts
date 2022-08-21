@@ -25,7 +25,7 @@ export abstract class DocumentViewer {
 		},3000,true);
     }
 
-    setTheme(theme: string) {
+    setTheme(theme: DocumentViewerTheme) {
         
     }
 
@@ -64,5 +64,15 @@ export abstract class DocumentViewer {
     abstract show(data: ArrayBuffer | string,state?: any, ext?: string, annotations?: string): Promise<void>;
     abstract closeDocument(): Promise<void>;
     abstract getState(): any;
+
+}
+
+export enum DocumentViewerTheme {
+    Dark = "dark",
+    DarkYellow = "dark-yellow",
+    DarkGreen = "dark-green",
+    Light = "light",
+    LightYellow = "light-yellow",
+    LightGreen = "light-green",
 
 }

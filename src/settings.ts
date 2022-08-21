@@ -1,6 +1,7 @@
 
 import { AudioExts, ImageExts, MAIN_BOOKVAULT_ID, OfficeExts, VideoExts } from "./constants"; 
 import { BookTreeSortType } from "./Book";
+import { DocumentViewerTheme } from "./documentViewers/documentViewer";
 
 export interface DeviceSetting {
 	deviceName: string;
@@ -19,6 +20,7 @@ export interface BookMasterSettings {
     deviceSetting: {[appId:string]:DeviceSetting};
     dataPath: string;
 
+    documentViewerTheme: DocumentViewerTheme;
     showBookExts: Array<string>;
 
     currentBookVault: string;
@@ -46,6 +48,7 @@ export const DEFAULT_SETTINGS: BookMasterSettings = {
     deviceSetting: {},
     dataPath: "bookmaster",
 
+    documentViewerTheme: DocumentViewerTheme.Dark,
 	showBookExts: ["pdf", "epub","txt","html",
     ...OfficeExts,
     ...ImageExts,

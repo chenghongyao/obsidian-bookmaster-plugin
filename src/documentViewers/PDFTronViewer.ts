@@ -1,4 +1,4 @@
-import { DocumentViewer } from "./documentViewer";
+import { DocumentViewer, DocumentViewerTheme } from "./documentViewer";
 import WebViewer, { WebViewerInstance } from "@pdftron/webviewer";
 import { loadPdfJs, Notice } from "obsidian";
 import { ImageExts } from "../constants";
@@ -37,7 +37,7 @@ export class PDFTronViewer extends DocumentViewer {
 
 	private data: ArrayBuffer;
 
-    constructor(bid: string, container: HTMLElement, workerPath: string, callbacks?: any) {
+    constructor(bid: string, container: HTMLElement, workerPath: string, theme: DocumentViewerTheme, callbacks?: any) {
         super(bid,container,callbacks);
 
         this.workerPath = workerPath;
@@ -131,8 +131,10 @@ export class PDFTronViewer extends DocumentViewer {
         WebViewer({
             path: this.workerPath,
             config: this.workerPath+"/config.js",
+
             custom: JSON.stringify({
                 id: this.viewerId,
+				theme: this.getThemeData(theme),
             }),
             preloadWorker: "pdf",
         },this.container)
@@ -151,9 +153,32 @@ export class PDFTronViewer extends DocumentViewer {
 		return this.xfdfDoc ? new XMLSerializer().serializeToString(this.xfdfDoc) : "";
 	}
 
+	getThemeData(theme: DocumentViewerTheme) {
+		var th,bgcolor;
+		if (theme.startsWith("dark")) {
+			th = "dark";
+		} else if (theme.startsWith("light")) {
+			th = "light";
+		} else {
+			th = "light"
+		}
 
-	setTheme(theme: string): void {
-		this.postViewerWindowMessage("setTheme",theme);
+		if (theme.endsWith("-yellow")) {
+			bgcolor = "rgb(242,235,217)";
+		} else if (theme.endsWith("-green")) {
+			bgcolor = "rgb(205,222,194)";
+		} else {
+			bgcolor = "rgb(255,255,255)";
+		}
+
+		return {
+			theme: th,
+			bgcolor: bgcolor
+		}
+	}
+
+	setTheme(theme: DocumentViewerTheme): void {
+		this.postViewerWindowMessage("setTheme",this.getThemeData(theme));
 	}
 
 	private parseXfdfString(xfdfString: string) {
