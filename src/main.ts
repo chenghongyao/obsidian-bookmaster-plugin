@@ -165,21 +165,18 @@ export default class BookMasterPlugin extends Plugin {
 			// 		new Notice("标注链接参数错误");
 			// 	}
 			"open-book": function(params: ObsidianProtocolData) {
-
-				if (params.fullpath) {
-					self.getBookByFullPath(params.fullpath).then((book) => {
-						const state = {
-							aid: params.aid,
-							page: params.page, // TODO: currently support pdf only
-						};
-						self.openBook(book,false,state);
-					}).catch((err) => {
-						new Notice(err);
-					});
-					
+				
+				let bookPromise: Promise<Book>;
+				if (params.bid) {
+					bookPromise = self.getBookById(params.bid)
+				} else if (params.vid && params.bpath) {
+					bookPromise = self.getBookByPath(params.vid, params.bpath)
+				} else if (params.fullpath) {
+					bookPromise = self.getBookByFullPath(params.fullpath);
 				}
-				else if (params.bid) {
-					self.getBookById(params.bid).then((book) => {
+
+				if (bookPromise) {
+					bookPromise.then((book) => {
 						const state = {
 							aid: params.aid,
 							page: params.page, // TODO: currently support pdf only
@@ -192,6 +189,25 @@ export default class BookMasterPlugin extends Plugin {
 			},
 			"update-book-explorer": function(params: ObsidianProtocolData) {
 				self.updateDispTree();
+			},
+			"basic-book-setting": function(params: ObsidianProtocolData) {
+
+				let bookPromise: Promise<Book>;
+				if (params.bid) {
+					bookPromise = self.getBookById(params.bid)
+				} else if (params.vid && params.bpath) {
+					bookPromise = self.getBookByPath(params.vid, params.bpath)
+				} else if (params.fullpath) {
+					bookPromise = self.getBookByFullPath(params.fullpath);
+				}
+
+				if (bookPromise) {
+					bookPromise.then((book: Book) => {
+						new BasicBookSettingModal(self.app,self,book).open();
+					}).catch((err: string) => {
+						new Notice(err);
+					});
+				}
 			}
 		}
 
@@ -886,7 +902,7 @@ export default class BookMasterPlugin extends Plugin {
 		await this.waitBookVaultLoading();
 
 		const entry = `${vid}:${path}`;
-		const book = this.bookMap[entry];
+		const book = this.bookMap[entry] as Book;
 		if (book) {
 			return book
 		} else {
