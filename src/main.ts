@@ -13,7 +13,7 @@ import BasicBookSettingModal from "./view/BasicBookSettingModal";
 
 // TODO: wait for book vault setup
 // TODO; set timer
-
+// TODO: description 放正文
 
 export default class BookMasterPlugin extends Plugin {
 	
@@ -27,6 +27,12 @@ export default class BookMasterPlugin extends Plugin {
     async onload() {
 
 		await this.loadSettings();
+		
+		// book vault manage
+		this.bookVaultManager = new BookVaultManager(this);
+		this.app.workspace.onLayoutReady(() => {
+			this.bookVaultManager.update();	
+		});
 
 		// `registe`r views
 		this.safeRegisterView(VIEW_TYPE_BOOK_EXPLORER,leaf => new BookExplorer(leaf,this));
@@ -68,9 +74,8 @@ export default class BookMasterPlugin extends Plugin {
 		})
 		// this.app.workspace.on("")
 
-		// book vault manage
-		this.bookVaultManager = new BookVaultManager(this);
-		this.bookVaultManager.update();	
+	
+		
 		
 		this.registerProtocalHandler();
     }
@@ -78,36 +83,15 @@ export default class BookMasterPlugin extends Plugin {
 	private registerProtocalHandler() {
 		const self = this;
 		const obProtocalHandler: any = {
-			// "annotation": function(params: ObsidianProtocolData) {
-			// 	const bid = params.bid;
-			// 	const aid = params.aid;
-			// 	if (bid && aid) {
-			// 		self.getBookById(bid).then((book) => {
-			// 			self.openBook(book);
-			// 		})
-			// 	}
-
-			// 	const annotBook = self.decodeBookFromPath(params["book"]);
-			// 	console.log("anotBook:",annotBook);
-			// 	if (annotId && annotBook) {
-			// 		// TODO:还需要支持?
-			// 		if (self.isForceOpenBySystem(annotBook)) {
-			// 			self.openBookBySystem(annotBook);
-			// 		} else {
-			// 			self.showAnnotationById(annotBook,annotId);
-			// 		}
-			// 	} else {
-			// 		new Notice("标注链接参数错误");
-			// 	}
-			"open-book": function(params: ObsidianProtocolData) {
+			"open-book": async function(params: ObsidianProtocolData) {
 				
 				var book;
 				if (params.bid) {
-					book = self.bookVaultManager.getBookById(params.bid)
+					book = await self.bookVaultManager.getBookById(params.bid)
 				} else if (params.vid && params.bpath) {
-					book = self.bookVaultManager.getBookByPath(params.vid, params.bpath)
+					book = await self.bookVaultManager.getBookByPath(params.vid, params.bpath)
 				} else if (params.fullpath) {
-					book = self.bookVaultManager.getBookByFullPath(params.fullpath);
+					book = await self.bookVaultManager.getBookByFullPath(params.fullpath);
 				}
 
 				if (book) {
@@ -133,7 +117,7 @@ export default class BookMasterPlugin extends Plugin {
 			// "update-book-explorer": function(params: ObsidianProtocolData) {
 			// 	self.updateDispTree();
 			// },
-			"basic-book-setting": function(params: ObsidianProtocolData) {
+			"basic-book-setting": async function(params: ObsidianProtocolData) {
 
 				// let bookPromise: Promise<Book>;
 				// if (params.bid) {
@@ -154,11 +138,11 @@ export default class BookMasterPlugin extends Plugin {
 
 				var book;
 				if (params.bid) {
-					book = self.bookVaultManager.getBookById(params.bid)
+					book = await self.bookVaultManager.getBookById(params.bid)
 				} else if (params.vid && params.bpath) {
-					book = self.bookVaultManager.getBookByPath(params.vid, params.bpath)
+					book = await self.bookVaultManager.getBookByPath(params.vid, params.bpath)
 				} else if (params.fullpath) {
-					book = self.bookVaultManager.getBookByFullPath(params.fullpath);
+					book = await self.bookVaultManager.getBookByFullPath(params.fullpath);
 				}
 
 				if (book) {
@@ -203,13 +187,15 @@ export default class BookMasterPlugin extends Plugin {
 			if (g && g.length == 3) {
 				const bid = g[1];
 				const aid = g[2];
-				var book = this.bookVaultManager.getBookById(bid)
-				if (book) {
-					const state = {
-						aid: aid,
-					};
-					this.openBook(book as Book,false,state);
-				}
+				this.bookVaultManager.getBookById(bid).then((book) => {
+					if (book) {
+						const state = {
+							aid: aid,
+						};
+						this.openBook(book as Book,false,state);
+					}
+				});
+				
 			} 
 		}
 	}
@@ -354,7 +340,6 @@ export default class BookMasterPlugin extends Plugin {
 			new Notice("文件丢失");
 			return;
 		}
-
 		// TODO: book is visual
 		if (this.settings.openAllBookWithDefaultApp || this.settings.openBookExtsWithDefaultApp.includes(book.ext)) {
 			this.openBookBySystem(book);

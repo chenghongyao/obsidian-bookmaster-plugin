@@ -23,6 +23,7 @@ export class BookVaultManager {
 
 	bookVaultWatcher: Map<string, any>;
 
+	inited: boolean;
 
     constructor(plugin: BookMasterPlugin) {
         this.plugin = plugin;
@@ -32,9 +33,10 @@ export class BookVaultManager {
 		this.bookDispTree = reactive(new BookFolder(null,"", "", ""));
 		this.bookVaultWatcher = new Map();
 
+		this.inited = false;
 
 		// watch data folder
-		const handle = this.plugin.app.vault.on("delete",(file: TFile) => {
+		const handle = this.plugin.app.vault.on("delete",async (file: TFile) => {
 
 			if (file.path === this.getBookDataPath()) { // TODO: remove all
 				this.bookIdMap.forEach((book, id) => {
@@ -42,7 +44,7 @@ export class BookVaultManager {
 				});
 			} else if (file.path.startsWith(this.getBookDataPath())) {
 				const bid = file.basename;
-				const book = this.getBookById(bid);
+				const book = await this.getBookById(bid);
 				if (book) {
 					book.bid = null;
 					if (book.lost) {
@@ -66,15 +68,31 @@ export class BookVaultManager {
 		})
     }
 
-	getBookById(bid: string) {
+	private async waitBookInited() {
+		const self = this;
+		return new Promise<void>((resolve,reject) => {
+			function wait() {
+				if(!self.inited) {
+					setTimeout(wait,100);
+				} else {
+					resolve();
+				}
+			}
+			wait();
+		});
+	}
+
+	async getBookById(bid: string) {
+		await this.waitBookInited();
 		return this.bookIdMap.get(bid);
 	}
-	getBookByPath(vid: string, path: string) {
+	async getBookByPath(vid: string, path: string) {
+		await this.waitBookInited();
 		return this.bookMap.get(`${vid}:${path}`);
 	}
-	getBookByFullPath(fullpath: string) {
 
-		// await this.waitBookVaultLoading();
+	async getBookByFullPath(fullpath: string) {
+		await this.waitBookInited();
 
 		for (var vid in this.root) {
 			const vaultPath = this.getBookVaultPath(vid);
@@ -496,6 +514,8 @@ export class BookVaultManager {
 		});
 	}
 	async updateBookDispTree() {
+		await this.waitBookInited();
+
 		const vid = this.getCurrentBookVaultId();
 		this.bookDispTree.clear();
 
@@ -680,16 +700,24 @@ export class BookVaultManager {
 
 	async loadAllBookData() {
 		// TODO: wait until ob files loaded
+		const dataPath = this.getBookDataPath();
+		const absDataPath = (utils.app.vault.adapter as any).basePath + "/" + dataPath;
+		const files = Platform.isMobile ? await utils.fs.readdir(absDataPath) : utils.fs.readdirSync(absDataPath);
+
+
 		const dataFolder = utils.app.vault.getAbstractFileByPath(this.getBookDataPath()) as TFolder;
-		if (!dataFolder || !(dataFolder instanceof TFolder)) return;
-
-
+		if (!dataFolder || !(dataFolder instanceof TFolder)) {
+			console.warn("no book data folder");
+			return;
+		}
+		
 		for(var i = 0 ;i < dataFolder.children.length; i++) {
 			const file = dataFolder.children[i];
 			if (!(file instanceof TFile)) continue;
 
 			const meta = await utils.app.metadataCache.getFileCache(file as TFile).frontmatter;
-
+			if (!meta) {
+			}
 			if (!meta || !meta["bm-meta"]) {
 				new Notice("非配置文件:"+file.name,0)
 				console.error("非配置文件:"+file.name,meta)
@@ -749,17 +777,89 @@ export class BookVaultManager {
 				this.bookIdMap.set(bid, book);
 			} 
 
-			book.loadBookData(meta);
+			book.loadBookData(file);
 			// FIXME: data file is deleted manualy??
 		}
 	}
 
+	// async loadAllBookData() {
+	// 	const dataPath = this.getBookDataPath();
+	// 	const absDataPath = (utils.app.vault.adapter as any).basePath + "/" + dataPath;
+	// 	const files = Platform.isMobile ? await utils.fs.readdir(absDataPath) : utils.fs.readdirSync(absDataPath);
+
+	// 	for(var i = 0 ;i < files.length; i++) {
+	// 		const filename = files[i];
+	// 		const meta = await utils.app.metadataCache.getCache(dataPath + "/" + filename).frontmatter;
+	// 		if (!meta || !meta["bm-meta"]) {
+	// 			new Notice("非配置文件:"+filename,0)
+	// 			console.error("非配置文件:"+filename,meta)
+	// 			continue;
+	// 		}
+			
+	// 		const {vid,bid,path,name,ext} = meta;
+	// 		if (!vid || !bid) { // TODO: check book path?
+	// 			new Notice("无效配置文件:"+filename);
+	// 			console.error("无效配置文件:"+filename)
+
+	// 			continue; 
+	// 		}
+
+
+	// 		if (!this.root.has(vid)) {
+	// 			console.warn(`书库 ${vid} 不存在`)
+	// 			continue; 
+	// 		}
+
+	// 		if (!this.root.has(vid)) {
+	// 			this.addBookVault(vid);
+	// 		}
+
+	// 		const entry = `${vid}:${path}`;
+	// 		var book = this.bookIdMap.get(bid);
+	// 		if (book) { // old data file
+	// 			// TODO: move book when change vid or path manually, which should not happen
+	// 			// if (book.vid !== vid || book.path !== path) { 
+	// 			// 	book.parent.children.remove(book);
+	// 			// 	book.vid = vid;
+	// 			// 	book.path = path;
+	// 			// 	if (this.root.get(vid)) {
+	// 			// 		const folder = this.getBookFolder(vid,book.path,this.root[vid]) // exist root[vid]?
+	// 			// 		book.parent = folder;
+	// 			// 		folder.push(book);
+	// 			// 	}
+	// 			// }
+	// 			// book.lost = !this.bookMap.has(entry)	// update book lost flag
+	// 		} else { // new book data file
+				
+	// 			book = this.bookMap.get(entry) as Book;
+
+	// 			if (!book || book.isFolder()) {   // this book is lost
+
+	// 				const folder = this.getBookFolder(vid, utils.getFolderName(path),this.root.get(vid),this.bookMap);
+	// 				book = reactive(new Book(folder, vid, name, path, ext, bid, true)); // book is lost
+	// 				folder.push(book);
+	// 				this.bookMap.set(entry, book);
+	// 			} else if (book.bid) { //not lost, but has repeat bid
+	// 				if (bid !== book.bid) {
+	// 					new Notice(`book id ${bid} exist, already has ${book.bid}`)
+	// 					console.error(`book id ${bid} exist, already has ${book.bid}`);
+	// 					continue;
+	// 				}
+	// 			}			
+	// 			this.bookIdMap.set(bid, book);
+	// 		} 
+
+	// 		book.loadBookData(meta);
+	// 		// FIXME: data file is deleted manualy??
+	// 	}
+	// }
 
     async update() {	
 		return this.loadAllBookVault().then(() => {
 			console.log("book vault updated");
 			return this.loadAllBookData().then(() => {
 				console.log("book vault data updated");
+				this.inited = true;
 				return this.updateBookDispTree();
 			});
 			

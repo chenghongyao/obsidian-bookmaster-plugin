@@ -14,6 +14,7 @@ export class BookView extends ItemView {
     bid: string;
     viewer: DocumentViewer;
     debounceSaveAnnotation: any;
+    debounceUpdateProgress: any;
     
     constructor(leaf: WorkspaceLeaf, plugin: BookMasterPlugin) {
         super(leaf);
@@ -29,6 +30,12 @@ export class BookView extends ItemView {
 			this.plugin.bookVaultManager.saveBookAnnotations(this.bid, this.viewer.exportAnnotations());
 		}, 2000, true);
 
+        this.debounceUpdateProgress = debounce((params: any) => {
+            this.getBook().then((book) => {
+                book.meta["progress"] = params.progress;
+                this.bookVaultManager.saveBookDataSafely(book);
+            });
+		}, 1000, true);
     }
 
     getDisplayText() {
@@ -44,23 +51,39 @@ export class BookView extends ItemView {
 	}
 
     getState() {
+        console.log("get state");
+
         if (this.bid) {
             return {
                 bid: this.bid,
-                viewer: this.viewer.getState()
+                viewerState: this.viewer.getState()
             };
         } else {
             return {};
         }
     }
-    async setState() {
-
+    async setState(state: any) {
+        if (state.bid) {
+            if (this.plugin?.bookVaultManager.inited) {
+                this.setStateTimeout(state, 0);
+            } else {
+                setTimeout(this.setStateTimeout.bind(this),500, state, 0);
+            }
+        }
     }
-
+    private setStateTimeout (state: any, tryTimes: number) {
+        if (this.plugin?.bookVaultManager.inited) {
+            console.log(state.viewerState);
+            this.openBook(state.bid, state.viewerState);
+        } else {
+            setTimeout(this.setStateTimeout.bind(this),300, state, tryTimes + 1);
+        }
+    }
     private setTitle(title: string) {
         (this.leaf as any).tabHeaderInnerTitleEl.innerText = title;
     }
 
+    
     async onOpen() {
 		console.log("BookView Open");
 
@@ -69,21 +92,21 @@ export class BookView extends ItemView {
 		this.contentEl.addClass("bm-bookview");
 
         this.contentEl.onNodeInserted(() => {
-            const book = this.getBook();
-
-            if (book) {
-                this.setTitle(book.meta.title || book.name);
+            if (this.bid) {
+                this.getBook().then((book) => {
+                    this.setTitle(book.meta.title || book.name);
+                })    
             }
         }, false)
     }
 
-    getBook() {
-        return this.bid && this.bookVaultManager.getBookById(this.bid);
+    async getBook() {
+        return this.bid && await this.bookVaultManager.getBookById(this.bid);
     }
 
     async onClose() {
 
-        const book = this.getBook();
+        const book = await this.getBook();
         if (book) {
             book.view = null;
         }
@@ -104,7 +127,10 @@ export class BookView extends ItemView {
             this.debounceSaveAnnotation();
         } else if (event == "delete-annotation") {
             this.debounceSaveAnnotation();
-        } else {
+        } else if (event == "progress-update") {
+            this.debounceUpdateProgress(params);
+        } 
+        else {
             console.warn("unknown event:", event, params)
         }
     }
@@ -193,7 +219,7 @@ export class BookView extends ItemView {
     async openBook(bid: string, state?: any) {
 
         this.bid = bid;
-        const book = this.getBook();
+        const book = await this.getBook();
         const annos = await this.bookVaultManager.loadBookAnnotations(bid);
         
         book.view = this;
@@ -205,6 +231,10 @@ export class BookView extends ItemView {
             return this.bookVaultManager.getBookContent(book).then((data: ArrayBuffer) => {
                 const workerPath = this.plugin.getCurrentDeviceSetting().bookViewerWorkerPath + "/webviewer";
                 this.viewer = new PDFTronViewer(bid, this.contentEl, theme, workerPath, this.viewerEvent.bind(this));
+                if (!state) {
+                    state = {};
+                } 
+                state.progress = book.meta["progress"]
                 this.viewer.show(data,state,book.ext,annos);
             });
         } else {
@@ -221,7 +251,9 @@ export class BookView extends ItemView {
     onPaneMenu(menu: Menu, source: string): void {
         // console.log(menu);
         if (this.bid) {
-            this.plugin.createBookContextMenu(menu, this.getBook())
+            this.getBook().then((book) => {
+                this.plugin.createBookContextMenu(menu, book)
+            })
         }
     }
     

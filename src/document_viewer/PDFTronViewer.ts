@@ -16,8 +16,9 @@ interface PDFDocumentProxy {
 }
 
 interface PDFTronViewerState {
-	aid?: string;
     page: number;
+	aid?: string;
+    progress?: number;
 }
 
 
@@ -75,6 +76,7 @@ export class PDFTronViewer extends DocumentViewer {
 
 			pageNumberUpdated(page: number) {
                 self.state.page = page;
+				self.eventCallback("progress-update", {progress: page});
 			},
 
 			annotationChanged(data: any) {
@@ -277,6 +279,8 @@ export class PDFTronViewer extends DocumentViewer {
 			this.showAnnotation(state.aid);
 		} else if (state.page) {
 			this.showBookPage(state.page);
+		} else if (state.progress) {
+			this.showBookPage(state.progress);
 		}
     }
 

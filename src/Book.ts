@@ -67,10 +67,10 @@ export const BookMetaMap : {[type:string]:BookMetaOptionMap}= {
             type: "text",
             // default: ""
         },
-        "desc": {
-            type: "text",
-            // default: ""
-        },
+        // "desc": {
+        //     type: "text",
+        //     // default: ""
+        // },
         "authors": {
             type: "text-array",
             default: [],
@@ -217,14 +217,23 @@ export class Book extends AbstractBook {
         return this.bid;
     }
 
+    private async getBookDescription(file: TFile) {
+        const ryaml = /^(---\r?\n[\s\S]*\r?\n---)\r?\n/;
+        const cont = await utils.app.vault.read(file);
+        const g = ryaml.exec(cont)
+        var len = 0;
+        if (g && g[1]) {
+            len = g[1].length;
+        }
+        return cont.substring(len+1).trim();
+    }
 
-    loadBookData(file: TFile | any) {
+    async loadBookData(file: TFile) {
         const basicMeta = BookMetaMap['basic'];
 
         // TODO: correct meta type
         if (file) { // load from file
-
-            const inputMeta: any = file instanceof TFile ? utils.app.metadataCache.getFileCache(file).frontmatter : file;
+            const inputMeta: any = utils.app.metadataCache.getFileCache(file).frontmatter;
             const typeMeta = BookMetaMap[inputMeta['type']];
 
             this.bid = inputMeta["bid"];
@@ -249,6 +258,8 @@ export class Book extends AbstractBook {
                 this.meta[key] = inputMeta[key];
             }
 
+            this.meta["desc"] = await this.getBookDescription(file);
+
         } else { // init book meta
 
             for(const key in basicMeta) {
@@ -270,6 +281,8 @@ export class Book extends AbstractBook {
                     }
                 }  
             }
+
+            this.meta["desc"] = "";
 
 
         }
@@ -301,7 +314,7 @@ export class Book extends AbstractBook {
             }    
         }
 
-        const content = this.getBookMetaString();
+        const content = this.getBookMetaString() + this.meta["desc"];
         return utils.safeWriteObFile(filepath,content,true);
     }
 
@@ -321,8 +334,8 @@ export class Book extends AbstractBook {
         for(const key in this.meta) {
             const val = this.meta[key]; // TODO: correct type string
 
-            if (val === undefined) continue;
-            
+            if (val === undefined || key === "desc") continue;
+
             if (typeof val === "string") {
                 if (!val) continue;
                 content += `${key}: "${val}"\n`;
