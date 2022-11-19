@@ -2,7 +2,8 @@ import { debounce, ItemView, Menu, Notice, WorkspaceLeaf } from "obsidian";
 import { Book } from "src/Book";
 import { BookVaultManager } from "src/BookVault";
 import { DocumentViewer, DocumentViewerTheme } from "../document_viewer/DocumentViewer";
-import { PDFTronViewer } from "../document_viewer/PDFTronViewer";
+import PDFTronViewer from "../document_viewer/PDFTronViewer";
+import EpubJSViewer from "../document_viewer/EPUBJSViewer";
 
 import BookMasterPlugin from "../main";
 import * as utils from "../utils"
@@ -51,8 +52,6 @@ export class BookView extends ItemView {
 	}
 
     getState() {
-        console.log("get state");
-
         if (this.bid) {
             return {
                 bid: this.bid,
@@ -73,7 +72,6 @@ export class BookView extends ItemView {
     }
     private setStateTimeout (state: any, tryTimes: number) {
         if (this.plugin?.bookVaultManager.inited) {
-            console.log(state.viewerState);
             this.openBook(state.bid, state.viewerState);
         } else {
             setTimeout(this.setStateTimeout.bind(this),300, state, tryTimes + 1);
@@ -89,6 +87,8 @@ export class BookView extends ItemView {
 
         this.contentEl.empty();
         this.contentEl.style.padding = "0";
+        this.containerEl.style.height = "100%";
+        this.containerEl.style.width = "100%";
 		this.contentEl.addClass("bm-bookview");
 
         this.contentEl.onNodeInserted(() => {
@@ -237,7 +237,27 @@ export class BookView extends ItemView {
                 state.progress = book.meta["progress"]
                 this.viewer.show(data,state,book.ext,annos);
             });
-        } else {
+        } else if (book.ext === "epub") {
+
+            return this.bookVaultManager.getBookContent(book).then((data: ArrayBuffer) => {
+                // const workerPath = this.plugin.getCurrentDeviceSetting().bookViewerWorkerPath + "/epubjs_release/input  .html";
+                // const workerPath = this.plugin.getCurrentDeviceSetting().bookViewerWorkerPath + "/epubjs-reader/reader/index.html";
+                this.viewer = new EpubJSViewer(bid, this.contentEl, theme, "", this.viewerEvent.bind(this));
+                if (!state) {
+                    state = {};
+                } 
+                state.progress = book.meta["progress"]
+                this.viewer.show(data,state,book.ext,annos);
+            });
+
+            // const workerPath = this.plugin.getCurrentDeviceSetting().bookViewerWorkerPath + "/epubjs-reader/reader/index.html";
+            // this.viewer = new EpubJSViewer(bid, this.contentEl, theme, workerPath, this.viewerEvent.bind(this)); 
+            // // const url = this.bookVaultManager.getBookUrl(book);
+            // // const url = "app://local/D:/我的书库/其他/金字塔原理2.epub"
+            // // const url = "http://127.0.0.1/%E6%88%91%E7%9A%84%E4%B9%A6%E5%BA%93/%E5%85%B6%E4%BB%96//金字塔原理2.epub"
+            // this.viewer.show(url,state,book.ext)
+        }
+        else {
             new Notice("无法打开文件");
             this.leaf.detach();
         }

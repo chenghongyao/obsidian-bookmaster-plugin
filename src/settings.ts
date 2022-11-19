@@ -15,7 +15,7 @@ export interface DeviceSetting {
 
 export const DEFAULT_DEVICE_SETTINGS: DeviceSetting = {
 	deviceName: "",
-	bookVaultPaths: {[MAIN_BOOKVAULT_ID]:"D:\\我的书库"},      // for test default book vault
+	bookVaultPaths: {},     
     bookViewerWorkerPath: "http://127.0.0.1/bookviewer",
 };
 
@@ -35,6 +35,12 @@ export interface BookMasterSettings {
 
     // book view
     documentViewerTheme: DocumentViewerTheme;
+
+    // recent book view
+    recentBookNumberLimit: Number;
+
+    // book project view
+    pinProjectFile: boolean;
 
     // annotations
     fixedAnnotationImageScale: number;
@@ -60,7 +66,7 @@ export const DEFAULT_SETTINGS: BookMasterSettings = {
     openAllBookWithDefaultApp: false,
     openBookExtsWithDefaultApp: [],
 
-    bookVaultNames: {[MAIN_BOOKVAULT_ID]:"我的书库"},
+    bookVaultNames: {},
     currentBookVault: MAIN_BOOKVAULT_ID,
 
     bookTreeSortType: BookTreeSortType.PATH,
@@ -68,6 +74,12 @@ export const DEFAULT_SETTINGS: BookMasterSettings = {
 
     // book view
     documentViewerTheme: DocumentViewerTheme.Dark,
+
+    //recent book view
+    recentBookNumberLimit: 20,
+
+    // book project view
+    pinProjectFile: false,
 
     // annotations
     fixedAnnotationImageScale: 2.0,

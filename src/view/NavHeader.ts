@@ -15,7 +15,16 @@ export default class NavHeader {
 		const el = this.view.addAction(icon,title,callback,20);
 		el.classList.replace("view-action","nav-action-button")
 		this.buttonContainer.appendChild(el);
+		return el;
 	}
+
+	removeAction(el: HTMLElement) {
+		this.buttonContainer.removeChild(el);
+	}
+
+	// replaceAction(el: HTMLElement, icon: string, title: string, callback: (evt: MouseEvent) => any) {
+
+	// }
 	
 
 }

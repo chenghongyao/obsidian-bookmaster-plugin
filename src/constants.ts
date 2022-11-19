@@ -21,7 +21,7 @@ export const supportBookExts = [
     // ...ImageExts,               //image
     // ...AudioExts,
     // ...VideoExts,
-    // "epub",
+    "epub",
     // "txt",
     // "html"
 ];

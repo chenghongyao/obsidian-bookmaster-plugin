@@ -69,11 +69,12 @@ export default {
 		},
 		showNoteIcon: Boolean
 	},
-	setup(props) {
-		return {
-			root: props.root
-		}
-	}
+	// setup(props) {
+	// 	return {
+	// 		root: props.root,
+	// 		showTitle: props.showTitle
+	// 	}
+	// }
 }
 
 // export default defineComponent({

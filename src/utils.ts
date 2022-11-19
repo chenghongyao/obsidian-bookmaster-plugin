@@ -152,3 +152,12 @@ export function encodeTemplate(template: string, params: {[key: string]:string})
     }
     return template;
 }
+
+
+export function getPropertyValue(file: TFile, propertyName: string) {
+    if (!file) {
+        return null;
+    }
+    const cache = app.metadataCache.getFileCache(file);
+    return cache?.frontmatter?.[propertyName];
+}

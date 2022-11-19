@@ -22,7 +22,7 @@ interface PDFTronViewerState {
 }
 
 
-export class PDFTronViewer extends DocumentViewer {
+export default class PDFTronViewer extends DocumentViewer {
     
     workerPath: string;
     listener: any;
@@ -270,6 +270,7 @@ export class PDFTronViewer extends DocumentViewer {
 
     close(): void {
         this.data = null;
+        window.removeEventListener("message", this.listener);
     }
 
     setState(state: PDFTronViewerState): void {

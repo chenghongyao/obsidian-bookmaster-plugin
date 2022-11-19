@@ -49,7 +49,14 @@ export class BookExplorer extends ItemView {
 	}
 
     onPaneMenu(menu: Menu, source: string): void {
-        
+        menu.addItem((item) => {
+			item
+			.setTitle("关闭")
+			.setIcon("cross")
+			.onClick(() => {
+				this.leaf.detach();
+			})
+		});
     }
 
 
@@ -221,12 +228,12 @@ export class BookExplorer extends ItemView {
 			menu.showAtMouseEvent(evt);
 		})
 
-		this.header.addAction("gear","设置",(evt) => {
-			// const menu = new Menu();
-			// this.createSettingMenu(menu)
-			// menu.showAtMouseEvent(evt);
+		// this.header.addAction("gear","设置",(evt) => {
+		// 	// const menu = new Menu();
+		// 	// this.createSettingMenu(menu)
+		// 	// menu.showAtMouseEvent(evt);
 
-		});
+		// });
     }
     
     async onOpen() {
@@ -235,7 +242,7 @@ export class BookExplorer extends ItemView {
         this.containerEl.style.padding = "0";
         this.containerEl.style.overflow = "hidden";
 
-
+		
         this.bookVaultManager.updateBookDispTree().then(() => {
 			this.createHeader();
 			const self = this;
