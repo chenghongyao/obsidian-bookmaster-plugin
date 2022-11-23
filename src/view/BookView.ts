@@ -7,6 +7,8 @@ import EpubJSViewer from "../document_viewer/EPUBJSViewer";
 
 import BookMasterPlugin from "../main";
 import * as utils from "../utils"
+import TxtViewer from "../document_viewer/TxtViewer";
+
 
 export const VIEW_TYPE_BOOK_VIEW = "bm-book-view"
 export class BookView extends ItemView {
@@ -55,7 +57,7 @@ export class BookView extends ItemView {
         if (this.bid) {
             return {
                 bid: this.bid,
-                viewerState: this.viewer.getState()
+                viewerState: this.viewer?.getState()
             };
         } else {
             return {};
@@ -256,6 +258,21 @@ export class BookView extends ItemView {
             // // const url = "app://local/D:/我的书库/其他/金字塔原理2.epub"
             // // const url = "http://127.0.0.1/%E6%88%91%E7%9A%84%E4%B9%A6%E5%BA%93/%E5%85%B6%E4%BB%96//金字塔原理2.epub"
             // this.viewer.show(url,state,book.ext)
+        } else if (book.ext === "html") {
+            const url = this.bookVaultManager.getBookUrl(book);
+            state = {url: url};
+            this.leaf.setViewState({ type: "web-browser-view", active: true, state});
+        } else if (book.ext === "txt") {
+            return this.bookVaultManager.getBookContent(book).then((data: ArrayBuffer) => {
+                const workerPath = this.plugin.getCurrentDeviceSetting().bookViewerWorkerPath + "/txtviewer/index.html";
+                this.viewer = new TxtViewer(bid, this.contentEl, theme, workerPath, this.viewerEvent.bind(this));
+                if (!state) {
+                    state = {};
+                } 
+                state.progress = book.meta["progress"]
+                this.viewer.show(data,state,book.ext,annos);
+            });
+
         }
         else {
             new Notice("无法打开文件");

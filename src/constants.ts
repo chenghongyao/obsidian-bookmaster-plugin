@@ -15,15 +15,15 @@ export const AudioExts = ["wav","mp3","ogg"] // support by <audio>
 export const VideoExts = ["mp4"] // support by <video>
 export const OfficeExts = [ "xlsx","xls","doc","docx","ppt","pptx"]
 
-export const supportBookExts = [
+export const supportedBookExts = [
     "pdf",
     // ...OfficeExts,
     // ...ImageExts,               //image
     // ...AudioExts,
     // ...VideoExts,
     "epub",
-    // "txt",
-    // "html"
+    "txt",
+    "html"
 ];
 
 

@@ -6,7 +6,7 @@ import { BookMasterSettings, DEFAULT_SETTINGS, DeviceSetting, DEFAULT_DEVICE_SET
 import * as utils from './utils'
 import { AbstractBook, Book, BookFolder, BookFolderType, BookStatus} from "./Book";
 import { BookView, VIEW_TYPE_BOOK_VIEW } from "./view/BookView";
-import { supportBookExts as supportedBookExts } from "./constants";
+import { supportedBookExts } from "./constants";
 import { BookMasterSettingTab } from "./view/BookMasterSettingTab";
 import BookSuggestModal from "./view/BookSuggestModal";
 import BasicBookSettingModal from "./view/BasicBookSettingModal";
@@ -184,15 +184,13 @@ export default class BookMasterPlugin extends Plugin {
 			})
 		);	
 
+		// status bar
 		this.bookProjectStatusEl = this.addStatusBarItem();
-
 		setIcon(this.bookProjectStatusEl, "album");
 		const file = this.app.workspace.getActiveFile();
 		if (file && this.bookProjectManager.searchProjectFile(file)) {
 			this.bookProjectStatusEl.style.color = "var(--text-accent)";
 		}
-
-
 		this.bookProjectStatusEl.onClickEvent((ev:MouseEvent) => {
 
 			const file = this.lastActiveMarkdownView?.file || this.app.workspace.getActiveFile();
@@ -222,6 +220,13 @@ export default class BookMasterPlugin extends Plugin {
 			
 			
 		});
+
+		// update book project when file is changed
+		this.app.metadataCache.on("changed",(file,data,cache) => {
+			if (this.bookProjectManager.projectFile && this.bookProjectManager.projectFile == file) {
+				this.bookProjectManager.loadProjectFromFile(file);
+			}
+		})
 		
 	}
 
@@ -394,7 +399,7 @@ export default class BookMasterPlugin extends Plugin {
 			// leaf = this.app.workspace.getLeaf("tab");
 		} else {
 			// leaf = this.app.workspace.getLeaf("window");		
-			leaf = this.app.workspace.getLeaf();	
+			leaf = this.app.workspace.getLeaf("split");	
 		}
 
 		leaf.setGroup("bookview-group");
@@ -493,9 +498,9 @@ export default class BookMasterPlugin extends Plugin {
 		const bid = await this.bookVaultManager.getBookIdSafely(book);
 
 		// TODO: book is visual
-		if (this.settings.openAllBookWithDefaultApp || this.settings.openBookExtsWithDefaultApp.includes(book.ext)) {
+		if (this.settings.openAllBookWithDefaultApp || this.settings.openBookExtsWithDefaultApp.includes(book.ext) || !supportedBookExts.includes(book.ext)) {
 			this.openBookBySystem(book);
-		} else if (supportedBookExts.includes(book.ext)) { // TODO: support exts
+		} else { // TODO: support exts
 			var leaf;
 
 			if (book.view) {
@@ -507,10 +512,7 @@ export default class BookMasterPlugin extends Plugin {
 				leaf = view.leaf;
 			}
 			this.app.workspace.setActiveLeaf(leaf);
-		} else {
-			this.openBookBySystem(book);
-		}
-
+		} 
 
 		// if open by system
 		// if (book.vid) {

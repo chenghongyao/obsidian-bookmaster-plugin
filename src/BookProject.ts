@@ -59,6 +59,15 @@ export default class BookProjecetManager {
 
     }
 
+    async loadProjectFromFile(file: TFile) {
+        const projFile = this.searchProjectFile(file);
+        if (projFile) {
+            this.loadProjectFile(projFile);
+        } else {
+            this.projectBooks.clear();
+        }
+    }
+
     isProjectFile(file: TFile) {
 		return file && (utils.getPropertyValue(file, "bookmaster-plugin") || utils.getPropertyValue(file,"bm-books"));
 	}
