@@ -1,7 +1,7 @@
 {
 	"id": "obsidian-bookmaster-plugin",
 	"name": "BookMaster",
-	"version": "0.3.0",
+	"version": "0.3.2",
 	"minAppVersion": "0.16.0",
 	"description": "book  manage plugin for Obsidian.",
 	"author": "chenghongyao",
