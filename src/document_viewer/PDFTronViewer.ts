@@ -24,6 +24,7 @@ interface PDFTronViewerState {
 
 export default class PDFTronViewer extends DocumentViewer {
     
+	author: string;
     workerPath: string;
     listener: any;
 	eventHandlerMap: any;
@@ -42,10 +43,11 @@ export default class PDFTronViewer extends DocumentViewer {
 
     state: PDFTronViewerState;
 
-    constructor(bid: string, container: HTMLElement, theme: DocumentViewerTheme,  workerPath: string, eventCallback: Function) {
+    constructor(bid: string, container: HTMLElement, theme: DocumentViewerTheme, author: string, workerPath: string, eventCallback: Function) {
         super(bid, container, theme, eventCallback);
         this.workerPath = workerPath;
-        
+		this.author = author;
+		
         this.setTheme(theme);
         this.viewerReady = false;
 		this.documentReady = false;
@@ -150,6 +152,7 @@ export default class PDFTronViewer extends DocumentViewer {
             custom: JSON.stringify({
                 id: this.viewerId,
 				theme: this.translateTheme(this.theme),
+				author: this.author || "Guest",
             }),
             preloadWorker: "pdf",
         }, this.container);

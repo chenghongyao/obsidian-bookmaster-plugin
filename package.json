@@ -23,6 +23,7 @@
     },
     "dependencies": {
         "@pdftron/webviewer": "^8.2.0",
+        "annotpdf": "^1.0.15",
         "epubjs": "^0.3.93",
         "monkey-around": "^2.3.0",
         "obsidian": "^0.16.3"

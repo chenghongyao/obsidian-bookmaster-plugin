@@ -43,6 +43,7 @@ export interface BookMasterSettings {
     pinProjectFile: boolean;
 
     // annotations
+    annotationAuthor: string;
     fixedAnnotationImageScale: number;
     annotationTemplate: {
         pdf: {
@@ -82,6 +83,7 @@ export const DEFAULT_SETTINGS: BookMasterSettings = {
     pinProjectFile: false,
 
     // annotations
+    annotationAuthor: "Guest",
     fixedAnnotationImageScale: 2.0,
     annotationTemplate: {
         pdf: {

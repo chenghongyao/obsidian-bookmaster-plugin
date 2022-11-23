@@ -207,6 +207,16 @@ export class BookMasterSettingTab extends PluginSettingTab {
         });
 
 
+        new Setting(containerEl)
+        .setName("用户名")
+        .setDesc("用于设置标注时的用户名")
+        .addText((text) => {
+            text.setValue(commonSetting.annotationAuthor).onChange(async (value) => {
+                commonSetting.annotationAuthor = value;
+                await this.plugin.saveSettings();
+            })
+        });
+
 
         new Setting(containerEl)
             .setName("PDF截图比例")

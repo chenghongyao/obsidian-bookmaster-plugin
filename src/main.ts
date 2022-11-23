@@ -15,6 +15,7 @@ import { RecentBookView, VIEW_TYPE_RECENT_BOOKS } from "./view/RecentBookView";
 import BookProjecetManager from "./BookProject";
 import { BookProject, VIEW_TYPE_BOOK_PROJECT } from "./view/BookProjectView";
 import { around } from "monkey-around";
+import exportPDFAnnotation from "./utils/PdfAnnotation";
 
 
 // TODO: 重复添加book vault watcher
@@ -61,6 +62,7 @@ export default class BookMasterPlugin extends Plugin {
 				// this.bookExplorer = view;
 			});
 		});
+
 		this.addCommand({
 			id: "bm-search-book",
 			name: "Search Book",
@@ -550,6 +552,22 @@ export default class BookMasterPlugin extends Plugin {
 				menu.addSeparator();
 			}
 
+			if (book.ext === "pdf") {
+				menu.addItem((item: any) => 
+				item
+					.setTitle("导出标注后文件")
+					.onClick(async () => {
+						const annots = await this.bookVaultManager.loadBookAnnotations(book.bid);
+						if (!annots) {
+							new Notice("无法加载标注文件");
+						} else {
+							return this.bookVaultManager.getBookContent(book).then((data: ArrayBuffer) => {
+								exportPDFAnnotation(this.settings.annotationAuthor, book.name + ".pdf", data, annots);
+							});
+						}
+					}));
+			}
+
 			menu.addItem((item: any) =>
 			item
 				.setTitle("基本设置")
@@ -692,31 +710,31 @@ export default class BookMasterPlugin extends Plugin {
 			
 		}
 
-		if (!book.lost) {
-			menu.addSeparator();
-			menu.addItem((item: any) =>
-			item
-				.setTitle("使用默认应用打开")
-				.setIcon("popup-open")
-				.onClick(()=>{
-					this.openBookBySystem(book);
-				})
-			);
+	// 	if (!book.lost) {
+	// 		menu.addSeparator();
+	// 		menu.addItem((item: any) =>
+	// 		item
+	// 			.setTitle("使用默认应用打开")
+	// 			.setIcon("popup-open")
+	// 			.onClick(()=>{
+	// 				this.openBookBySystem(book);
+	// 			})
+	// 		);
 				
 
-			if (book.vid && !book.visual && !Platform.isMobile) {
-				menu.addItem((item: any) =>
-				item
-					.setTitle("在系统资源管理器中显示")
-					.setIcon("popup-open")
-					.onClick(()=>{
-						// TODO: http?
-						this.showBookLocationInSystem(book);						
-					})
-				)
-			};
+	// 		if (book.vid && !book.visual && !Platform.isMobile) {
+	// 			menu.addItem((item: any) =>
+	// 			item
+	// 				.setTitle("在系统资源管理器中显示")
+	// 				.setIcon("popup-open")
+	// 				.onClick(()=>{
+	// 					// TODO: http?
+	// 					this.showBookLocationInSystem(book);						
+	// 				})
+	// 			)
+	// 		};
 	
-		}
+		// }
 	}
 
 	createBookFolderContextMenu(menu: Menu, folder: BookFolder) {

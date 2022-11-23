@@ -15,6 +15,7 @@ export class BookView extends ItemView {
 	plugin: BookMasterPlugin;
     bookVaultManager: BookVaultManager;
     bid: string;
+    book: Book;
     viewer: DocumentViewer;
     debounceSaveAnnotation: any;
     debounceUpdateProgress: any;
@@ -34,10 +35,10 @@ export class BookView extends ItemView {
 		}, 2000, true);
 
         this.debounceUpdateProgress = debounce((params: any) => {
-            this.getBook().then((book) => {
-                book.meta["progress"] = params.progress;
-                this.bookVaultManager.saveBookDataSafely(book);
-            });
+            if (this.book) {
+                this.book.meta["progress"] = params.progress;
+                this.bookVaultManager.saveBookDataSafely(this.book);
+            }
 		}, 1000, true);
     }
 
@@ -81,6 +82,7 @@ export class BookView extends ItemView {
     }
     private setTitle(title: string) {
         (this.leaf as any).tabHeaderInnerTitleEl.innerText = title;
+        (this.leaf as any).tabHeaderEl.ariaLabel = title;
     }
 
     
@@ -94,23 +96,18 @@ export class BookView extends ItemView {
 		this.contentEl.addClass("bm-bookview");
 
         this.contentEl.onNodeInserted(() => {
-            if (this.bid) {
-                this.getBook().then((book) => {
-                    this.setTitle(book.meta.title || book.name);
-                })    
+            if (this.book) {
+                this.setTitle(this.book.meta.title || this.book.name);
             }
         }, false)
     }
 
-    async getBook() {
-        return this.bid && await this.bookVaultManager.getBookById(this.bid);
-    }
+
 
     async onClose() {
 
-        const book = await this.getBook();
-        if (book) {
-            book.view = null;
+        if (this.book) {
+            this.book.view = null;
         }
         if (this.viewer) {
             this.viewer.close();
@@ -221,35 +218,35 @@ export class BookView extends ItemView {
     async openBook(bid: string, state?: any) {
 
         this.bid = bid;
-        const book = await this.getBook();
+        this.book = await this.bookVaultManager.getBookById(this.bid); // TODO: validate book
         const annos = await this.bookVaultManager.loadBookAnnotations(bid);
         
-        book.view = this;
-        this.setTitle(book.meta.title || book.name);
+        this.book.view = this;
+        this.setTitle(this.book.meta.title || this.book.name);
 
         const theme = this.plugin.settings.documentViewerTheme;
         
-        if (["pdf"].includes(book.ext)) {
-            return this.bookVaultManager.getBookContent(book).then((data: ArrayBuffer) => {
+        if (["pdf"].includes(this.book.ext)) {
+            return this.bookVaultManager.getBookContent(this.book).then((data: ArrayBuffer) => {
                 const workerPath = this.plugin.getCurrentDeviceSetting().bookViewerWorkerPath + "/webviewer";
-                this.viewer = new PDFTronViewer(bid, this.contentEl, theme, workerPath, this.viewerEvent.bind(this));
+                this.viewer = new PDFTronViewer(bid, this.contentEl, theme, this.plugin.settings.annotationAuthor, workerPath, this.viewerEvent.bind(this));
                 if (!state) {
                     state = {};
                 } 
-                state.progress = book.meta["progress"]
-                this.viewer.show(data,state,book.ext,annos);
+                state.progress = this.book.meta["progress"]
+                this.viewer.show(data,state,this.book.ext,annos);
             });
-        } else if (book.ext === "epub") {
+        } else if (this.book.ext === "epub") {
 
-            return this.bookVaultManager.getBookContent(book).then((data: ArrayBuffer) => {
+            return this.bookVaultManager.getBookContent(this.book).then((data: ArrayBuffer) => {
                 // const workerPath = this.plugin.getCurrentDeviceSetting().bookViewerWorkerPath + "/epubjs_release/input  .html";
                 // const workerPath = this.plugin.getCurrentDeviceSetting().bookViewerWorkerPath + "/epubjs-reader/reader/index.html";
                 this.viewer = new EpubJSViewer(bid, this.contentEl, theme, "", this.viewerEvent.bind(this));
                 if (!state) {
                     state = {};
                 } 
-                state.progress = book.meta["progress"]
-                this.viewer.show(data,state,book.ext,annos);
+                state.progress = this.book.meta["progress"]
+                this.viewer.show(data,state,this.book.ext,annos);
             });
 
             // const workerPath = this.plugin.getCurrentDeviceSetting().bookViewerWorkerPath + "/epubjs-reader/reader/index.html";
@@ -258,19 +255,19 @@ export class BookView extends ItemView {
             // // const url = "app://local/D:/我的书库/其他/金字塔原理2.epub"
             // // const url = "http://127.0.0.1/%E6%88%91%E7%9A%84%E4%B9%A6%E5%BA%93/%E5%85%B6%E4%BB%96//金字塔原理2.epub"
             // this.viewer.show(url,state,book.ext)
-        } else if (book.ext === "html") {
-            const url = this.bookVaultManager.getBookUrl(book);
+        } else if (this.book.ext === "html") {
+            const url = this.bookVaultManager.getBookUrl(this.book);
             state = {url: url};
             this.leaf.setViewState({ type: "web-browser-view", active: true, state});
-        } else if (book.ext === "txt") {
-            return this.bookVaultManager.getBookContent(book).then((data: ArrayBuffer) => {
+        } else if (this.book.ext === "txt") {
+            return this.bookVaultManager.getBookContent(this.book).then((data: ArrayBuffer) => {
                 const workerPath = this.plugin.getCurrentDeviceSetting().bookViewerWorkerPath + "/txtviewer/index.html";
                 this.viewer = new TxtViewer(bid, this.contentEl, theme, workerPath, this.viewerEvent.bind(this));
                 if (!state) {
                     state = {};
                 } 
-                state.progress = book.meta["progress"]
-                this.viewer.show(data,state,book.ext,annos);
+                state.progress = this.book.meta["progress"]
+                this.viewer.show(data,state,this.book.ext,annos);
             });
 
         }
@@ -285,12 +282,17 @@ export class BookView extends ItemView {
         this.viewer.setState(state);
     }
 
-    onPaneMenu(menu: Menu, source: string): void {
-        // console.log(menu);
-        if (this.bid) {
-            this.getBook().then((book) => {
-                this.plugin.createBookContextMenu(menu, book)
-            })
+    onPaneMenu(menu: Menu, source: string) {
+        if (this.book) {
+            this.plugin.createBookContextMenu(menu, this.book);
+            menu.addItem((item) => {
+                item
+                .setTitle("关闭")
+                .setIcon("cross")
+                .onClick(() => {
+                    this.leaf.detach();
+                })
+            });
         }
     }
     

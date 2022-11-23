@@ -225,7 +225,7 @@ export class Book extends AbstractBook {
         if (g && g[1]) {
             len = g[1].length;
         }
-        return cont.substring(len+1).trim();
+        return cont.substring(len+1).trim() ;
     }
 
     async loadBookData(file: TFile) {
