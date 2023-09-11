@@ -81,6 +81,7 @@ export class BookView extends ItemView {
         }
     }
     private setTitle(title: string) {
+        (this.leaf as any).containerEl.find(".view-header-title").innerText = title;
         (this.leaf as any).tabHeaderInnerTitleEl.innerText = title;
         (this.leaf as any).tabHeaderEl.ariaLabel = title;
     }
