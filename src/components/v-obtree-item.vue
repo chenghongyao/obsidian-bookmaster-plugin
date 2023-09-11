@@ -1,16 +1,16 @@
 <template>
     <!-- folder -->
-    <div v-if="isFolder" class="nav-folder" :class="{'is-collapsed':!isOpen}">
-        <div class="nav-folder-title" 
+    <div v-if="isFolder" class="tree-item nav-folder" :class="{'is-collapsed':!isOpen}">
+        <div class="tree-item-self is-clickable mod-collapsible nav-folder-title" 
             :data-path="item.path" 
             :data-count="item.count" 
             @click="toggleFolder"
             @contextmenu.prevent="onFolderContextMenu"
             >
-            <div class="nav-folder-collapse-indicator collapse-icon"/>
-            <div class="nav-folder-title-content">{{item.name}}</div>
+            <div class="tree-item-icon  nav-folder-collapse-indicator collapse-icon" :class="{'is-collapsed':!isOpen}" />
+            <div class="tree-item-inner nav-folder-title-content">{{item.name}}</div>
         </div>	
-        <div v-show="isOpen" class="nav-folder-children">
+        <div v-show="isOpen" class="tree-item-children nav-folder-children">
             <!-- can't auto send event?? -->
             <v-obtree-item v-for="child in item.children" 
             :showNoteIcon="showNoteIcon"
@@ -22,8 +22,8 @@
         </div>
     </div>
     <!-- file -->
-    <div v-else class="nav-file" :class="`book-${item.ext}`">
-        <div class="nav-file-title" 
+    <div v-else class="tree-item nav-file" :class="`book-${item.ext}`">
+        <div class="tree-item-self is-clickable nav-file-title" 
             :class="{'is-active':isActivate,
                     'bm-lost': item.meta && item.lost,
                     'bm-unread': item.meta && item.meta['status'] === 'unread', 
@@ -36,8 +36,8 @@
             @dblclick="$emit('open-file',item)"
             @contextmenu.prevent="onContextMenu"
             >
-            <div class="nav-file-tag">{{item.ext}}</div>
-            <div class="nav-file-title-content" :class="{'hasnote': showNoteIcon && item.meta && item.meta.note}">
+            <!-- <div class="nav-file-tag">{{item.ext}}</div> -->
+            <div class="tree-item-inner nav-file-title-content" :class="{'hasnote': showNoteIcon && item.meta && item.meta.note}">
                 {{(item.meta && item.meta.title) || item.name}}
             </div>
         </div>
