@@ -16,7 +16,7 @@ export interface DeviceSetting {
 export const DEFAULT_DEVICE_SETTINGS: DeviceSetting = {
 	deviceName: "",
 	bookVaultPaths: {},     
-    bookViewerWorkerPath: "http://127.0.0.1/bookviewer",
+    bookViewerWorkerPath: "http://81.71.65.248:8866",
 };
 
 

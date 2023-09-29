@@ -534,11 +534,14 @@ export class BookVaultManager {
 		const vid = this.getCurrentBookVaultId();
 		this.bookDispTree.clear();
 
+
 		if (vid !== this.bookDispTree.vid) {
 			this.bookDispTree.vid = vid;
-			this.bookDispTree.name = this.getBookVaultName(vid);
-			this.bookDispTree.path = this.getBookVaultPath(vid);
 		}
+		this.bookDispTree.name = this.getBookVaultName(vid);
+		this.bookDispTree.path = this.getBookVaultPath(vid);
+
+
 
 		const rawTree = this.root.get(vid);
 		if (!rawTree) { // doesn't exists

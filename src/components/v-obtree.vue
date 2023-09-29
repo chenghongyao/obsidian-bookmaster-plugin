@@ -2,7 +2,7 @@
         <div class="tree-item nav-folder mod-root bm-root">
             <div class="tree-item-self nav-folder-title" :data-path="root.path" :data-count="root.count" v-show="showTitle">
                 <!-- <div class="nav-folder-collapse-indicator collapse-icon"></div> -->
-                <div ref="titleEl" class="tree-item-inner nav-folder-title-content">{{root.name}}</div>
+                <div ref="titleEl" class="tree-item-inner nav-folder-title-content">{{root.name || "???"}}</div>
             </div>
             <div class="tree-item-children nav-folder-children">
                 <v-obtree-item v-for="child in root.children" 

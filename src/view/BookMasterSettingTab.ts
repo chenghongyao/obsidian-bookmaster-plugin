@@ -85,7 +85,7 @@ export class BookMasterSettingTab extends PluginSettingTab {
                         } else if (path.lastIndexOf("\\") !== -1) {
                             newName = path.substring(path.lastIndexOf("\\") + 1);
                         }
-                        console.log(newName);
+                        // console.log(newName);
                         compName.setValue(newName);
                         compPath.setValue(path);
                         if (path !== deviceSetting.bookVaultPaths[vid] || newName !== commonSetting.bookVaultNames[vid]) {
@@ -139,7 +139,7 @@ export class BookMasterSettingTab extends PluginSettingTab {
                 });
             });
         new Setting(containerEl)
-            .setName("BookViewer库路径")
+            .setName("BookViewer服务器地址")
             .setDesc("默认服务器仅供测试，随时下线，请及时部署本地服务器")
             .addText((text) => {
                 text.inputEl.style.width = "300px";
