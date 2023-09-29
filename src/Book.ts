@@ -67,10 +67,11 @@ export const BookMetaMap : {[type:string]:BookMetaOptionMap}= {
             type: "text",
             // default: ""
         },
-        // "desc": {
-        //     type: "text",
-        //     // default: ""
-        // },
+        "desc": {
+            type: "text",
+            // default: ""
+        },
+        
         "authors": {
             type: "text-array",
             default: [],
@@ -258,7 +259,8 @@ export class Book extends AbstractBook {
                 this.meta[key] = inputMeta[key];
             }
 
-            this.meta["desc"] = await this.getBookDescription(file);
+            // TODO: book desc
+            // this.meta["desc"] = await this.getBookDescription(file);
 
         } else { // init book meta
 
@@ -282,7 +284,8 @@ export class Book extends AbstractBook {
                 }  
             }
 
-            this.meta["desc"] = "";
+            // TODO: book desc
+            // this.meta["desc"] = "";
 
 
         }
@@ -291,7 +294,7 @@ export class Book extends AbstractBook {
     // make sure this book has bid
     // do NOT use this directly, use plugin.saveBookData() instead
     async saveBookData(datapath: string) {
-        const filepath = normalizePath(datapath+"/"+this.bid+".md");
+        const filepath = normalizePath(datapath+`/${this.vid}` + "/"+this.bid+".md");
 
         const rawMeta = (utils.app.metadataCache.getCache(filepath)?.frontmatter as any) || {};
         // TODO: load from map
@@ -314,7 +317,11 @@ export class Book extends AbstractBook {
             }    
         }
 
-        const content = this.getBookMetaString() + this.meta["desc"];
+        var content = this.getBookMetaString();
+        // TODO: book desc
+        // if (this.meta["desc"]) {
+        //     content += this.meta["desc"]
+        // }
         return utils.safeWriteObFile(filepath,content,true);
     }
 
@@ -334,7 +341,7 @@ export class Book extends AbstractBook {
         for(const key in this.meta) {
             const val = this.meta[key]; // TODO: correct type string
 
-            if (val === undefined || key === "desc") continue;
+            if (val === undefined) continue;
 
             if (typeof val === "string") {
                 if (!val) continue;

@@ -1,4 +1,4 @@
-import {ItemView, MarkdownView, Menu, Notice, ObsidianProtocolData, PaneType, Platform, Plugin, setIcon, TFile, ViewCreator} from "obsidian";
+import {ItemView, MarkdownView, Menu, Notice, ObsidianProtocolData, PaneType, Platform, Plugin, setIcon, TFile, ViewCreator, WorkspaceLeaf} from "obsidian";
 import { VIEW_TYPE_BOOK_EXPLORER, BookExplorer } from "./view/BookExplorer";
 
 import { BookVaultManager } from "./BookVault";
@@ -30,53 +30,42 @@ export default class BookMasterPlugin extends Plugin {
 	// bookExplorer: BookExplorer;
 	// lastActiveBookView: BookView = null; // TODO: history??
 	lastActiveMarkdownView: MarkdownView;
-
 	annotationImageSelector: string;
-
 	bookProjectStatusEl: HTMLElement;
 
     async onload() {
 
+		// load or init settings
 		await this.loadSettings();
 		
+		// create all manager
 		this.bookVaultManager = new BookVaultManager(this);
 		this.recentBooksManager = new RecentBooksManager(this);
 		this.bookProjectManager = new BookProjecetManager(this);
 
+		// register all views
+		this.safeRegisterView(VIEW_TYPE_BOOK_EXPLORER,leaf => new BookExplorer(leaf,this));
+		this.safeRegisterView(VIEW_TYPE_BOOK_VIEW,leaf => new BookView(leaf,this));
+		this.safeRegisterView(VIEW_TYPE_RECENT_BOOKS,leaf => new RecentBookView(leaf,this));
+		this.safeRegisterView(VIEW_TYPE_BOOK_PROJECT,leaf => new BookProject(leaf,this));
+		
+		this.addSettingTab(new BookMasterSettingTab(this.app, this));
+
+		// TODO: init all books data when all files in obsidian is loaded
 		this.app.workspace.onLayoutReady(() => {
 			this.bookVaultManager.update();	
 			this.recentBooksManager.setup();
 		});
 
-		// `registe`r views
-		this.safeRegisterView(VIEW_TYPE_BOOK_EXPLORER,leaf => new BookExplorer(leaf,this));
-		this.safeRegisterView(VIEW_TYPE_BOOK_VIEW,leaf => new BookView(leaf,this));
-		this.safeRegisterView(VIEW_TYPE_RECENT_BOOKS,leaf => new RecentBookView(leaf,this));
-		this.safeRegisterView(VIEW_TYPE_BOOK_PROJECT,leaf => new BookProject(leaf,this));
-
-		this.addSettingTab(new BookMasterSettingTab(this.app, this));
-
-		// command
+		// add all icon and commands
+		// command: open book explorer
 		this.addRibbonIcon("library","Book Explorer", (evt) => {
 			this.activateView(VIEW_TYPE_BOOK_EXPLORER, "left").then((view: BookExplorer) => {
 				// this.bookExplorer = view;
 			});
 		});
 
-		this.addCommand({
-			id: "bm-search-book",
-			name: "Search Book",
-			checkCallback: (checking) => {
-				const tree = this.bookVaultManager.getCurrentBookVault();
-				if (checking) {
-					return Boolean(tree);
-				} else {
-					new BookSuggestModal(this.app, this, tree).open();
-					return true;
-				}
-			}
-
-		});
+		// command: open recent book view
 		this.addCommand({
 			id: "bm-open-recent-book-view",
 			name: "Open Recent Book View",
@@ -84,7 +73,8 @@ export default class BookMasterPlugin extends Plugin {
 				this.activateView(VIEW_TYPE_RECENT_BOOKS, "left");
 			},
 		});
-
+		
+		// command: open book project view
 		this.addCommand({
 			id: "bm-open-book-project-view",
 			name: "Open Book Project View",
@@ -92,42 +82,31 @@ export default class BookMasterPlugin extends Plugin {
 				this.activateView(VIEW_TYPE_BOOK_PROJECT, "right");
 			},
 		});
+
+		// command: search book command
+		this.addCommand({
+				id: "bm-search-book",
+				name: "Search Book",
+				checkCallback: (checking) => {
+					const tree = this.bookVaultManager.getCurrentBookVault();
+					if (checking) {
+						return Boolean(tree);
+					} else {
+						new BookSuggestModal(this.app, this, tree).open();
+						return true;
+					}
+				}
+	
+			});
+
+		// register some book project related event or command
 		this.registerBookProject();
 
-		// update last active view
-
-		const activeLeafChangeRef = this.app.workspace.on("active-leaf-change",(leaf) => {
-			// if (leaf.view.getViewType() === VIEW_TYPE_BOOK_VIEW) {
-			// 	this.lastActiveBookView = leaf.view as BookView;
-			// 	console.log("active view:", this.lastActiveBookView.book.name);
-			// }
-			
-			if (leaf.view instanceof MarkdownView) {
-				this.lastActiveMarkdownView = leaf.view;
-				
-				const projFile = this.bookProjectManager.searchProjectFile(leaf.view.file);
-				if (projFile) {
-					if (!this.settings.pinProjectFile && leaf.view.file) {
-						this.bookProjectManager.loadProjectFile(leaf.view.file);
-					}
-
-					this.bookProjectStatusEl.style.color = "var(--text-accent)"
-					// this.bookProjectStatusEl.addClass("book-project-active");
-				} else {
-					this.bookProjectStatusEl.style.color = ""
-					// this.bookProjectStatusEl.removeClass("book-project-active");
-				}
-			}
-		});
-		this.register(() => {
-			this.app.workspace.offref(activeLeafChangeRef);
-		});
-
-		// this.app.workspace.on("")
+		// register protocal handler
 		this.registerProtocalHandler();
     }
 
-
+	// register some book project related event or command
 	private registerBookProject() {
 		const self = this;
 
@@ -229,9 +208,39 @@ export default class BookMasterPlugin extends Plugin {
 				this.bookProjectManager.loadProjectFromFile(file);
 			}
 		})
+
+
+		// update last active view
+		const activeLeafChangeRef = this.app.workspace.on("active-leaf-change",(leaf) => {
+			// if (leaf.view.getViewType() === VIEW_TYPE_BOOK_VIEW) {
+			// 	this.lastActiveBookView = leaf.view as BookView;
+			// 	console.log("active view:", this.lastActiveBookView.book.name);
+			// }
+			
+			if (leaf.view instanceof MarkdownView) {
+				this.lastActiveMarkdownView = leaf.view;
+				
+				const projFile = this.bookProjectManager.searchProjectFile(leaf.view.file);
+				if (projFile) {
+					if (!this.settings.pinProjectFile && leaf.view.file) {
+						this.bookProjectManager.loadProjectFile(leaf.view.file);
+					}
+
+					this.bookProjectStatusEl.style.color = "var(--text-accent)"
+					// this.bookProjectStatusEl.addClass("book-project-active");
+				} else {
+					this.bookProjectStatusEl.style.color = ""
+					// this.bookProjectStatusEl.removeClass("book-project-active");
+				}
+			}
+		});
+		this.register(() => {
+			this.app.workspace.offref(activeLeafChangeRef);
+		});
 		
 	}
 
+	// register protocal handler
 	private registerProtocalHandler() {
 		const self = this;
 		const obProtocalHandler: any = {
@@ -311,23 +320,16 @@ export default class BookMasterPlugin extends Plugin {
 			}
 		});
 
-
-		// this.registerMarkdownPostProcessor((element, context) => {
-		// 	console.log("post:",element);
-		// })
-
-		// this.app.workspace.on("")
-
 		this.annotationImageSelector = ".view-content img[src]";
 		// document.on("mousemove", this.annotationImageSelector, this.annotationImageMouseMoveEvent);
 		document.on("mousedown", this.annotationImageSelector, this.annotationImageMouseClickEvent);
-
 	}
 
 	onunload(): void {
 		// document.off("mousemove", this.annotationImageSelector, this.annotationImageMouseMoveEvent);
 		document.off("mousedown", this.annotationImageSelector, this.annotationImageMouseClickEvent);
 	}
+
 	// private annotationImageMouseMoveEvent(ev: MouseEvent, target: HTMLElement) {
 	// 	// if (ev.ctrlKey) {
 	// 	// 	console.log(target.attributes.getNamedItem("src"));
@@ -362,8 +364,16 @@ export default class BookMasterPlugin extends Plugin {
 	async saveSettings() {
 		await this.saveData(this.settings);
 	}
+	
 	getCurrentDeviceSetting() {
 		return this.settings.deviceSetting[utils.appId];
+	}
+
+	private safeRegisterView(type: string, viewCreator: ViewCreator) {
+		this.registerView(type, viewCreator);
+		this.register(() => {
+			this.app.workspace.detachLeavesOfType(type);
+		});
 	}
 
     async activateView(type: string, layout?: "left" | "right" | "center", split: boolean | PaneType = false, newPanel: boolean = false) {
@@ -392,7 +402,7 @@ export default class BookMasterPlugin extends Plugin {
 	}
 
 	async createNewBookView(newPanel: boolean = false) {
-		var leaf;
+		var leaf: WorkspaceLeaf;
 
 		const oldLeafs = this.app.workspace.getLeavesOfType(VIEW_TYPE_BOOK_VIEW);
 		if (!newPanel && oldLeafs.length) {
@@ -404,24 +414,14 @@ export default class BookMasterPlugin extends Plugin {
 			leaf = this.app.workspace.getLeaf("split");	
 		}
 
-		leaf.setGroup("bookview-group");
-		await leaf.setViewState({
+		leaf.setGroup("bm-bookview-group");
+		return leaf.setViewState({
 			type: VIEW_TYPE_BOOK_VIEW,
 			active: true,
-		});
-		return leaf.view as BookView;
+		}).then(() => {
+			return leaf.view as BookView;
+		})
 	}
-    private safeRegisterView(type: string, viewCreator: ViewCreator) {
-		this.registerView(type, viewCreator);
-		this.register(() => {
-			this.app.workspace.detachLeavesOfType(type);
-		});
-	}
-
-	// async updateDispTree() {
-	// 	return this.bookVaultManager.update();
-	// }
-
 
 	async openBookBySystem(book: Book, state?: any) {
 		if (book.ext === "url") {
@@ -442,48 +442,30 @@ export default class BookMasterPlugin extends Plugin {
 	}
 
 	async insertBookToProjectFile(book: Book,file: TFile) {
-	
-		return Promise.all([this.bookVaultManager.getBookIdPath(book),this.app.vault.read(file)]).then((value) => {
-			const idpath = value[0];
-			const content = value[1];
+		return this.bookVaultManager.getBookIdPath(book).then((idpath) => {
+			return this.app.fileManager.processFrontMatter(file, (frontmatter) => {
 
-			const rYaml = /^(---\r?\n[\s\S]*\r?\n)---\r?\n/;
-			const r = /(.*):(.*)\r?\n((?:- .*)\r?\n)*/g;
-			const regIdPath = /[a-zA-Z0-9]{16}/;
-			const gYaml = rYaml.exec(content)
-			const yaml = gYaml?.[0];
-			var result = null;
-			if (yaml) {
-				const gi = yaml.matchAll(r);
-				for (var val = gi.next().value; val; val = gi.next().value) {
-					var newYaml = null;
-					const idSet = new Set<string>();
+				if (!frontmatter["bm-books"]) {
+					frontmatter["bm-books"] = [idpath]
+				} 
 
-					if (val[1] === "bm-books") {
-						if (val[2]) {
-							newYaml = yaml.replace(val[0],`bm-books:\n- ${val[2]}\n- ${idpath}`)
-						} else {
-							newYaml = yaml.replace(val[0],val[0]+`- ${idpath}\n`);
-						}
-						result = content.replace(yaml,newYaml);
-						break;
-					}
+				if (typeof(frontmatter["bm-books"] ) == "string") {
+					frontmatter["bm-books"] = [frontmatter["bm-books"]]
 				}
-	
-				if (!result) {
-					result = content.replace(yaml,gYaml[1]+`bm-books:\n- ${idpath}\n---\n`)
-				}
-	
-			} else {
-				result = `---\nbm-books:\n- ${idpath}\n---\n` + content;
-	
-			}
-	
-			if (result) {
-				return this.app.vault.modify(file,result);
-			}
 
-		});
+				if (!(frontmatter["bm-books"] instanceof Array)) {
+					new Notice("bm-books属性类型非列表，请删除后重试")
+					return
+				}
+
+				console.log()
+				if (frontmatter["bm-books"].contains(idpath)) {
+					new Notice("文件已存在")
+				} else {
+					frontmatter["bm-books"].push(idpath)
+				}
+			})
+		})
 	}
 
 	async openBook(book: Book, newPanel: boolean=false, state?: any) {
@@ -557,7 +539,7 @@ export default class BookMasterPlugin extends Plugin {
 				item
 					.setTitle("导出标注后文件")
 					.onClick(async () => {
-						const annots = await this.bookVaultManager.loadBookAnnotations(book.bid);
+						const annots = await this.bookVaultManager.loadBookAnnotations(book);
 						if (!annots) {
 							new Notice("无法加载标注文件");
 						} else {
@@ -633,6 +615,8 @@ export default class BookMasterPlugin extends Plugin {
 				}
 			}
 			menu.addSeparator();
+
+
 			menu.addItem((item) =>
 			item
 				.setTitle("复制路径(ID:Title)")
@@ -668,6 +652,8 @@ export default class BookMasterPlugin extends Plugin {
 				})
 			);
 			menu.addSeparator();
+
+
 			menu.addItem((item: any) =>
 			item
 				.setTitle("打开设置文件")
@@ -710,31 +696,31 @@ export default class BookMasterPlugin extends Plugin {
 			
 		}
 
-	// 	if (!book.lost) {
-	// 		menu.addSeparator();
-	// 		menu.addItem((item: any) =>
-	// 		item
-	// 			.setTitle("使用默认应用打开")
-	// 			.setIcon("popup-open")
-	// 			.onClick(()=>{
-	// 				this.openBookBySystem(book);
-	// 			})
-	// 		);
+		if (!book.lost) {
+			menu.addSeparator();
+			menu.addItem((item: any) =>
+			item
+				.setTitle("使用默认应用打开")
+				.setIcon("popup-open")
+				.onClick(()=>{
+					this.openBookBySystem(book);
+				})
+			);
 				
 
-	// 		if (book.vid && !book.visual && !Platform.isMobile) {
-	// 			menu.addItem((item: any) =>
-	// 			item
-	// 				.setTitle("在系统资源管理器中显示")
-	// 				.setIcon("popup-open")
-	// 				.onClick(()=>{
-	// 					// TODO: http?
-	// 					this.showBookLocationInSystem(book);						
-	// 				})
-	// 			)
-	// 		};
+			if (book.vid && !book.visual && !Platform.isMobile) {
+				menu.addItem((item: any) =>
+				item
+					.setTitle("在系统资源管理器中显示")
+					.setIcon("popup-open")
+					.onClick(()=>{
+						// TODO: http?
+						this.showBookLocationInSystem(book);						
+					})
+				)
+			};
 	
-		// }
+		}
 	}
 
 	createBookFolderContextMenu(menu: Menu, folder: BookFolder) {
@@ -759,6 +745,5 @@ export default class BookMasterPlugin extends Plugin {
 			new Notice("请先激活目标Markdown窗口");
 		}
 	}
-
 
 }

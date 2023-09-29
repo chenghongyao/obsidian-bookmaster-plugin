@@ -34,10 +34,10 @@ export default class PDFTronViewer extends DocumentViewer {
     xfdfDoc: Document;
 	annotsDoc: Element;
     annotsChanged: boolean;
+	pageMtxMap: Map<String,Array<number>>;
 
     data: ArrayBuffer;
     ext: string;
-
     private pdfjsDoc: PDFDocumentProxy;
 	private image: ImageBitmap;
 
@@ -54,9 +54,10 @@ export default class PDFTronViewer extends DocumentViewer {
 
         this.xfdfDoc = null;
 		this.annotsDoc = null;
+		this.pageMtxMap = new Map<String,Array<number>>;
+
 		this.annotsChanged = false;
 		this.state = {page: 0};
-
         const self = this;
 		this.eventHandlerMap = {
 			viewerLoaded(data: any) {
@@ -72,6 +73,23 @@ export default class PDFTronViewer extends DocumentViewer {
 
 				self.xfdfDoc = self.parseXfdfString(data);
 				self.annotsDoc = self.xfdfDoc.getElementsByTagName("annots")[0];
+				console.log(self.xfdfDoc)
+				var pagesDoc = self.xfdfDoc.getElementsByTagName("pages")[0];
+				console.log(pagesDoc)
+
+				if (pagesDoc) {
+					self.pageMtxMap.set("default", 
+											pagesDoc.getElementsByTagName("defmtx")[0].getAttr("matrix").split(",").map((t:string) => Number(t))
+					)
+
+					var pagesMtx = pagesDoc.getElementsByTagName("pgmtx")
+					for(var i = 0; i < pagesMtx.length; ++i) {
+						var mtx = pagesMtx[i].getAttr("matrix").split(",").map((t:string) => Number(t))
+						self.pageMtxMap.set(pagesMtx[i].getAttr("page"), mtx)
+					}
+		
+				}
+
 				self.annotsChanged = false;
 				self.documentReady = true;
 			},
@@ -119,7 +137,7 @@ export default class PDFTronViewer extends DocumentViewer {
 			copyAnnotationLink(data: any) {
 				const id = data.id;
 				const annot = self.xfdfDoc.getElementsByName(id)[0]; // FIXME: not exists??
-
+				console.log(annot)
 				if (annot && self.eventCallback) {
 					self.eventCallback("copy-annotation", {
 						annot: annot,
@@ -315,13 +333,29 @@ export default class PDFTronViewer extends DocumentViewer {
 
 		// const annoRect = annot.getAttr("rect")
 		const annoPage = Number(annot.getAttr("page")) + 1;
+
+		let mtx = this.pageMtxMap.get(annot.getAttr("page")) || this.pageMtxMap.get("default")
+		console.log( this.pageMtxMap)
+
+
+		if (mtx) {
+			clipBox[0] = clipBox[0] + mtx[4]
+			clipBox[1] = mtx[5] - clipBox[1]
+
+			clipBox[2] = clipBox[2] + mtx[4]
+			clipBox[3] = mtx[5] - clipBox[3]
+		}
+
+		console.log("mtx:", mtx)
+
 		const clipWidth = (clipBox[2] - clipBox[0])*zoom;
-		const clipHeight = (clipBox[3] - clipBox[1])*zoom;
+		const clipHeight = (clipBox[1] - clipBox[3])*zoom;
 		const clipLeft = clipBox[0]*zoom;
+		const clipTop = clipBox[3]*zoom;
+
 
 		return this.pdfjsDoc.getPage(annoPage).then((page: any) => {
-			const clipTop = (page.view[3] - clipBox[3])*zoom;
-	
+			
 			const viewport = page.getViewport({
 				scale: zoom,
 				offsetX:-clipLeft,

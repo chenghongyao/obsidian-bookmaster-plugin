@@ -31,7 +31,7 @@ export class BookView extends ItemView {
 
 
 		this.debounceSaveAnnotation = debounce(() => {
-			this.plugin.bookVaultManager.saveBookAnnotations(this.bid, this.viewer.exportAnnotations());
+			this.plugin.bookVaultManager.saveBookAnnotations(this.book, this.viewer.exportAnnotations());
 		}, 2000, true);
 
         this.debounceUpdateProgress = debounce((params: any) => {
@@ -178,7 +178,7 @@ export class BookView extends ItemView {
 			if (template.includes("{{img}}")) {
 				const image = await this.viewer.getAnnotationImage(annot,clipBox,realZoom);
 				if (image) {
-					imgName = await this.bookVaultManager.saveBookAnnotationImage(this.bid,annoId,Buffer.from(image));
+					imgName = await this.bookVaultManager.saveBookAnnotationImage(this.book,annoId, Buffer.from(image));
 				} else {
 					new Notice("无法获取标注图片图片");
 				}
@@ -220,7 +220,7 @@ export class BookView extends ItemView {
 
         this.bid = bid;
         this.book = await this.bookVaultManager.getBookById(this.bid); // TODO: validate book
-        const annos = await this.bookVaultManager.loadBookAnnotations(bid);
+        const annos = await this.bookVaultManager.loadBookAnnotations(this.book);
         
         this.book.view = this;
         this.setTitle(this.book.meta.title || this.book.name);
@@ -249,12 +249,6 @@ export class BookView extends ItemView {
                 state.progress = this.book.meta["progress"]
                 this.viewer.show(data,state,this.book.ext,annos);
             });
-
-            // const workerPath = this.plugin.getCurrentDeviceSetting().bookViewerWorkerPath + "/epubjs-reader/reader/index.html";
-            // this.viewer = new EpubJSViewer(bid, this.contentEl, theme, workerPath, this.viewerEvent.bind(this)); 
-            // // const url = this.bookVaultManager.getBookUrl(book);
-            // // const url = "app://local/D:/我的书库/其他/金字塔原理2.epub"
-            // // const url = "http://127.0.0.1/%E6%88%91%E7%9A%84%E4%B9%A6%E5%BA%93/%E5%85%B6%E4%BB%96//金字塔原理2.epub"
             // this.viewer.show(url,state,book.ext)
         } else if (this.book.ext === "html") {
             const url = this.bookVaultManager.getBookUrl(this.book);

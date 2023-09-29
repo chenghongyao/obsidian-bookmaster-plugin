@@ -9,7 +9,7 @@ import * as utils from './utils'
 
 export default class BookProjecetManager {
     plugin: BookMasterPlugin;
-    bookVaultManager: BookVaultManagerl;
+    bookVaultManager: BookVaultManager;
     projectBooks: BookFolder;
     projectFile: TFile;
 

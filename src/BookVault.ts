@@ -149,37 +149,37 @@ export class BookVaultManager {
 
 	async openBookDataFile(book: Book) {
 		return this.getBookIdSafely(book).then((bid) => {
-			return utils.openMdFileInObsidian(this.getBookDataFilePath(book.bid));
+			return utils.openMdFileInObsidian(this.getBookDataFilePath(book));
 		})
 	}
 
-	async loadBookAnnotations(bid: string) {
-		const path = this.getBookAnnotationsFilePath(bid);
+	async loadBookAnnotations(book: Book) {
+		const path = this.getBookAnnotationsFilePath(book);
 		return utils.safeReadObFile(path);
 	}
-	async saveBookAnnotations(bid: string, annotations: string) {
-		return utils.safeWriteObFile(this.getBookAnnotationsFilePath(bid), annotations, true)
+	async saveBookAnnotations(book: Book, annotations: string) {
+		return utils.safeWriteObFile(this.getBookAnnotationsFilePath(book), annotations, true)
 	}
-	getBookAnnotationsFilePath(bid: string) {
-		return this.getBookAnnotationsPath() + `/${bid}.xml`;
+	getBookAnnotationsFilePath(book: Book) {
+		return this.getBookAnnotationsPath() + `/${book.vid}/${book.bid}.xml`;
 	}
 
-	async saveBookAnnotationImage(bid: string, aid: string, data: ArrayBuffer, suffix?: string) {
+	async saveBookAnnotationImage(book: Book, aid: string, data: ArrayBuffer, suffix?: string) {
 
 		if (suffix) {
 			suffix = "-" + suffix;
 		} else {
 			suffix = "";
 		}
-		const imageName = `${bid}-${aid}${suffix}.png`
-		const path = this.getBookAnnotationImagesPath() + "/" + imageName;
+		const imageName = `${book.bid}-${aid}${suffix}.png`
+		const path = this.getBookAnnotationImagesPath() + `/${book.vid}` + "/" + imageName;
 		return utils.safeWriteObFile(path, data).then(() => {
 			return imageName;
 		});
 	}
 
-	private getBookDataFilePath(bid: string) {
-		return this.getBookDataPath() + `/${bid}.md`;
+	private getBookDataFilePath(book: Book) {
+		return this.getBookDataPath() + `/${book.vid}/${book.bid}.md`;
 	}
 
 
@@ -723,73 +723,122 @@ export class BookVaultManager {
 			return;
 		}
 
-		for (var i = 0; i < dataFolder.children.length; i++) {
-			const file = dataFolder.children[i];
-			if (!(file instanceof TFile)) continue;
-
-			const meta = await utils.app.metadataCache.getFileCache(file as TFile).frontmatter;
-			if (!meta) {
-			}
-			if (!meta || !meta["bm-meta"]) {
-				new Notice("非配置文件:" + file.name, 0)
-				console.error("非配置文件:" + file.name, meta)
-				continue;
-			}
-			const { vid, bid, path, name, ext } = meta;
-			if (!vid || !bid) { // TODO: check book path?
-				new Notice("无效配置文件:" + file.name);
-				console.error("无效配置文件:" + file.name)
-
-				continue;
-			}
+		for (var v = 0; v < dataFolder.children.length; v++) {
 
 
-			if (!this.root.has(vid)) {
-				// console.warn(`书库 ${vid} 不存在：`, file.name)
-				continue;
-			}
+			// for backward complement, will be removed in the future 
+			if (dataFolder.children[v] instanceof TFile) {
+				console.log("copying data created in  older version")
+				var datafile = dataFolder.children[v] as TFile
+				const meta = await utils.app.metadataCache.getFileCache(datafile).frontmatter;
+				if (meta && meta["bm-meta"] && meta["vid"] && meta["bid"]) {
 
-			if (!this.root.has(vid)) {
-				this.addBookVault(vid);
-			}
+					var datafilefolder = this.getBookDataPath() + `/${meta["vid"]}`
+					if (!this.plugin.app.vault.getAbstractFileByPath(datafilefolder)) {
+						await this.plugin.app.vault.createFolder(datafilefolder);
+					}
 
-			const entry = `${vid}:${path}`;
-			var book = this.bookIdMap.get(bid);
-			if (book) { // old data file
-				// TODO: move book when change vid or path manually, which should not happen
-				// if (book.vid !== vid || book.path !== path) { 
-				// 	book.parent.children.remove(book);
-				// 	book.vid = vid;
-				// 	book.path = path;
-				// 	if (this.root.get(vid)) {
-				// 		const folder = this.getBookFolder(vid,book.path,this.root[vid]) // exist root[vid]?
-				// 		book.parent = folder;
-				// 		folder.push(book);
-				// 	}
-				// }
-				// book.lost = !this.bookMap.has(entry)	// update book lost flag
-			} else { // new book data file
+					await this.plugin.app.fileManager.renameFile(datafile, datafilefolder + "/" + datafile.name)
 
-				book = this.bookMap.get(entry) as Book;
+					var annofile = this.plugin.app.vault.getAbstractFileByPath(this.getBookAnnotationsPath() +  `/${meta["bid"]}.xml`)
+					if (annofile) {
+						var annofilefolder = this.getBookAnnotationsPath() + `/${meta["vid"]}`
+						if (!this.plugin.app.vault.getAbstractFileByPath(annofilefolder)) {
+							await this.plugin.app.vault.createFolder(annofilefolder);
+						}
+						await this.plugin.app.fileManager.renameFile(annofile,  annofilefolder + "/" + annofile.name)
+					}
 
-				if (!book || book.isFolder()) {   // this book is lost
+					var imagefolder = this.plugin.app.vault.getAbstractFileByPath(this.getBookAnnotationImagesPath()) as TFolder
+					var newimagefolderpath =  this.getBookAnnotationImagesPath() +  `/${meta["vid"]}`
+					var newimagefolder = this.plugin.app.vault.getAbstractFileByPath(newimagefolderpath) as TFolder
 
-					const folder = this.getBookFolder(vid, utils.getFolderName(path), this.root.get(vid), this.bookMap);
-					book = reactive(new Book(folder, vid, name, path, ext, bid, true)); // book is lost
-					folder.push(book);
-					this.bookMap.set(entry, book);
-				} else if (book.bid) { //not lost, but has repeat bid
-					if (bid !== book.bid) {
-						new Notice(`book id ${bid} exist, already has ${book.bid}`)
-						console.error(`book id ${bid} exist, already has ${book.bid}`);
-						continue;
+					if (imagefolder) {
+						for (const imgfile of imagefolder.children) {
+							if (imgfile.name.startsWith(meta["bid"])) {
+								if (!newimagefolder) {
+									await this.plugin.app.vault.createFolder(newimagefolderpath);
+									newimagefolder = this.plugin.app.vault.getAbstractFileByPath(newimagefolderpath) as TFolder
+								}
+
+								await this.plugin.app.fileManager.renameFile(imgfile, newimagefolderpath + "/" + imgfile.name)
+							}
+						}
 					}
 				}
-				this.bookIdMap.set(bid, book);
-			}
+				continue
+			};
 
-			book.loadBookData(file);
-			// FIXME: data file is deleted manualy??
+			let vaultDataFolder = dataFolder.children[v] as TFolder;
+
+			for (var i = 0; i < vaultDataFolder.children.length; i++) {
+				const file = vaultDataFolder.children[i];
+				if (!(file instanceof TFile)) continue;
+
+				const meta = await utils.app.metadataCache.getFileCache(file as TFile).frontmatter;
+				if (!meta) {
+				}
+				if (!meta || !meta["bm-meta"]) {
+					new Notice("非配置文件:" + file.name, 0)
+					console.error("非配置文件:" + file.name, meta)
+					continue;
+				}
+				const { vid, bid, path, name, ext } = meta;
+				if (!vid || !bid) { // TODO: check book path?
+					new Notice("无效配置文件:" + file.name);
+					console.error("无效配置文件:" + file.name)
+
+					continue;
+				}
+
+
+				if (!this.root.has(vid)) {
+					// console.warn(`书库 ${vid} 不存在：`, file.name)
+					continue;
+				}
+
+				if (!this.root.has(vid)) {
+					this.addBookVault(vid);
+				}
+
+				const entry = `${vid}:${path}`;
+				var book = this.bookIdMap.get(bid);
+				if (book) { // old data file
+					// TODO: move book when change vid or path manually, which should not happen
+					// if (book.vid !== vid || book.path !== path) { 
+					// 	book.parent.children.remove(book);
+					// 	book.vid = vid;
+					// 	book.path = path;
+					// 	if (this.root.get(vid)) {
+					// 		const folder = this.getBookFolder(vid,book.path,this.root[vid]) // exist root[vid]?
+					// 		book.parent = folder;
+					// 		folder.push(book);
+					// 	}
+					// }
+					// book.lost = !this.bookMap.has(entry)	// update book lost flag
+				} else { // new book data file
+
+					book = this.bookMap.get(entry) as Book;
+
+					if (!book || book.isFolder()) {   // this book is lost
+
+						const folder = this.getBookFolder(vid, utils.getFolderName(path), this.root.get(vid), this.bookMap);
+						book = reactive(new Book(folder, vid, name, path, ext, bid, true)); // book is lost
+						folder.push(book);
+						this.bookMap.set(entry, book);
+					} else if (book.bid) { //not lost, but has repeat bid
+						if (bid !== book.bid) {
+							new Notice(`book id ${bid} exist, already has ${book.bid}`)
+							console.error(`book id ${bid} exist, already has ${book.bid}`);
+							continue;
+						}
+					}
+					this.bookIdMap.set(bid, book);
+				}
+
+				book.loadBookData(file);
+				// FIXME: data file is deleted manualy??
+			}
 		}
 	}
 

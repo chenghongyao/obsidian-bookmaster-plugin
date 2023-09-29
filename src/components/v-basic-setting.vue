@@ -58,9 +58,10 @@
     <div class="book-setting-item">
         <div class="book-setting-label">描述：</div>
         <div class="book-setting-value-container">
-            <textarea style="width: 100%;" v-model="book.meta.desc" class="book-desc-textarea"
-            @change="$emit('change','desc')"
-            @keypress="$emit('change','desc')" />
+            <!-- <textarea style="width: 100%;" v-model="book.meta.desc" class="book-desc-textarea" -->
+            <input style="width: 100%" type="text" v-model="book.meta.desc"
+                @change="$emit('change','desc')"
+                @keypress="$emit('change','desc')" />
         </div>
     </div>
     <div class="book-setting-item">
