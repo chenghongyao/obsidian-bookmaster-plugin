@@ -3,11 +3,8 @@
 import { debounce, Notice, Platform, TFile, TFolder, WorkspaceLeaf } from "obsidian";
 import { reactive } from "vue";
 import { AbstractBook, Book, BookFolder, BookFolderType, BookTreeSortType } from "./Book";
-// import { supportBookExts } from "./constants";
 import BookMasterPlugin from "./main";
 import * as utils from './utils'
-// import { VIEW_TYPE_BOOK_EXPLORER } from "./view/BookExplorer";
-// import { BookView, VIEW_TYPE_BOOK_VIEW } from "./view/BookView";
 
 export const MAIN_BOOKVAULT_ID = "00";
 export const OB_BOOKVAULT_ID = "99";

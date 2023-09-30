@@ -2,8 +2,6 @@
 import { AudioExts, ImageExts, OfficeExts, VideoExts } from "./constants"; 
 import {MAIN_BOOKVAULT_ID} from "./BookVault"; 
 import { BookTreeSortType } from "./Book";
-
-// import { BookTreeSortType } from "./Book";
 import { DocumentViewerTheme } from "./document_viewer/documentViewer";
 
 

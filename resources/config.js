@@ -1,4 +1,4 @@
-// for bookmaster-v0.3.2
+// for bookmaster-v0.3.3
 if (!window.wvWindowMessageListener) {
   // console.error("add message EventListener");
   const eventHandlerMap = {

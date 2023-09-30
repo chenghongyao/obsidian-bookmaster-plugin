@@ -29,6 +29,8 @@ export class BookMasterSettingTab extends PluginSettingTab {
         var btnPickFolder: ButtonComponent = null;
         var btnToggleEdit: ButtonComponent = null;
         var changed = false;
+    
+        bookVaultSetting.setClass("bookvault-setting")
 
         bookVaultSetting
             .setName("vid:" + vid)
@@ -53,11 +55,15 @@ export class BookMasterSettingTab extends PluginSettingTab {
                     btn.setIcon("check");
                     compName.setDisabled(false);
                     compPath.setDisabled(false);
-                    btnPickFolder.setDisabled(false);
+                    if (Platform.isDesktop) {
+                        btnPickFolder.setDisabled(false);
+                    }
                 } else {
                     compName.setDisabled(true);
                     compPath.setDisabled(true);
-                    btnPickFolder.setDisabled(true);
+                    if (Platform.isDesktop) {
+                        btnPickFolder.setDisabled(true);
+                    }
                     btn.setIcon("pencil");
 
                     if (changed) {
@@ -69,6 +75,9 @@ export class BookMasterSettingTab extends PluginSettingTab {
                 }
             })
         })
+    
+        
+
         if (Platform.isDesktop) {
             bookVaultSetting.addButton((btn) => {
                 btnPickFolder = btn;
@@ -97,6 +106,7 @@ export class BookMasterSettingTab extends PluginSettingTab {
                 })
             })
         }
+
         bookVaultSetting.addButton((btn) => {
             btn.setIcon("cross");
             btn.onClick(async () => {
@@ -109,12 +119,16 @@ export class BookMasterSettingTab extends PluginSettingTab {
         if (newVault) {
             compName.setDisabled(false);
             compPath.setDisabled(false);
-            btnPickFolder.setDisabled(false);
+            if (Platform.isDesktop) {
+                btnPickFolder.setDisabled(false);
+            }
             btnToggleEdit.setIcon("check");
         } else {
             compName.setDisabled(true);
             compPath.setDisabled(true);
-            btnPickFolder.setDisabled(true);
+            if (Platform.isDesktop) {
+                btnPickFolder.setDisabled(true);
+            }
             btnToggleEdit.setIcon("pencil");
         }
     }

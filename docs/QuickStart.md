@@ -73,4 +73,28 @@ TODO
 ## 其他
 
 ### 多设备支持
-### 移动端部署
+
+当在不同设备中使用插件时，书库文件夹的所在位置可能不同。此时可为不同设备上的软件设置对应的书库地址。
+
+![设备名](images/device_name.png)
+
+在设置面板中的`当前设备名`下显示了当前设备的唯一 `id`，可为该设备自定义名称（只做展示用）。`id` 是从obsidian中获取的，不同设备一般不同，目前发现移动端以ob库路径为 `id`, 如果不同移动端下的ob库文件夹在同一路径，则插件无法分辨。
+
+当在新设备中使用插件时，需要重新设置 `书库路径`以及 `BookViewer服务器地址`。
+![书库路径](images/bookvaultpath.png)。
+
+### 移动端部署（安卓）
+
+由于插件对多设备的支持，可以在移动端单独设置不同的书库路径以及BookViewer服务器地址。重点是BookViewer服务器的部署，如果使用公网的服务器地址（如使用测试服务器），则像在pc端一样修改书库文件夹的地址即可。
+
+![](images/bookvault_in_mobile.png)
+
+![](images/bookvault_path_setting.jpg)
+
+
+由于obsidian安卓端有本地服务器的功能，实际上不需要另外部署文件服务器，只需要将bookviewer包放到移动端下, 如下图所示，服务器地址是文件夹地址前加 `http://localhost/_capacitor_file_`, 下面的图的实际地址为`http://localhost/_capacitor_file_/storage/emulated/0/Documents/bookviewer`
+
+![](images/bookviewer_path_in_mobile.png)
+
+![](images/bookviewer_server_setting_mobile.png)
+

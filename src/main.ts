@@ -17,7 +17,7 @@ import { BookProject, VIEW_TYPE_BOOK_PROJECT } from "./view/BookProjectView";
 import { around } from "monkey-around";
 import exportPDFAnnotation from "./utils/PdfAnnotation";
 
-
+import "./styles.css"
 // TODO: 重复添加book vault watcher
 
 export default class BookMasterPlugin extends Plugin {
