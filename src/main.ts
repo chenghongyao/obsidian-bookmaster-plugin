@@ -488,6 +488,7 @@ export default class BookMasterPlugin extends Plugin {
 			var leaf;
 
 			if (book.view) {
+				console.warn("view exists")
 				leaf = book.view.leaf;
 				book.view.setViewerState(state);
 			} else {
@@ -499,11 +500,9 @@ export default class BookMasterPlugin extends Plugin {
 		} 
 
 		// if open by system
-		// if (book.vid) {
-		// 	return this.getBookId(book).then((bid) => {
-		// 		this.appendRecentBook(book);
-		// 	});
-		// }
+		if (book.vid) {
+			this.recentBooksManager.addBook(book);
+		}
 	}
 
 	showBookLocationInSystem(book: AbstractBook) {

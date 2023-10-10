@@ -35,7 +35,7 @@ export interface BookMasterSettings {
     documentViewerTheme: DocumentViewerTheme;
 
     // recent book view
-    recentBookNumberLimit: Number;
+    recentBookNumberLimit: number;
 
     // book project view
     pinProjectFile: boolean;
