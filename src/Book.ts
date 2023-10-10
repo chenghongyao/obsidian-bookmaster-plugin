@@ -218,49 +218,44 @@ export class Book extends AbstractBook {
         return this.bid;
     }
 
-    private async getBookDescription(file: TFile) {
-        const ryaml = /^(---\r?\n[\s\S]*\r?\n---)\r?\n/;
-        const cont = await utils.app.vault.read(file);
-        const g = ryaml.exec(cont)
-        var len = 0;
-        if (g && g[1]) {
-            len = g[1].length;
-        }
-        return cont.substring(len+1).trim() ;
-    }
+    // private async getBookDescription(file: TFile) {
+    //     const ryaml = /^(---\r?\n[\s\S]*\r?\n---)\r?\n/;
+    //     const cont = await utils.app.vault.read(file);
+    //     const g = ryaml.exec(cont)
+    //     var len = 0;
+    //     if (g && g[1]) {
+    //         len = g[1].length;
+    //     }
+    //     return cont.substring(len+1).trim() ;
+    // }
 
     async loadBookData(file: TFile) {
         const basicMeta = BookMetaMap['basic'];
-
         // TODO: correct meta type
         if (file) { // load from file
-            const inputMeta: any = utils.app.metadataCache.getFileCache(file).frontmatter;
-            const typeMeta = BookMetaMap[inputMeta['type']];
+            return utils.app.fileManager.processFrontMatter(file, (inputMeta) => {
+                this.bid = inputMeta["bid"];
+                this.vid = inputMeta["vid"];
+                this.path = inputMeta["path"];
+                this.name = inputMeta["name"];
+                this.ext = inputMeta["ext"];
+                this.visual = inputMeta["visual"];
 
-            this.bid = inputMeta["bid"];
-            this.vid = inputMeta["vid"];
-            this.path = inputMeta["path"];
-            this.name = inputMeta["name"];
-            this.ext = inputMeta["ext"];
-            this.visual = inputMeta["visual"];
-            // this.hash = inputMeta["hash"];
-            // this.citekey = inputMeta["citekey"];
+                for(const key in basicMeta) {
+                    const val = inputMeta[key];
+                    if (basicMeta[key].type === "text-array") {
+                        this.meta[key] = val === undefined ? new Array() : (typeof val === "string" ? [val] : val);
+                    } else if(val !== undefined){
+                        this.meta[key] = inputMeta[key];
+                    }
+                }
 
-            for(const key in basicMeta) {
-                const val = inputMeta[key];
-                if (basicMeta[key].type === "text-array") {
-                    this.meta[key] = val === undefined ? new Array() : (typeof val === "string" ? [val] : val);
-                } else if(val !== undefined){
+                const typeMeta = BookMetaMap[inputMeta['type']];
+                for(const key in typeMeta) {
                     this.meta[key] = inputMeta[key];
                 }
-            }
 
-            for(const key in typeMeta) {
-                this.meta[key] = inputMeta[key];
-            }
-
-            // TODO: book desc
-            // this.meta["desc"] = await this.getBookDescription(file);
+            })
 
         } else { // init book meta
 
@@ -283,83 +278,40 @@ export class Book extends AbstractBook {
                     }
                 }  
             }
-
             // TODO: book desc
             // this.meta["desc"] = "";
-
-
         }
     }
 
     // make sure this book has bid
     // do NOT use this directly, use plugin.saveBookData() instead
-    async saveBookData(datapath: string) {
+    async saveBookData(datapath: string) {        
         const filepath = normalizePath(datapath+`/${this.vid}` + "/"+this.bid+".md");
+        return utils.safeWriteObFile(filepath, "", false).then(() => {
+            const file = utils.app.vault.getAbstractFileByPath(filepath) as TFile;
+            return utils.app.fileManager.processFrontMatter(file, (frontmatter) => {
+                frontmatter["bm-meta"] = true;
+                frontmatter["bid"] = this.bid;
+                frontmatter["vid"] = this.vid;
+                frontmatter["path"] = this.path;
+                frontmatter["name"] = this.name;
+                frontmatter["ext"] = this.ext;
+                frontmatter["visual"] = this.visual;
 
-        const rawMeta = (utils.app.metadataCache.getCache(filepath)?.frontmatter as any) || {};
-        // TODO: load from map
-        delete rawMeta['position'];
+                for(const key in this.meta) {
+                    var val = this.meta[key]; // TODO: correct type string
+                    if (val === undefined) continue;
+    
+                    if (typeof val === "string") {
+                        val =  `"${val}"`;
+                    }
 
-        const basicMeta = BookMetaMap['basic'];
-        const typeMeta = this.meta.type && BookMetaMap[this.meta.type];
-
-        for(const key in basicMeta) {
-            if (this.meta[key] !== undefined) {
-                rawMeta[key] = this.meta[key];
-            }
-        }
-
-        if (typeMeta) {
-            for(const key in typeMeta) {
-                if (this.meta[key] !== undefined) {
-                    rawMeta[key] = this.meta[key];
+                    frontmatter[key] = val;
                 }
-            }    
-        }
+            });
+        });
 
-        var content = this.getBookMetaString();
-        // TODO: book desc
-        // if (this.meta["desc"]) {
-        //     content += this.meta["desc"]
-        // }
-        return utils.safeWriteObFile(filepath,content,true);
     }
-
-    private getBookMetaString() {
-        var content = "";
-        content += "---\n";
-        content += "bm-meta: true\n";
-        content += `bid: "${this.bid}"\n`;
-        content += `vid: "${this.vid}"\n`;
-        content += `path: "${this.path}"\n`;
-        content += `name: "${this.name}"\n`;
-        content += `ext: ${this.ext}\n`;
-        content += `visual: ${this.visual}\n`;
-        // if (this.hash) content += `hash: ${this.hash}\n`;
-        // if (this.citekey) content += `citekey: ${this.citekey}\n`;
-
-        for(const key in this.meta) {
-            const val = this.meta[key]; // TODO: correct type string
-
-            if (val === undefined) continue;
-
-            if (typeof val === "string") {
-                if (!val) continue;
-                content += `${key}: "${val}"\n`;
-            } else if (typeof val === "object") { // array
-                if (val.length === 0) continue;
-                content += `${key}:\n`;
-                val.forEach((v: string) => {
-                    content += ` - ${v}\n`
-                })
-            } else {
-                content += `${key}: ${val}\n`;
-            }
-        }
-        content += "---\n"
-        return content;
-    }
-
 }
 
 export enum BookFolderType {

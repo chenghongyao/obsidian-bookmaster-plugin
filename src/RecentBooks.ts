@@ -42,7 +42,9 @@ export default class RecentBooksManager {
         const bid = url.searchParams.get("bid");
         if (!url) continue;
         this.bookVaultManager.getBookById(bid).then((book) => {
-          this.recentBooks.push(book);
+          if (book) {
+            this.recentBooks.push(book);
+          }
         })
       } while(item)
     }

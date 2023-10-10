@@ -411,7 +411,8 @@ export default class BookMasterPlugin extends Plugin {
 			// leaf = this.app.workspace.getLeaf("tab");
 		} else {
 			// leaf = this.app.workspace.getLeaf("window");		
-			leaf = this.app.workspace.getLeaf("split");	
+			// leaf = this.app.workspace.getLeaf("split");	
+			leaf = this.app.workspace.createLeafInParent((this.app.workspace.getMostRecentLeaf() as any).parent, -1,)
 		}
 
 		leaf.setGroup("bm-bookview-group");
@@ -458,7 +459,6 @@ export default class BookMasterPlugin extends Plugin {
 					return
 				}
 
-				console.log()
 				if (frontmatter["bm-books"].contains(idpath)) {
 					new Notice("文件已存在")
 				} else {
@@ -488,7 +488,6 @@ export default class BookMasterPlugin extends Plugin {
 			var leaf;
 
 			if (book.view) {
-				console.warn("view exists")
 				leaf = book.view.leaf;
 				book.view.setViewerState(state);
 			} else {
