@@ -255,6 +255,8 @@ export class Book extends AbstractBook {
                     this.meta[key] = inputMeta[key];
                 }
 
+                console.log(this.meta)
+
             })
 
         } else { // init book meta
@@ -301,11 +303,6 @@ export class Book extends AbstractBook {
                 for(const key in this.meta) {
                     var val = this.meta[key]; // TODO: correct type string
                     if (val === undefined) continue;
-    
-                    if (typeof val === "string") {
-                        val =  `"${val}"`;
-                    }
-
                     frontmatter[key] = val;
                 }
             });

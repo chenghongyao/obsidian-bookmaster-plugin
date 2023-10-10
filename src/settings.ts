@@ -48,7 +48,10 @@ export interface BookMasterSettings {
             textAnnotation: string;
             regionAnnotation: string;    
         }
-    }
+    };
+
+    //
+    autoChangeBookStatusWhenOpen: boolean;
 }
 
 
@@ -89,4 +92,6 @@ export const DEFAULT_SETTINGS: BookMasterSettings = {
             regionAnnotation: "![[{{img}}|{{width}}]]\n{{page}}\n{{comment}}\n\n"
         }
     },
+
+    autoChangeBookStatusWhenOpen: true,
 }

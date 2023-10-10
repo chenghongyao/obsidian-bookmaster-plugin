@@ -220,6 +220,14 @@ export class BookMasterSettingTab extends PluginSettingTab {
             })
         });
 
+        new Setting(containerEl)
+        .setName("打开未读状态文件时自动更新为在读")
+        .addToggle((tooble) => {
+            tooble.setValue(commonSetting.autoChangeBookStatusWhenOpen).onChange(async (value) => {
+                commonSetting.autoChangeBookStatusWhenOpen = value;
+                await this.plugin.saveSettings();
+            })
+        })
 
         new Setting(containerEl)
         .setName("用户名")

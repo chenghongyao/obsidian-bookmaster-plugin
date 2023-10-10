@@ -33,6 +33,8 @@ export default class BookMasterPlugin extends Plugin {
 	annotationImageSelector: string;
 	bookProjectStatusEl: HTMLElement;
 
+
+
     async onload() {
 
 		// load or init settings
@@ -499,9 +501,21 @@ export default class BookMasterPlugin extends Plugin {
 		} 
 
 		// if open by system
-		if (book.vid) {
-			this.recentBooksManager.addBook(book);
+		if (!book.vid) return;
+
+		if (this.settings.autoChangeBookStatusWhenOpen && book.meta.status == BookStatus.UNREAD) {
+			book.meta.status = BookStatus.READING;
+			book.meta.progress = 0;
+			book.meta.rating = 0;
+
+			return this.bookVaultManager.saveBookDataSafely(book).then(() => {
+			}).catch((reason)=>{
+				new Notice("设置状态为在读失败:\n"+reason);
+			});
 		}
+
+		this.recentBooksManager.addBook(book);
+		
 	}
 
 	showBookLocationInSystem(book: AbstractBook) {
