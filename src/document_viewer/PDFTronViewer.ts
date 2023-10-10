@@ -36,7 +36,7 @@ export default class PDFTronViewer extends DocumentViewer {
     annotsChanged: boolean;
 	pageMtxMap: Map<String,Array<number>>;
 
-    data: ArrayBuffer;
+    docData: ArrayBuffer;
     ext: string;
     private pdfjsDoc: PDFDocumentProxy;
 	private image: ImageBitmap;
@@ -64,7 +64,7 @@ export default class PDFTronViewer extends DocumentViewer {
 				console.log("[webviewer]viewer ready");
 				if (self.viewerReady) {
 					// console.error("viewer reload!!")
-					self.show(self.data,self.getState(),self.ext,self.exportAnnotations());
+					self.show(self.docData,self.getState(),self.ext,self.exportAnnotations());
 				}
 				self.viewerReady = true;
 			},
@@ -73,9 +73,9 @@ export default class PDFTronViewer extends DocumentViewer {
 
 				self.xfdfDoc = self.parseXfdfString(data);
 				self.annotsDoc = self.xfdfDoc.getElementsByTagName("annots")[0];
-				console.log(self.xfdfDoc)
+				// console.log(self.xfdfDoc)
 				var pagesDoc = self.xfdfDoc.getElementsByTagName("pages")[0];
-				console.log(pagesDoc)
+				// console.log(pagesDoc)
 
 				if (pagesDoc) {
 					self.pageMtxMap.set("default", 
@@ -137,7 +137,7 @@ export default class PDFTronViewer extends DocumentViewer {
 			copyAnnotationLink(data: any) {
 				const id = data.id;
 				const annot = self.xfdfDoc.getElementsByName(id)[0]; // FIXME: not exists??
-				console.log(annot)
+				// console.log(annot)
 				if (annot && self.eventCallback) {
 					self.eventCallback("copy-annotation", {
 						annot: annot,
@@ -231,7 +231,7 @@ export default class PDFTronViewer extends DocumentViewer {
 		const loadingTask: Promise<PDFDocumentProxy> = pdfjsLib.getDocument({
 			// cMapUrl: this.CMAP_URL,
 			// cMapPacked: true,
-			data: data,
+			data: structuredClone(data),
 		}).promise;
 
 		return loadingTask.then((pdfjsDoc: any) => {
@@ -254,12 +254,12 @@ export default class PDFTronViewer extends DocumentViewer {
 	}
 
     async show(data: ArrayBuffer | string, state?: any, ext?: string, annotations?: string) {
-        this.data = data as ArrayBuffer;
+        this.docData = data as ArrayBuffer;
 
 
 
 		this.ext = ext || "pdf";
-        const arr = new Uint8Array(this.data);
+        const arr = new Uint8Array(this.docData);
         const blob = new Blob([arr], { type: 'application/'+this.ext });
         this.postViewerWindowMessage("openFile",{
             blob:blob,
@@ -290,7 +290,7 @@ export default class PDFTronViewer extends DocumentViewer {
     }
 
     close(): void {
-        this.data = null;
+        this.docData = null;
         window.removeEventListener("message", this.listener);
     }
 
@@ -335,7 +335,7 @@ export default class PDFTronViewer extends DocumentViewer {
 		const annoPage = Number(annot.getAttr("page")) + 1;
 
 		let mtx = this.pageMtxMap.get(annot.getAttr("page")) || this.pageMtxMap.get("default")
-		console.log( this.pageMtxMap)
+		// console.log( this.pageMtxMap)
 
 
 		if (mtx) {
@@ -346,7 +346,7 @@ export default class PDFTronViewer extends DocumentViewer {
 			clipBox[3] = mtx[5] - clipBox[3]
 		}
 
-		console.log("mtx:", mtx)
+		// console.log("mtx:", mtx)
 
 		const clipWidth = (clipBox[2] - clipBox[0])*zoom;
 		const clipHeight = (clipBox[1] - clipBox[3])*zoom;
