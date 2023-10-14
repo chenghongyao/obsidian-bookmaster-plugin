@@ -1,9 +1,13 @@
 import { debounce, ItemView, Menu, Notice, WorkspaceLeaf } from "obsidian";
-import { Book } from "src/Book";
+
+import { AbstractBook, Book, BookFolder, BookFolderType, BookStatus} from "../Book";
+
 import { BookVaultManager } from "src/BookVault";
 import { DocumentViewer, DocumentViewerTheme } from "../document_viewer/DocumentViewer";
 import PDFTronViewer from "../document_viewer/PDFTronViewer";
 import EpubJSViewer from "../document_viewer/EPUBJSViewer";
+
+import BasicBookSettingModal from "./BasicBookSettingModal";
 
 import BookMasterPlugin from "../main";
 import * as utils from "../utils"
@@ -20,6 +24,8 @@ export class BookView extends ItemView {
     debounceSaveAnnotation: any;
     debounceUpdateProgress: any;
     
+    actAutoInsert: HTMLElement;
+    actBookStatus: HTMLElement;
     constructor(leaf: WorkspaceLeaf, plugin: BookMasterPlugin) {
         super(leaf);
 		this.plugin = plugin;
@@ -43,7 +49,11 @@ export class BookView extends ItemView {
     }
 
     getDisplayText() {
-		return "Empty Book";
+        if (this.book) {
+            return this.book.meta.title || this.book.name;
+        } else {
+            return "Empty Book";
+        }
 	}
 
 	getViewType() {
@@ -101,6 +111,44 @@ export class BookView extends ItemView {
                 this.setTitle(this.book.meta.title || this.book.name);
             }
         }, false)
+
+
+        this.addAction("gear","设置",(evt) => {
+            if (!this.book) return;
+            new BasicBookSettingModal(this.app,this.plugin,this.book).open();
+        });   
+
+        this.actBookStatus = this.addAction("book-open-check","阅读状态",(evt) => {
+            if (!this.book) return;
+
+            const menu = new Menu();
+            const allStatus = [BookStatus.UNREAD,BookStatus.READING,BookStatus.FINISHED];
+			const statusIcon = ["cross","clock","checkmark"]
+			const statusName = ["未读","在读","已读"];
+            const bookStatus = allStatus.includes(this.book.meta["status"]) ? this.book.meta["status"] : BookStatus.UNREAD;
+			for (let ind in allStatus) {
+				const status = allStatus[ind];
+				if (bookStatus !== status) {
+					menu.addItem((item) =>
+					item
+						.setTitle("设为"+statusName[ind])
+						.setIcon(statusIcon[ind])
+						.onClick(()=>{
+							this.book.meta["status"] = status;							
+							this.bookVaultManager.saveBookDataSafely(this.book).then(() => {
+								new Notice("设置成功");
+							}).catch((reason)=>{
+								new Notice("设置失败:\n"+reason);
+							});
+						})
+					);
+				}
+			}
+
+            menu.showAtMouseEvent(evt);
+
+        });
+
     }
 
 
@@ -290,5 +338,7 @@ export class BookView extends ItemView {
             });
         }
     }
+
+
     
 }
