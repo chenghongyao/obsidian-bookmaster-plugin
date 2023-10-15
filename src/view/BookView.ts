@@ -170,6 +170,10 @@ export class BookView extends ItemView {
         if (event === "copy-annotation") {
             this.onCopyAnnotation(params.annot, params.ctrl);
         } else if (event == "add-annotation") {
+            if (this.plugin.settings.autoInsertNewAnnotation) {
+                this.onCopyAnnotation(params, true)
+            }
+
             this.debounceSaveAnnotation();
         } else if (event == "modify-annotation") {
             this.debounceSaveAnnotation();

@@ -255,7 +255,7 @@ export class Book extends AbstractBook {
                     this.meta[key] = inputMeta[key];
                 }
 
-                console.log(this.meta)
+                // console.log(this.meta)
 
             })
 

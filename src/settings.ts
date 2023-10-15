@@ -52,6 +52,7 @@ export interface BookMasterSettings {
 
     //
     autoChangeBookStatusWhenOpen: boolean;
+    autoInsertNewAnnotation: boolean;
 }
 
 
@@ -94,4 +95,5 @@ export const DEFAULT_SETTINGS: BookMasterSettings = {
     },
 
     autoChangeBookStatusWhenOpen: true,
+    autoInsertNewAnnotation: false,
 }

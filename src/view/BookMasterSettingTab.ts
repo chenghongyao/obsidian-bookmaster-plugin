@@ -227,7 +227,17 @@ export class BookMasterSettingTab extends PluginSettingTab {
                 commonSetting.autoChangeBookStatusWhenOpen = value;
                 await this.plugin.saveSettings();
             })
+        });
+        new Setting(containerEl)
+        .setName("自动插入标注")
+        .setDesc("自动插入新创建的标注，需要先激活笔记视图")
+        .addToggle((tooble) => {
+            tooble.setValue(commonSetting.autoInsertNewAnnotation).onChange(async (value) => {
+                commonSetting.autoInsertNewAnnotation = value;
+                await this.plugin.saveSettings();
+            })
         })
+
 
         new Setting(containerEl)
         .setName("用户名")
