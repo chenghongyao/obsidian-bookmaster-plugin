@@ -21,6 +21,7 @@ export abstract class DocumentViewer {
     viewerId: string;
     theme: DocumentViewerTheme;
     eventCallback: Function;
+	numPages: number;
 
     constructor(bid: string, container: HTMLElement, theme: DocumentViewerTheme, callback: Function) {
         this.bid = bid;

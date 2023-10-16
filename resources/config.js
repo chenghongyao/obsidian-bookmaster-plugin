@@ -28,7 +28,7 @@ if (!window.wvWindowMessageListener) {
       window.postObsidianBookNoteMessage("copyCurrentPageLink", page);
     },
     setTheme: function(theme) {
-      console.log(theme.bgcolor);
+      // console.log(theme.bgcolor);
       instance.docViewer.setDefaultPageColor(theme.bgcolor); // TODO?
       instance.UI.setTheme(theme.theme);
     }

@@ -470,7 +470,7 @@ export default class BookMasterPlugin extends Plugin {
 		})
 	}
 
-	async openBook(book: Book, newPanel: boolean=false, state?: any) {
+	async openBook(book: Book, newPanel: boolean = false, state?: any) {
 		if (!book.vid) {
 			return;
 		}	

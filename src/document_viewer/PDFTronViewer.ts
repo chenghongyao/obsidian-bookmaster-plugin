@@ -236,6 +236,7 @@ export default class PDFTronViewer extends DocumentViewer {
 
 		return loadingTask.then((pdfjsDoc: any) => {
 			this.pdfjsDoc = pdfjsDoc;
+			this.numPages = this.pdfjsDoc.numPages;
 		}).catch((reason) => {
 			new Notice("读取pdf文件错误,将无法截图:\n"+reason);
 		});
@@ -255,8 +256,6 @@ export default class PDFTronViewer extends DocumentViewer {
 
     async show(data: ArrayBuffer | string, state?: any, ext?: string, annotations?: string) {
         this.docData = data as ArrayBuffer;
-
-
 
 		this.ext = ext || "pdf";
         const arr = new Uint8Array(this.docData);

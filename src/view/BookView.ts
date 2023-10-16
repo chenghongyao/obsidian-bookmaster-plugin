@@ -293,7 +293,12 @@ export class BookView extends ItemView {
                     state = {};
                 } 
                 state.progress = this.book.meta["progress"]
-                this.viewer.show(data,state,this.book.ext,annos);
+                this.viewer.show(data,state,this.book.ext,annos).then(() => {
+                    if (!this.book.meta.total) {
+                        this.book.meta.total = this.viewer.numPages;
+                        this.bookVaultManager.saveBookDataSafely(this.book);
+                    }
+                })
             });
         } else if (this.book.ext === "epub") {
 
