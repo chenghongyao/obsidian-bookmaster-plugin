@@ -587,7 +587,7 @@ export class BookVaultManager {
 
 
 
-	private async walkBookVault(vid: string, vaultPath: string, rootPath: string, root: BookFolder) {
+	private async walkBookVault(vid: string, vaultPath: string, rootPath: string, root: BookFolder, first: boolean) {
 
 		const dirpath = utils.normalizePath(vaultPath, rootPath);
 		const files = Platform.isMobile ? await utils.fs.readdir(dirpath) : utils.fs.readdirSync(dirpath);
@@ -607,13 +607,19 @@ export class BookVaultManager {
 					folder = reactive(new BookFolder(root, vid, name, path));
 					root.push(folder);
 					this.bookMap.set(entry, folder);
+
+					// if (!first) {
+					// 	folder.newFlag = true;
+					// 	console.log("new folder");
+					// }
+
 				} else {			// existed folder
 					if (folder.lost) {
 						folder.lost = false;
 					}
 				}
 				folder.existFlag = true;
-				await this.walkBookVault(vid, vaultPath, path, folder);
+				await this.walkBookVault(vid, vaultPath, path, folder, first);
 			} else { // file
 				const ext = utils.getExtName(path);
 				if (!this.isValidBook(name, ext)) continue; // TODO: add all file type??
@@ -624,6 +630,12 @@ export class BookVaultManager {
 					book = reactive(new Book(root, vid, bookname, path, ext));
 					root.push(book);
 					this.bookMap.set(entry, book);
+
+					if (!first) {
+						book.newFlag = true;
+						console.log("new book");
+					}
+
 				} else {		// existed book
 					if (book.lost) book.lost = false;
 				}
@@ -631,7 +643,7 @@ export class BookVaultManager {
 			}
 		}
 
-		// delete book
+		// delete losted book
 		for (var i = root.children.length - 1; i >= 0; i--) {
 			const absbook = root.children[i];
 			if (!absbook.existFlag) {
@@ -642,14 +654,18 @@ export class BookVaultManager {
 							this.bookMap.delete(absbook.getEntry());
 							root.children.remove(absbook);
 						}
-					} else {
+					} else if(!(absbook as Book).bid){
 						this.removeBook(absbook as Book);
 						root.children.remove(absbook);
+					} else {
+						absbook.lost = true;
+						(absbook as Book).view.leaf.detach();
+
 					}
 				}
-			} else {
-				absbook.existFlag = false;
-			}
+			} 
+
+			absbook.existFlag = false;
 		}
 	}
 
@@ -691,17 +707,19 @@ export class BookVaultManager {
 	async loadBookVault(vid: string) {
 
 		const path = this.getBookVaultPath(vid);
+		let first = false;
 		if (!this.root.get(vid)) {
 			this.addBookVault(vid);
+			first = true;
 		}
 
 		const folder = this.root.get(vid);
 
 
-		if (!utils.isFolderExists(path)) {
+		if (!utils.isFolderExists(path)) {	// book vault path not exists
 			folder.lost = true;
 		} else {
-			return this.walkBookVault(vid, path, "", folder);
+			return this.walkBookVault(vid, path, "", folder, first);
 		}
 	}
 
@@ -782,8 +800,6 @@ export class BookVaultManager {
 				if (!(file instanceof TFile)) continue;
 
 				const meta = await utils.app.metadataCache.getFileCache(file as TFile).frontmatter;
-				if (!meta) {
-				}
 				if (!meta || !meta["bm-meta"]) {
 					new Notice("非配置文件:" + file.name, 0)
 					console.error("非配置文件:" + file.name, meta)
@@ -793,7 +809,6 @@ export class BookVaultManager {
 				if (!vid || !bid) { // TODO: check book path?
 					new Notice("无效配置文件:" + file.name);
 					console.error("无效配置文件:" + file.name)
-
 					continue;
 				}
 

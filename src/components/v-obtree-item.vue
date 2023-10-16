@@ -26,6 +26,7 @@
         <div class="tree-item-self is-clickable nav-file-title" 
             :class="{'is-active':isActivate,
                     'bm-lost': item.meta && item.lost,
+                    'bm-new': item.newFlag,
                     'bm-unread': item.meta && item.meta['status'] === 'unread', 
                     'bm-reading': item.meta && item.meta['status'] === 'reading',
                     'bm-finished': item.meta && item.meta['status'] === 'finished'}"
@@ -113,6 +114,17 @@ div.nav-file-title.bm-lost:hover > div.nav-file-title-content {
     color: red;
 }
 
+/* new book */
+div.nav-file-title.bm-new::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 5px;
+    height: 5px;
+    background-color: red;
+    border-radius: 50%;
+}
 
 .is-mobile .nav-folder.mod-root.bm-root > .nav-folder-title .nav-folder-title-content {
     display: block;

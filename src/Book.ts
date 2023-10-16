@@ -159,6 +159,7 @@ export abstract class AbstractBook {
     
     children?: Array<AbstractBook>;
     existFlag: boolean;
+    newFlag: boolean;
 
     constructor(parent: BookFolder, vid: string, name: string, path: string, lost: boolean = false) {
         this.parent = parent;
@@ -170,6 +171,7 @@ export abstract class AbstractBook {
         this.path = path;
 
         this.existFlag = false;
+        this.newFlag = false;
     }
 
     isFolder() {
@@ -320,6 +322,7 @@ export enum BookFolderType {
 export class BookFolder extends AbstractBook {
     count: number;
     type: BookFolderType;
+    
     constructor(parent: BookFolder, vid: string, name: string, path: string, lost: boolean = false, type: BookFolderType = BookFolderType.PATH, children?: Array<AbstractBook>) {
         super(parent, vid, name, path, lost);
         this.type = type;

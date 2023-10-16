@@ -473,7 +473,9 @@ export default class BookMasterPlugin extends Plugin {
 	async openBook(book: Book, newPanel: boolean=false, state?: any) {
 		if (!book.vid) {
 			return;
-		}
+		}	
+
+		book.newFlag = false;
 		
 		if (book.lost) {
 			// TODO: fix lost book
