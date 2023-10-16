@@ -143,7 +143,10 @@ export default async function exportPDFAnnotation(author: string, filename: stri
                 // contents: content,
                 // quadPoints: coords
             })
-        } 
+        } else if (annotEl.nodeName === "custom") {
+            // TODO: custom annotation?
+            
+        }        
         // else if (annotEl.nodeName === "text") { // TODO: comment
 
         // }

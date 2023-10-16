@@ -12,6 +12,7 @@ import BasicBookSettingModal from "./BasicBookSettingModal";
 import BookMasterPlugin from "../main";
 import * as utils from "../utils"
 import TxtViewer from "../document_viewer/TxtViewer";
+import exportPDFAnnotation from "../utils/PdfAnnotation";
 
 
 export const VIEW_TYPE_BOOK_VIEW = "bm-book-view"
@@ -148,6 +149,11 @@ export class BookView extends ItemView {
             menu.showAtMouseEvent(evt);
 
         });
+
+        this.addAction("arrow-down","导出标注后文件", async (evt) => {
+            if (!this.book) return;
+            return this.plugin.exportAnnotatedFile(this.book);
+        })
 
     }
 

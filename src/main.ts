@@ -530,6 +530,18 @@ export default class BookMasterPlugin extends Plugin {
 	
 	}
 
+	async exportAnnotatedFile(book: Book) {
+		const annots = await this.bookVaultManager.loadBookAnnotations(book);
+		if (!annots) {
+			new Notice("无法加载标注文件");
+		} else {
+			return this.bookVaultManager.getBookContent(book).then((data: ArrayBuffer) => {
+				exportPDFAnnotation(this.settings.annotationAuthor, book.name + ".pdf", data, annots);
+			});
+		}
+	}
+
+
 	createBookContextMenu(menu: Menu, book: Book) {
 		if (book.vid) {
 
@@ -549,16 +561,10 @@ export default class BookMasterPlugin extends Plugin {
 			if (book.ext === "pdf") {
 				menu.addItem((item: any) => 
 				item
+					.setIcon("arrow-down")
 					.setTitle("导出标注后文件")
 					.onClick(async () => {
-						const annots = await this.bookVaultManager.loadBookAnnotations(book);
-						if (!annots) {
-							new Notice("无法加载标注文件");
-						} else {
-							return this.bookVaultManager.getBookContent(book).then((data: ArrayBuffer) => {
-								exportPDFAnnotation(this.settings.annotationAuthor, book.name + ".pdf", data, annots);
-							});
-						}
+						return this.exportAnnotatedFile(book);
 					}));
 			}
 
@@ -574,7 +580,7 @@ export default class BookMasterPlugin extends Plugin {
 			menu.addItem((item: any) =>
 			item
 				.setTitle("插入当前文件")
-				.setIcon("gear")
+				.setIcon("anchor")
 				.onClick(()=>{
 					const file = this.lastActiveMarkdownView?.file
 
@@ -738,14 +744,23 @@ export default class BookMasterPlugin extends Plugin {
 	createBookFolderContextMenu(menu: Menu, folder: BookFolder) {
 
 		if (folder.type === BookFolderType.PATH) {
-			menu.addItem((item: any) =>
-			item
-				.setTitle("在系统资源管理器中显示")
-				.setIcon("popup-open")
-				.onClick(()=>{
-					// TODO: http?
-					this.showBookLocationInSystem(folder);						
-				})
+			
+			menu
+			.addItem((item: any) =>
+				item
+					.setTitle("复制路径")
+					.setIcon("link")
+					.onClick(()=>{
+						navigator.clipboard.writeText(folder.path+"/");
+					})
+			)
+			.addItem((item: any) =>
+				item
+					.setTitle("在系统资源管理器中显示")
+					.setIcon("popup-open")
+					.onClick(()=>{
+						this.showBookLocationInSystem(folder);						
+					})
 			)
 		}
 	}
