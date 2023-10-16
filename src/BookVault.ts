@@ -257,7 +257,7 @@ export class BookVaultManager {
 
 		this.plugin.register(() => {
 			this.bookVaultWatcher.get(vid).close();
-		})
+		});
 
 		if (this.getCurrentBookVaultId() === vid) {
 			if (this.plugin.bookExplorer) {
@@ -271,17 +271,23 @@ export class BookVaultManager {
 			if (entry.startsWith(vid)) {
 				this.bookMap.delete(entry);
 			}
-		})
+		});
 
 		this.bookIdMap.forEach((book, id) => {
 			if (book.vid === vid) {
 				this.bookIdMap.delete(id);
 			}
+		});
+
+		delete this.plugin.settings.bookVaultNames[vid];
+		for (let devId in this.plugin.settings.deviceSetting) {
+			delete this.plugin.settings.deviceSetting[devId].bookVaultPaths[vid];
+		}
+
+		return this.plugin.saveSettings().then(() => {
+			new Notice("删除成功");
 		})
-
-
 	}
-
 
 	getCurrentBookVaultId() {
 		return this.plugin.settings.currentBookVault;

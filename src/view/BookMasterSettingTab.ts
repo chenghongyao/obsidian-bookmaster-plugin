@@ -47,6 +47,7 @@ export class BookMasterSettingTab extends PluginSettingTab {
                 })
             })
 
+        // edit button
         bookVaultSetting.addButton((btn) => {
             btnToggleEdit = btn;
 
@@ -76,8 +77,7 @@ export class BookMasterSettingTab extends PluginSettingTab {
             })
         })
     
-        
-
+        // select folder button
         if (Platform.isDesktop) {
             bookVaultSetting.addButton((btn) => {
                 btnPickFolder = btn;
@@ -107,6 +107,7 @@ export class BookMasterSettingTab extends PluginSettingTab {
             })
         }
 
+        // delete folder button
         bookVaultSetting.addButton((btn) => {
             btn.setIcon("cross");
             btn.onClick(async () => {
