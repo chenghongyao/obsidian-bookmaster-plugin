@@ -32,6 +32,7 @@ export default class BookMasterPlugin extends Plugin {
 	lastActiveMarkdownView: MarkdownView;
 	annotationImageSelector: string;
 	bookProjectStatusEl: HTMLElement;
+	autoInsertAnnotationEl: HTMLElement;
 
 
 
@@ -106,6 +107,22 @@ export default class BookMasterPlugin extends Plugin {
 
 		// register protocal handler
 		this.registerProtocalHandler();
+
+		// auto insert annotation switch in status bar
+		this.autoInsertAnnotationEl = this.addStatusBarItem();
+		setIcon(this.autoInsertAnnotationEl, "arrow-up-left-from-circle");
+		if (this.settings.autoInsertNewAnnotation) {
+			this.autoInsertAnnotationEl.style.color = "var(--text-accent)";
+		}
+		this.autoInsertAnnotationEl.onClickEvent(async (ev:MouseEvent) => {
+			this.settings.autoInsertNewAnnotation = !this.settings.autoInsertNewAnnotation;
+			await this.saveSettings();
+			if (this.settings.autoInsertNewAnnotation) {
+				this.autoInsertAnnotationEl.style.color = "var(--text-accent)";
+			} else {
+				this.autoInsertAnnotationEl.style.color = "";
+			}
+		});
     }
 
 	// register some book project related event or command

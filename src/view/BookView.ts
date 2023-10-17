@@ -207,8 +207,8 @@ export class BookView extends ItemView {
 		var annoContent = "";
 		var template = null;
 		var isTextAnnot = false;
-		if (["highlight","underline" ,"strikeout","squiggly","freetext"].includes(annoType)) {
-			annoContent = annot.textContent;
+		if (["highlight","underline" ,"strikeout","squiggly","freetext","text"].includes(annoType)) {
+			annoContent = annot.textContent.replaceAll('\n','');
 			template = this.plugin.settings.annotationTemplate.pdf.textAnnotation;
 			isTextAnnot = true;
 		} else {
