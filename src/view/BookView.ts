@@ -235,8 +235,8 @@ export class BookView extends ItemView {
 
 			if (template.includes("{{img}}")) {
 				const image = await this.viewer.getAnnotationImage(annot,clipBox,realZoom);
-				if (image) {
-					imgName = await this.bookVaultManager.saveBookAnnotationImage(this.book,annoId, Buffer.from(image));
+				if (image) { 
+                    imgName = await this.bookVaultManager.saveBookAnnotationImage(this.book,annoId, image);
 				} else {
 					new Notice("无法获取标注图片图片");
 				}

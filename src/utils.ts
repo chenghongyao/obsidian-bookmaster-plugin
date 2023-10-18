@@ -82,7 +82,7 @@ export async function safeWriteObFile(path: string, data: ArrayBuffer|string, ov
             }
         }
         
-        if (typeof path === "string") {
+        if (typeof data === "string") {
             return vault.create(path, data as string).then(() =>{
                 return;
             })
