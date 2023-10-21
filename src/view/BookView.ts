@@ -262,6 +262,7 @@ export class BookView extends ItemView {
 			height: clipHeight.toString(),
 			img: imgName,
 			comment: comment, // TODO: add all book meta fields
+            title: this.book.meta.title || this.book.name,
 		}
 
 		const result = utils.encodeTemplate(template,params)
@@ -272,6 +273,26 @@ export class BookView extends ItemView {
 		} else {
 			new Notice("标注已复制",600);
 		}
+    }
+
+    private async onCopyPageLink(page: number) {
+		const annoPage = page;
+
+		const link = `obsidian://bookmaster?type=open-book&bid=${this.bid}&page=${annoPage}`;
+
+		var template = this.plugin.settings.annotationTemplate.pdf.pageAnnotation;;
+	
+		const params = {
+			url: link,
+			page: annoPage.toString(),
+            title: this.book.meta.title || this.book.name,
+		}
+
+		const result = utils.encodeTemplate(template,params)
+		navigator.clipboard.writeText(result);
+        
+	
+        new Notice("已复制",600);
     }
 
     async openBook(bid: string, state?: any) {
@@ -342,7 +363,18 @@ export class BookView extends ItemView {
 
     onPaneMenu(menu: Menu, source: string) {
         if (this.book) {
-            this.plugin.createBookContextMenu(menu, this.book);
+
+
+            menu.addItem((item) => {
+                    item.setTitle("复制当前页链接")
+                    .setIcon("link")
+                    .onClick(() => {
+                        const page = (this.viewer.getState() as any).page;
+                        this.onCopyPageLink(page);
+
+                    })
+            });
+        
             menu.addItem((item) => {
                 item
                 .setTitle("关闭")
@@ -351,6 +383,10 @@ export class BookView extends ItemView {
                     this.leaf.detach();
                 })
             });
+
+
+            menu.addSeparator()
+            this.plugin.createBookContextMenu(menu, this.book);
         }
     }
 

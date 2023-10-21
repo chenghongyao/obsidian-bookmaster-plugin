@@ -577,15 +577,6 @@ export default class BookMasterPlugin extends Plugin {
 				menu.addSeparator();
 			}
 
-			if (book.ext === "pdf") {
-				menu.addItem((item: any) => 
-				item
-					.setIcon("arrow-down")
-					.setTitle("导出标注后文件")
-					.onClick(async () => {
-						return this.exportAnnotatedFile(book);
-					}));
-			}
 
 			menu.addItem((item: any) =>
 			item
@@ -728,6 +719,18 @@ export default class BookMasterPlugin extends Plugin {
 
 		if (!book.lost) {
 			menu.addSeparator();
+
+			if (book.ext === "pdf") {
+				menu.addItem((item: any) => 
+				item
+					.setIcon("arrow-down")
+					.setTitle("导出标注后文件")
+					.onClick(async () => {
+						return this.exportAnnotatedFile(book);
+					}));
+			}
+
+
 			menu.addItem((item: any) =>
 			item
 				.setTitle("使用默认应用打开")
@@ -748,7 +751,7 @@ export default class BookMasterPlugin extends Plugin {
 						this.showBookLocationInSystem(book);						
 					})
 				)
-			};
+			}
 	
 		}
 	}

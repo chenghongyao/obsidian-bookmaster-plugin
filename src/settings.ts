@@ -47,6 +47,7 @@ export interface BookMasterSettings {
         pdf: {
             textAnnotation: string;
             regionAnnotation: string;    
+            pageAnnotation: string;
         }
     };
 
@@ -89,8 +90,9 @@ export const DEFAULT_SETTINGS: BookMasterSettings = {
     fixedAnnotationImageScale: 2.0,
     annotationTemplate: {
         pdf: {
-            textAnnotation: "[{{content}}]({{url}})\n{{page}}\n{{comment}}\n\n",
-            regionAnnotation: "![[{{img}}|{{width}}]]\n{{page}}\n{{comment}}\n\n"
+            textAnnotation: "[{{content}}]({{url}})\n",
+            regionAnnotation: "![[{{img}}|{{width}}]]\n",
+            pageAnnotation: "[{{title}}]({{url}})\n"
         }
     },
 

@@ -267,8 +267,8 @@ export class BookMasterSettingTab extends PluginSettingTab {
         new Setting(containerEl)
             .setName("PDF选文标注模板")
             .addTextArea((text) => {
-                text.inputEl.style.width = "408px";
-                text.inputEl.style.height = "82px";
+                text.inputEl.classList.add("bm-setting-template-textarea");
+                text.inputEl.classList.add("rename-textarea");
                 text.setValue(commonSetting.annotationTemplate.pdf.textAnnotation).onChange(async (value) => {
                     commonSetting.annotationTemplate.pdf.textAnnotation = value;
                     await this.plugin.saveSettings();
@@ -279,15 +279,26 @@ export class BookMasterSettingTab extends PluginSettingTab {
         new Setting(containerEl)
             .setName("PDF区域标注模板")
             .addTextArea((text) => {
-                text.inputEl.style.width = "408px";
-                text.inputEl.style.height = "82px";
+                text.inputEl.classList.add("bm-setting-template-textarea");
+                text.inputEl.classList.add("rename-textarea");
                 text.setValue(commonSetting.annotationTemplate.pdf.regionAnnotation).onChange(async (value) => {
                     commonSetting.annotationTemplate.pdf.regionAnnotation = value;
                     await this.plugin.saveSettings();
                 });
             });
 
+        new Setting(containerEl)
+            .setName("PDF页链接模板")
+            .addTextArea((text) => {
+                text.inputEl.classList.add("bm-setting-template-textarea");
+                text.inputEl.classList.add("rename-textarea");
 
+                text.setValue(commonSetting.annotationTemplate.pdf.pageAnnotation).onChange(async (value) => {
+                    commonSetting.annotationTemplate.pdf.pageAnnotation = value;
+                    await this.plugin.saveSettings();
+                });
+            });
+            
         new Setting(containerEl)
             .setName("阅读器主题")
             .setDesc("背景色需要重新打开阅读器生效")
