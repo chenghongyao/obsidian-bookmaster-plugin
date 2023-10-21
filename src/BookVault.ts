@@ -97,9 +97,9 @@ export class BookVaultManager {
 		return null
 	}
 
-	async getBookByPath(vid: string, path: string) {
+	async getBookByPath(vid: string, path: string): Promise<Book> {
 		await this.waitBookInited();
-		return this.bookMap.get(`${vid}:${path}`);
+		return this.bookMap.get(`${vid}:${path}`) as Book;
 	}
 
 	async getBookByFullPath(fullpath: string) {
