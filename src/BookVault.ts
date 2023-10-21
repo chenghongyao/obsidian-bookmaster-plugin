@@ -856,8 +856,7 @@ export class BookVaultManager {
 					}
 					this.bookIdMap.set(bid, book);
 				}
-
-				book.loadBookData(file);
+				await book.loadBookData(file);
 				// FIXME: data file is deleted manualy??
 			}
 		}
