@@ -384,6 +384,31 @@ export class BookView extends ItemView {
                 })
             });
 
+            menu.addItem((item) => {
+                item
+                .setTitle("关闭其他")
+                .setIcon("cross")
+                .onClick(() => {
+                    const leafs = app.workspace.getLeavesOfType(VIEW_TYPE_BOOK_VIEW);
+                    for (const leaf of leafs) {
+                        if (leaf.view !== this) {
+                            leaf.detach();
+                        }
+                    }
+                })
+            });
+
+            menu.addItem((item) => {
+                item
+                .setTitle("关闭所有")
+                .setIcon("cross")
+                .onClick(() => {
+                    const leafs = app.workspace.getLeavesOfType(VIEW_TYPE_BOOK_VIEW);
+                    for (const leaf of leafs) {                    
+                        leaf.detach();
+                    }
+                })
+            });
 
             menu.addSeparator()
             this.plugin.createBookContextMenu(menu, this.book);
