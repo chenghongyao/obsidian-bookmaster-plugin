@@ -316,7 +316,7 @@ export default class BookMasterPlugin extends Plugin {
 				// 	});
 				// }
 
-				var book;
+				var book: Book;
 				if (params.bid) {
 					book = await self.bookVaultManager.getBookById(params.bid)
 				} else if (params.vid && params.bpath) {
@@ -326,7 +326,7 @@ export default class BookMasterPlugin extends Plugin {
 				}
 
 				if (book) {
-					// new BasicBookSettingModal(self.app,self,book).open();
+					new BasicBookSettingModal(self.app,self, book).open();
 				}
 			}
 		}
