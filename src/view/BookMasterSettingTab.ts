@@ -166,7 +166,7 @@ export class BookMasterSettingTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName("数据文件夹路径")
-            .setDesc("ob库内的文件夹路径，如 `/resources/bookmaster`，保存所有元信息和标注信息等")
+            .setDesc("ob库内的文件夹路径，如 `resources/bookmaster`，保存所有元信息和标注信息等")
             .addText((text) => {
                 text.inputEl.style.width = "300px";
                 text.setValue(commonSetting.dataPath).onChange(async (value) => {

@@ -175,7 +175,7 @@ export class BookVaultManager {
 		});
 	}
 
-	private getBookDataFilePath(book: Book) {
+	getBookDataFilePath(book: Book) {
 		return this.getBookDataPath() + `/${book.vid}/${book.bid}.md`;
 	}
 

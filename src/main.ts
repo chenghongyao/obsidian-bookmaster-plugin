@@ -703,16 +703,14 @@ export default class BookMasterPlugin extends Plugin {
 			if (book.vid) {
 				menu.addItem((item: any) =>
 				item
-					.setTitle("删除记录(todo)")
+					.setTitle("删除记录")
 					.setIcon("trash")
-					.onClick(()=>{
+					.onClick(async ()=>{
 						// TODO: double check
-						// const file = this.app.vault.getAbstractFileByPath(this.getBookManifestPath(book)) as TFile;
-						// if (file) {
-						// 	this.app.vault.delete(file.parent,true).then(() => {
-						// 		// this.updateBookMeta(book); read from file cache work, need to wait for some second?
-						// 	})
-						// }
+						const file = this.app.vault.getAbstractFileByPath(this.bookVaultManager.getBookDataFilePath(book)) as TFile;
+						if (file) {
+							await this.app.vault.trash(file, false);
+						}
 					})
 				);	
 			}
@@ -722,12 +720,7 @@ export default class BookMasterPlugin extends Plugin {
 					.setTitle("删除文件(todo)")
 					.setIcon("trash")
 					.onClick(()=>{
-						// TODO: double check
-						// const file = this.app.vault.getAbstractFileByPath(this.getBookManifestPath(book)) as TFile;
-						// if (file) {
-						// 	this.app.vault.delete(file.parent,true);
-						// }
-						// this.updateBookMeta(book);
+						
 					})
 				);
 			
