@@ -27,6 +27,7 @@ export class BookView extends ItemView {
     
     actAutoInsert: HTMLElement;
     actBookStatus: HTMLElement;
+    actExportBook: HTMLElement;
     constructor(leaf: WorkspaceLeaf, plugin: BookMasterPlugin) {
         super(leaf);
 		this.plugin = plugin;
@@ -124,40 +125,43 @@ export class BookView extends ItemView {
 
             const menu = new Menu();
             const allStatus = [BookStatus.UNREAD,BookStatus.READING,BookStatus.FINISHED];
-			const statusIcon = ["cross","clock","checkmark"]
+			const statusIcon = ["scan-line","scan","scan-face"]
 			const statusName = ["未读","在读","已读"];
             const bookStatus = allStatus.includes(this.book.meta["status"]) ? this.book.meta["status"] : BookStatus.UNREAD;
 			for (let ind in allStatus) {
 				const status = allStatus[ind];
-				if (bookStatus !== status) {
-					menu.addItem((item) =>
-					item
-						.setTitle("设为"+statusName[ind])
-						.setIcon(statusIcon[ind])
-						.onClick(()=>{
-							this.book.meta["status"] = status;							
-							this.bookVaultManager.saveBookDataSafely(this.book).then(() => {
-								new Notice("设置成功");
-							}).catch((reason)=>{
-								new Notice("设置失败:\n"+reason);
-							});
-						})
-					);
-				}
+                menu.addItem((item) => {
+                    item
+                    .setTitle("设为"+statusName[ind])
+                    .setIcon(statusIcon[ind])
+                    .onClick(()=>{
+                        this.book.meta["status"] = status;							
+                        this.bookVaultManager.saveBookDataSafely(this.book).then(() => {
+                            new Notice("设置成功");
+                        }).catch((reason)=>{
+                            new Notice("设置失败:\n"+reason);
+                        });
+                    })
+
+                    item.setChecked(status == bookStatus);
+
+                
+                });
+
 			}
 
             menu.showAtMouseEvent(evt);
 
         });
 
-        this.addAction("arrow-down","导出标注后文件", async (evt) => {
+        this.actExportBook = this.addAction("arrow-down","导出标注后文件", async (evt) => {
             if (!this.book) return;
             return this.plugin.exportAnnotatedFile(this.book);
-        })
+        });
+
+
 
     }
-
-
 
     async onClose() {
 
@@ -170,7 +174,6 @@ export class BookView extends ItemView {
         }
         this.debounceSaveAnnotation = null;
     }
-
 
     private viewerEvent(event: string, params: any) {
         if (event === "copy-annotation") {
@@ -305,7 +308,13 @@ export class BookView extends ItemView {
         this.setTitle(this.book.meta.title || this.book.name);
 
         const theme = this.plugin.settings.documentViewerTheme;
-        
+        if (this.book.ext == "pdf") {
+            this.actExportBook.style.display = "block";
+        } else {
+            this.actExportBook.style.display = "none";
+        }
+
+
         if (["pdf"].includes(this.book.ext)) {
             return this.bookVaultManager.getBookContent(this.book).then((data: ArrayBuffer) => {
                 const workerPath = this.plugin.getCurrentDeviceSetting().bookViewerWorkerPath + "/webviewer";
@@ -358,7 +367,10 @@ export class BookView extends ItemView {
     }
 
     setViewerState(state: any) {
-        this.viewer.setState(state);
+        // console.log(this.viewer)
+        if (this.viewer) {
+            this.viewer.setState(state);
+        } 
     }
 
     onPaneMenu(menu: Menu, source: string) {

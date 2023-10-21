@@ -428,7 +428,9 @@ export default class BookMasterPlugin extends Plugin {
 			// this.app.workspace.setActiveLeaf(oldLeafs[0]);
 			leaf = this.app.workspace.createLeafInParent((oldLeafs[0] as any).parent, -1);
 			// leaf = this.app.workspace.getLeaf("tab");
-		} else {
+		} else if (newPanel) {
+			leaf = this.app.workspace.getLeaf("split");	
+		}else {
 			// leaf = this.app.workspace.getLeaf("window");		
 			// leaf = this.app.workspace.getLeaf("split");	
 			leaf = this.app.workspace.createLeafInParent((this.app.workspace.getMostRecentLeaf() as any).parent, -1,)
@@ -621,14 +623,13 @@ export default class BookMasterPlugin extends Plugin {
 
 			// TODO: icon
 			const allStatus = [BookStatus.UNREAD,BookStatus.READING,BookStatus.FINISHED];
-			const statusIcon = ["cross","clock","checkmark"]
+			const statusIcon = ["scan-line","scan","scan-face"]
 			const statusName = ["未读","在读","已读"];
 			const bookStatus = allStatus.includes(book.meta["status"]) ? book.meta["status"] : BookStatus.UNREAD;
 			for (let ind in allStatus) {
 				const status = allStatus[ind];
-				if (bookStatus !== status) {
-					menu.addItem((item) =>
-					item
+					menu.addItem((item) => {
+						item
 						.setTitle("设为"+statusName[ind])
 						.setIcon(statusIcon[ind])
 						.onClick(()=>{
@@ -639,8 +640,9 @@ export default class BookMasterPlugin extends Plugin {
 								new Notice("设置失败:\n"+reason);
 							});
 						})
-					);
-				}
+
+						item.setChecked(status == bookStatus);
+					});
 			}
 			menu.addSeparator();
 
