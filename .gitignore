@@ -1,6 +1,6 @@
 node_modules
 main.js
-styles.css
+/styles.css
 release
 data.json
 deploy.bat

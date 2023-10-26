@@ -1,0 +1,33 @@
+/* bookvault settings */
+div.bookvault-setting {
+    display: block;
+}
+div.bookvault-setting  div.setting-item-info {
+    display: block;
+    padding-bottom:8px
+
+}
+
+div.bookvault-setting  div.setting-item-control {
+    display: block;
+}
+
+div.bookvault-setting  div.search-input-container {
+    display: block;
+    padding-bottom:8px
+
+}
+
+.modal-container .modal-content textarea.bm-setting-template-textarea {
+    width: 24rem;
+    height: 8rem; 
+    
+}
+
+/* bookview */
+.bm-bookview {
+    padding: 0  !important;
+    width: 100%;
+    height: 100%;
+    overflow: hidden !important;
+}

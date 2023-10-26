@@ -103,9 +103,6 @@ export class BookView extends ItemView {
 		console.log("BookView Open");
 
         this.contentEl.empty();
-        this.contentEl.style.padding = "0";
-        this.containerEl.style.height = "100%";
-        this.containerEl.style.width = "100%";
 		this.contentEl.addClass("bm-bookview");
 
         this.contentEl.onNodeInserted(() => {
