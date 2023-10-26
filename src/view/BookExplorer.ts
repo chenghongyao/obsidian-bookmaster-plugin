@@ -74,7 +74,7 @@ export class BookExplorer extends ItemView {
 				}
 			});
 			if (self.plugin.settings.bookTreeSortAsc) {
-				item.setIcon("checkmark");
+				item.setChecked(true);
 			}
 		});
 
@@ -89,7 +89,7 @@ export class BookExplorer extends ItemView {
 				}
 			});
 			if (!self.plugin.settings.bookTreeSortAsc) {
-				item.setIcon("checkmark");
+				item.setChecked(true);
 			}
 		});
 		menu.addSeparator();
@@ -105,7 +105,8 @@ export class BookExplorer extends ItemView {
 				}
 			});
 			if (self.plugin.settings.bookTreeSortType === BookTreeSortType.PATH)
-				item.setIcon("checkmark");
+				item.setChecked(true);
+
 		});
 
 		menu.addItem((item) => {
@@ -120,9 +121,7 @@ export class BookExplorer extends ItemView {
 			});
 
 			if (self.plugin.settings.bookTreeSortType === BookTreeSortType.TAG)
-				item.setIcon("checkmark");
-			
-			
+				item.setChecked(true);			
 		});	
 		menu.addItem((item) => {
 			item
@@ -136,7 +135,7 @@ export class BookExplorer extends ItemView {
 			});
 
 			if (self.plugin.settings.bookTreeSortType === BookTreeSortType.AUTHOR)
-				item.setIcon("checkmark");
+				item.setChecked(true);
 
 		});
 
@@ -152,7 +151,7 @@ export class BookExplorer extends ItemView {
 			});
 
 			if (self.plugin.settings.bookTreeSortType === BookTreeSortType.PUBLISH_YEAR)
-				item.setIcon("checkmark");
+				item.setChecked(true);
 
 		});
 		
@@ -183,7 +182,7 @@ export class BookExplorer extends ItemView {
 				});
 
 				if (vid === this.plugin.settings.currentBookVault) {
-					item.setIcon("checkmark");
+					item.setChecked(true);
 				}
 			})
 		})
