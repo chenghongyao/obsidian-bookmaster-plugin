@@ -250,6 +250,27 @@ export class BookMasterSettingTab extends PluginSettingTab {
             })
         });
 
+        // GPT settings
+        new Setting(containerEl)
+        .setName("GPT Host")
+        .setDesc("基于模型gpt-3.5-turbo，目前仅用于翻译")
+        .addText((text) => {
+            text.setPlaceholder("https://api.openai.com")
+            text.setValue(commonSetting.llm.gpt.host).onChange(async (value) => {
+                commonSetting.llm.gpt.host = value;
+                await this.plugin.saveSettings();
+            })
+        });
+        new Setting(containerEl)
+        .setName("GPT key")
+        .setDesc("注意key将以明文保存在data.json中")
+        .addText((text) => {
+            text.setValue(commonSetting.llm.gpt.key).onChange(async (value) => {
+                commonSetting.llm.gpt.key = value;
+                await this.plugin.saveSettings();
+            })
+        });
+
 
         new Setting(containerEl)
             .setName("PDF截图比例")

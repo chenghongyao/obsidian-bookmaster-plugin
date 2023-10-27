@@ -16,6 +16,7 @@ import BookProjecetManager from "./BookProject";
 import { BookProject, VIEW_TYPE_BOOK_PROJECT } from "./view/BookProjectView";
 import { around } from "monkey-around";
 import exportPDFAnnotation from "./utils/PdfAnnotation";
+import { BookTranslator, VIEW_TYPE_BOOK_TRANSLATOR } from "./view/BookTranslatorView";
 
 import "./styles.css"
 // TODO: 重复添加book vault watcher
@@ -51,6 +52,7 @@ export default class BookMasterPlugin extends Plugin {
 		this.safeRegisterView(VIEW_TYPE_BOOK_VIEW,leaf => new BookView(leaf,this));
 		this.safeRegisterView(VIEW_TYPE_RECENT_BOOKS,leaf => new RecentBookView(leaf,this));
 		this.safeRegisterView(VIEW_TYPE_BOOK_PROJECT,leaf => new BookProject(leaf,this));
+		this.safeRegisterView(VIEW_TYPE_BOOK_TRANSLATOR,leaf => new BookTranslator(leaf,this));
 		
 		this.addSettingTab(new BookMasterSettingTab(this.app, this));
 
@@ -83,6 +85,16 @@ export default class BookMasterPlugin extends Plugin {
 			name: "Open Book Project View",
 			callback: () => {
 				this.activateView(VIEW_TYPE_BOOK_PROJECT, "right");
+			},
+		});
+
+
+		// command: open book translator view
+		this.addCommand({
+			id: "bm-open-book-translator-view",
+			name: "Open Book Translator View",
+			callback: () => {
+				this.activateView(VIEW_TYPE_BOOK_TRANSLATOR, "right");
 			},
 		});
 
@@ -419,7 +431,11 @@ export default class BookMasterPlugin extends Plugin {
 
 		return leaf.view;
 	}
-
+	async translate(text: string) {
+		return this.activateView(VIEW_TYPE_BOOK_TRANSLATOR, "right").then((view: BookTranslator) => {
+			view.translate(text);
+		})
+	}
 	async createNewBookView(newPanel: boolean = false) {
 		var leaf: WorkspaceLeaf;
 

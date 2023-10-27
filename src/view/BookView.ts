@@ -187,7 +187,9 @@ export class BookView extends ItemView {
             this.debounceSaveAnnotation();
         } else if (event == "progress-update") {
             this.debounceUpdateProgress(params);
-        } 
+        } else if (event == "translate") {
+            this.onTranslate(params.text);
+        }
         else {
             console.warn("unknown event:", event, params)
         }
@@ -293,6 +295,10 @@ export class BookView extends ItemView {
         
 	
         new Notice("已复制",600);
+    }
+
+    private async onTranslate(text: string) {
+        return this.plugin.translate(text);
     }
 
     async openBook(bid: string, state?: any) {

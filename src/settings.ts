@@ -54,6 +54,13 @@ export interface BookMasterSettings {
     //
     autoChangeBookStatusWhenOpen: boolean;
     autoInsertNewAnnotation: boolean;
+
+    llm: {
+        gpt: {
+            host: string,
+            key: string
+        }
+    }
 }
 
 
@@ -98,4 +105,11 @@ export const DEFAULT_SETTINGS: BookMasterSettings = {
 
     autoChangeBookStatusWhenOpen: true,
     autoInsertNewAnnotation: false,
+
+    llm: {
+        gpt: {
+            host: "https://api.openai.com",
+            key: ""
+        }
+    }
 }

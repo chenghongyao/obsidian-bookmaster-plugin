@@ -144,9 +144,14 @@ export default class PDFTronViewer extends DocumentViewer {
 						ctrl: data.ctrlKey,
 					})
 				}
-
-				
 			},
+
+			translate(data: any) {
+				const text = data.text;
+				self.eventCallback("translate", {
+					text: text,
+				})
+			}
 
 		};
 		
